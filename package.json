@@ -4,7 +4,7 @@
   "description": "AfroPredict — Precision Tips. Global Reach. Real Results.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node config/migrate.js && node config/migrate_auth.js && node server.js",
     "dev": "nodemon server.js",
     "migrate": "node config/migrate.js",
     "prod": "NODE_ENV=production node server.js",

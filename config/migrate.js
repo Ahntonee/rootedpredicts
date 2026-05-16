@@ -9,11 +9,14 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 
+const DB_NAME = process.env.DB_NAME || 'afropredict';
+
 const DB_CONFIG = {
   host:     process.env.DB_HOST     || 'localhost',
   port:     parseInt(process.env.DB_PORT) || 3306,
   user:     process.env.DB_USER     || 'root',
   password: process.env.DB_PASSWORD || '',
+  database: DB_NAME,
   multipleStatements: true,
 };
 
@@ -24,20 +27,13 @@ const DB_CONFIG = {
 const MIGRATIONS = [
 
   // ----------------------------------------------------------
-  // 1. Create the database
+  // 1. Ensure charset on the database (safe on Railway where DB
+  //    already exists; skipped silently if no ALTER privilege)
   // ----------------------------------------------------------
   {
-    name: 'Create database',
-    sql: `CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'afropredict'}\`
+    name: 'Set database charset',
+    sql: `ALTER DATABASE \`${DB_NAME}\`
           CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`,
-  },
-
-  // ----------------------------------------------------------
-  // 2. USE the database for all subsequent statements
-  // ----------------------------------------------------------
-  {
-    name: 'Select database',
-    sql: `USE \`${process.env.DB_NAME || 'afropredict'}\`;`,
   },
 
   // ----------------------------------------------------------
@@ -456,9 +452,10 @@ async function runMigrations() {
         await connection.query(migration.sql);
         console.log(`[MIGRATE] ✓ Done: ${migration.name}`);
       } catch (err) {
-        // Skip duplicate entry errors on seed data — safe to ignore
         if (err.code === 'ER_DUP_ENTRY') {
           console.log(`[MIGRATE] ↷ Skipped (already exists): ${migration.name}`);
+        } else if (err.code === 'ER_ACCESS_DENIED_ERROR' || migration.name === 'Set database charset') {
+          console.log(`[MIGRATE] ↷ Skipped (no privilege): ${migration.name}`);
         } else {
           throw err;
         }
