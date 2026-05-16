@@ -353,42 +353,49 @@ const MIGRATIONS = [
   // ----------------------------------------------------------
   {
     name: 'Seed default SEO settings',
-    sql: `
-      INSERT IGNORE INTO seo_settings (page, meta_title, meta_description, keywords) VALUES
-      ('home',        'AfroPredict — Free Football Predictions & Betting Tips Today',
-                      'Get accurate free football predictions, VIP tips, and daily betting analysis covering 1,200+ leagues worldwide. Precision tips for Premier League, Champions League, and more.',
-                      'football predictions today, free football tips, best prediction site, sure tips today, football betting tips'),
-      ('predictions', 'Today\'s Football Predictions — All Leagues | AfroPredict',
-                      'Browse today\'s free and VIP football predictions across all 1,200+ leagues. Filter by market, league, or continent. Over 2.5, BTTS, 1X2 tips updated daily.',
-                      'football predictions today, free tips, over 2.5 goals, BTTS tips, accumulator tips'),
-      ('pricing',     'VIP Football Tips — Subscribe from $4.89/month | AfroPredict',
-                      'Unlock premium VIP football tips with high-confidence picks, early access, and Telegram alerts. Plans from $4.89/month. 3-day free trial available.',
-                      'VIP football tips, premium predictions, best tipster subscription, football tips site'),
-      ('leaderboard', 'Prediction Accuracy Leaderboard — Track Record | AfroPredict',
-                      'See AfroPredict\'s verified prediction accuracy stats and tipster performance leaderboard. Transparent results across all markets and leagues.',
-                      'football prediction accuracy, tipster results, best prediction site record'),
-      ('blog',        'Football Betting Guides & Match Previews | AfroPredict Blog',
-                      'Expert football betting guides, match previews, and league analysis. Learn how to win football bets with data-driven insights from AfroPredict.',
-                      'football betting guide, match preview, how to win football bets, league analysis'),
-      ('about',       'About AfroPredict — Global Football Prediction Platform',
-                      'AfroPredict is a global football prediction platform serving free and VIP tips powered by algorithm-generated predictions and API-Football data covering 1,200+ leagues.',
-                      'about AfroPredict, football prediction platform, best tipster'),
-      ('contact',     'Contact AfroPredict — Get in Touch',
-                      'Contact the AfroPredict team for support, partnership enquiries, or feedback. We\'re here to help bettors worldwide win more.',
-                      'contact AfroPredict, football tips support'),
-      ('privacy',     'Privacy Policy | AfroPredict',
-                      'Read the AfroPredict privacy policy. We are committed to protecting your personal data in compliance with GDPR and global data protection standards.',
-                      'AfroPredict privacy policy, data protection'),
-      ('terms',       'Terms of Service | AfroPredict',
-                      'Read the AfroPredict terms of service. By using our platform you agree to these terms governing free and VIP prediction services.',
-                      'AfroPredict terms of service, betting tips terms'),
-      ('login',       'Login to AfroPredict — Access Your Dashboard',
-                      'Log in to your AfroPredict account to access bookmarks, bet history, and VIP tips.',
-                      'AfroPredict login'),
-      ('register',    'Create a Free Account | AfroPredict',
-                      'Register for a free AfroPredict account to save predictions, track your bets, and upgrade to VIP for premium tips.',
-                      'AfroPredict register, free football tips account');
-    `,
+    fn: async (conn) => {
+      const rows = [
+        ['home',        'AfroPredict - Free Football Predictions & Betting Tips Today',
+                        'Get accurate free football predictions, VIP tips, and daily betting analysis covering 1,200+ leagues worldwide. Precision tips for Premier League, Champions League, and more.',
+                        'football predictions today, free football tips, best prediction site, sure tips today, football betting tips'],
+        ['predictions', 'Todays Football Predictions - All Leagues | AfroPredict',
+                        'Browse todays free and VIP football predictions across all 1,200+ leagues. Filter by market, league, or continent. Over 2.5, BTTS, 1X2 tips updated daily.',
+                        'football predictions today, free tips, over 2.5 goals, BTTS tips, accumulator tips'],
+        ['pricing',     'VIP Football Tips - Subscribe from $4.89/month | AfroPredict',
+                        'Unlock premium VIP football tips with high-confidence picks, early access, and Telegram alerts. Plans from $4.89/month. 3-day free trial available.',
+                        'VIP football tips, premium predictions, best tipster subscription, football tips site'],
+        ['leaderboard', 'Prediction Accuracy Leaderboard - Track Record | AfroPredict',
+                        'See AfroPredict verified prediction accuracy stats and tipster performance leaderboard. Transparent results across all markets and leagues.',
+                        'football prediction accuracy, tipster results, best prediction site record'],
+        ['blog',        'Football Betting Guides & Match Previews | AfroPredict Blog',
+                        'Expert football betting guides, match previews, and league analysis. Learn how to win football bets with data-driven insights from AfroPredict.',
+                        'football betting guide, match preview, how to win football bets, league analysis'],
+        ['about',       'About AfroPredict - Global Football Prediction Platform',
+                        'AfroPredict is a global football prediction platform serving free and VIP tips powered by algorithm-generated predictions and API-Football data covering 1,200+ leagues.',
+                        'about AfroPredict, football prediction platform, best tipster'],
+        ['contact',     'Contact AfroPredict - Get in Touch',
+                        'Contact the AfroPredict team for support, partnership enquiries, or feedback. We are here to help bettors worldwide win more.',
+                        'contact AfroPredict, football tips support'],
+        ['privacy',     'Privacy Policy | AfroPredict',
+                        'Read the AfroPredict privacy policy. We are committed to protecting your personal data in compliance with GDPR and global data protection standards.',
+                        'AfroPredict privacy policy, data protection'],
+        ['terms',       'Terms of Service | AfroPredict',
+                        'Read the AfroPredict terms of service. By using our platform you agree to these terms governing free and VIP prediction services.',
+                        'AfroPredict terms of service, betting tips terms'],
+        ['login',       'Login to AfroPredict - Access Your Dashboard',
+                        'Log in to your AfroPredict account to access bookmarks, bet history, and VIP tips.',
+                        'AfroPredict login'],
+        ['register',    'Create a Free Account | AfroPredict',
+                        'Register for a free AfroPredict account to save predictions, track your bets, and upgrade to VIP for premium tips.',
+                        'AfroPredict register, free football tips account'],
+      ];
+      for (const [page, title, desc, kw] of rows) {
+        await conn.execute(
+          'INSERT IGNORE INTO seo_settings (page, meta_title, meta_description, keywords) VALUES (?, ?, ?, ?)',
+          [page, title, desc, kw]
+        );
+      }
+    },
   },
 
   // ----------------------------------------------------------
@@ -449,7 +456,11 @@ async function runMigrations() {
     for (const migration of MIGRATIONS) {
       try {
         console.log(`[MIGRATE] Running: ${migration.name}`);
-        await connection.query(migration.sql);
+        if (migration.fn) {
+          await migration.fn(connection);
+        } else {
+          await connection.query(migration.sql);
+        }
         console.log(`[MIGRATE] ✓ Done: ${migration.name}`);
       } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
