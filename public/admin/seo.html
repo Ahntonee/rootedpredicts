@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEO Settings | AfroPredict Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar"><span class="admin-topbar-title">SEO Settings</span></div>
+<main class="admin-main">
+  <p style="font-size:0.875rem;color:var(--muted);margin-bottom:20px;">Edit meta titles, descriptions and keywords for each page. Changes affect search engine indexability.</p>
+  <div id="seo-loading" style="text-align:center;padding:40px;"><p style="color:var(--muted);">Loading SEO settings...</p></div>
+  <div id="seo-list" style="display:flex;flex-direction:column;gap:16px;"></div>
+</main>
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+const theme=localStorage.getItem('afro_theme')||'dark';document.documentElement.setAttribute('data-theme',theme);
+async function loadSeo(){
+  const json=await Admin.api('GET','/api/admin/seo');
+  document.getElementById('seo-loading').style.display='none';
+  if(!json.success)return;
+  document.getElementById('seo-list').innerHTML=json.data.map(s=>`
+    <div class="card" style="padding:20px;" id="seo-${s.page}">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:0.05em;"><span class="material-icons-round" style="color:var(--red);font-size:1rem;">travel_explore</span>/${s.page}</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="form-group" style="margin:0;"><label class="form-label">Meta Title</label><input type="text" class="form-control seo-meta-title" data-page="${s.page}" value="${s.meta_title||''}" placeholder="Page title for search engines" maxlength="300"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Meta Description</label><textarea class="form-control seo-meta-desc" data-page="${s.page}" rows="2" placeholder="Description for search results (max 160 chars)" maxlength="500">${s.meta_description||''}</textarea></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Keywords</label><input type="text" class="form-control seo-keywords" data-page="${s.page}" value="${s.keywords||''}" placeholder="Comma-separated keywords"></div>
+        <button onclick="saveSeo('${s.page}')" class="btn btn-primary btn-sm" style="align-self:flex-end;"><span class="material-icons-round">save</span>Save /${s.page}</button>
+      </div>
+    </div>`).join('');
+}
+async function saveSeo(page){
+  const card=document.getElementById('seo-'+page);
+  const body={meta_title:card.querySelector('.seo-meta-title').value.trim(),meta_description:card.querySelector('.seo-meta-desc').value.trim(),keywords:card.querySelector('.seo-keywords').value.trim()};
+  const json=await Admin.api('PUT','/api/admin/seo/'+page,body);
+  if(json.success)Admin.toast('SEO saved for /'+page);
+  else Admin.toast(json.message||'Save failed','error');
+}
+document.addEventListener('DOMContentLoaded',async()=>{Admin.buildSidebar();const u=await Admin.requireAdmin();if(u)loadSeo();});
+</script>
+</body></html>

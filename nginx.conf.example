@@ -1,0 +1,121 @@
+# nginx.conf.example
+# AfroPredict — Nginx reverse proxy configuration
+# Place at: /etc/nginx/sites-available/afropredict
+# Then: sudo ln -s /etc/nginx/sites-available/afropredict /etc/nginx/sites-enabled/
+# Run: sudo certbot --nginx -d afropredict.com -d www.afropredict.com
+# Certbot auto-fills the ssl_certificate paths below.
+
+# ── Redirect HTTP → HTTPS ────────────────────────────────────
+server {
+    listen 80;
+    listen [::]:80;
+    server_name afropredict.com www.afropredict.com;
+    return 301 https://$host$request_uri;
+}
+
+# ── Main HTTPS block ─────────────────────────────────────────
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name afropredict.com www.afropredict.com;
+
+    # SSL — filled in by Certbot automatically
+    # ssl_certificate     /etc/letsencrypt/live/afropredict.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/afropredict.com/privkey.pem;
+    # include             /etc/letsencrypt/options-ssl-nginx.conf;
+    # ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Frame-Options           "SAMEORIGIN"    always;
+    add_header X-Content-Type-Options    "nosniff"       always;
+    add_header X-XSS-Protection          "1; mode=block" always;
+    add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy        "geolocation=(), microphone=(), camera=()" always;
+
+    # Gzip compression
+    gzip            on;
+    gzip_vary       on;
+    gzip_proxied    any;
+    gzip_comp_level 6;
+    gzip_min_length 256;
+    gzip_types      text/plain text/css text/xml text/javascript
+                    application/json application/javascript application/xml
+                    application/rss+xml font/woff2 image/svg+xml;
+
+    # Static assets — long-term cache (versioned by deployment)
+    location ~* ^/(css|js|images)/.*\.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf)$ {
+        root /var/www/afropredict/public;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # favicon and robots served directly from public/
+    location = /favicon.ico {
+        root /var/www/afropredict/public;
+        expires 1d;
+        access_log off;
+    }
+
+    # Block sensitive paths
+    location ~ /\.(env|git|gitignore|htaccess|npmrc) {
+        deny all;
+        return 404;
+    }
+    location ~ ^/(node_modules|config|routes|controllers|services|utils|middleware)/ {
+        deny all;
+        return 404;
+    }
+
+    # All other requests → Node.js via PM2 on port 3000
+    location / {
+        proxy_pass          http://127.0.0.1:3000;
+        proxy_http_version  1.1;
+        proxy_set_header    Upgrade           $http_upgrade;
+        proxy_set_header    Connection        "upgrade";
+        proxy_set_header    Host              $host;
+        proxy_set_header    X-Real-IP         $remote_addr;
+        proxy_set_header    X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto $scheme;
+        proxy_cache_bypass  $http_upgrade;
+        proxy_read_timeout  30s;
+        proxy_connect_timeout 5s;
+
+        # Buffer settings (good for streaming responses)
+        proxy_buffer_size       128k;
+        proxy_buffers           4 256k;
+        proxy_busy_buffers_size 256k;
+    }
+
+    # Stripe webhook — needs raw body, no buffering issues
+    location = /api/webhooks/stripe {
+        proxy_pass          http://127.0.0.1:3000;
+        proxy_http_version  1.1;
+        proxy_set_header    Host              $host;
+        proxy_set_header    X-Real-IP         $remote_addr;
+        proxy_set_header    X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto $scheme;
+        proxy_read_timeout  30s;
+        # Do NOT set proxy_request_buffering off — Node handles it fine
+    }
+
+    # Rate-limit the auth endpoints at Nginx level too
+    limit_req_zone $binary_remote_addr zone=auth:10m rate=5r/m;
+    location ~ ^/api/(auth|subscriptions)/ {
+        limit_req zone=auth burst=10 nodelay;
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Logs
+    access_log /var/log/nginx/afropredict.access.log;
+    error_log  /var/log/nginx/afropredict.error.log  warn;
+
+    # Client upload limit (contact form, profile photo)
+    client_max_body_size 5M;
+}

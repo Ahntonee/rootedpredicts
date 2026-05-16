@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Predictions | AfroPredict Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar">
+  <span class="admin-topbar-title">Manage Predictions</span>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-outline btn-sm" id="score-all-btn" title="Run algorithm on all pending predictions"><span class="material-icons-round">auto_awesome</span>Score All</button>
+    <button class="btn btn-primary btn-sm" id="new-pred-btn"><span class="material-icons-round">add</span>New Prediction</button>
+  </div>
+</div>
+<main class="admin-main">
+  <div class="admin-table-header">
+    <div class="admin-filters">
+      <select class="admin-filter-select" id="f-result"><option value="">All Results</option><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option></select>
+      <select class="admin-filter-select" id="f-visibility"><option value="">All Visibility</option><option value="free">Free</option><option value="vip">VIP</option></select>
+      <input type="date" class="admin-filter-select" id="f-date">
+    </div>
+    <button class="btn btn-outline btn-sm" id="apply-filters"><span class="material-icons-round">filter_list</span>Apply</button>
+  </div>
+  <div class="card" style="overflow:hidden;">
+    <div id="pred-loading" style="text-align:center;padding:40px;"><span class="material-icons-round" style="font-size:2rem;color:var(--border);display:block;margin-bottom:8px;">hourglass_empty</span><p style="color:var(--muted);">Loading...</p></div>
+    <div id="pred-table" style="display:none;overflow-x:auto;">
+      <table class="leaderboard-table">
+        <thead><tr><th>Match</th><th>League</th><th>Tip</th><th>Market</th><th>Confidence</th><th>Visibility</th><th>Result</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody id="pred-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="pred-pagination" style="display:none;justify-content:center;gap:8px;margin-top:16px;align-items:center;">
+    <button id="p-prev" class="btn btn-outline btn-sm" disabled><span class="material-icons-round">chevron_left</span></button>
+    <span id="p-info" style="font-size:0.85rem;color:var(--muted);"></span>
+    <button id="p-next" class="btn btn-outline btn-sm"><span class="material-icons-round">chevron_right</span></button>
+  </div>
+</main>
+
+<!-- Create/Edit Modal -->
+<div id="pred-modal" class="admin-modal-overlay" style="display:none;">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <span class="admin-modal-title" id="modal-title">New Prediction</span>
+      <button class="admin-close-btn" onclick="Admin.hideModal('pred-modal')"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="admin-modal-body">
+      <input type="hidden" id="edit-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group" style="margin:0;"><label class="form-label">League ID</label><input type="number" class="form-control" id="m-league" placeholder="e.g. 1 (Premier League DB id)"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Match Date</label><input type="datetime-local" class="form-control" id="m-date"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Home Team</label><input type="text" class="form-control" id="m-home" placeholder="e.g. Arsenal"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Away Team</label><input type="text" class="form-control" id="m-away" placeholder="e.g. Chelsea"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Tip</label><input type="text" class="form-control" id="m-tip" placeholder="e.g. Home Win, Over 2.5"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Market</label>
+          <select class="form-control" id="m-market"><option>1X2</option><option>Over/Under</option><option>BTTS</option><option>Correct Score</option><option>Draw No Bet</option><option>Accumulator</option></select>
+        </div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Odds</label><input type="number" step="0.01" class="form-control" id="m-odds" placeholder="1.85"></div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+            Confidence (0-100)
+            <button type="button" id="auto-score-btn" class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.72rem;" title="Calculate score from form, H2H and odds">
+              <span class="material-icons-round" style="font-size:0.8rem;">auto_awesome</span>Auto-Score
+            </button>
+          </label>
+          <input type="number" min="0" max="100" class="form-control" id="m-conf" placeholder="Click Auto-Score or enter manually">
+        </div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Visibility</label>
+          <select class="form-control" id="m-vis"><option value="free">Free</option><option value="vip">VIP</option></select>
+        </div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Result</label>
+          <select class="form-control" id="m-result"><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option><option value="void">Void</option></select>
+        </div>
+        <div class="form-group" style="margin:0;grid-column:1/-1;"><label class="form-label">Expert Analysis</label><textarea class="form-control" id="m-analysis" rows="3" placeholder="Optional match analysis..."></textarea></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Home Form</label><input type="text" class="form-control" id="m-hform" placeholder="e.g. WWDLW"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Away Form</label><input type="text" class="form-control" id="m-aform" placeholder="e.g. LWWWD"></div>
+        <div class="form-group" style="margin:0;grid-column:1/-1;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-user-select:text;user-select:text;">
+            <input type="checkbox" id="m-published"> <span class="form-label" style="margin:0;">Publish immediately</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="Admin.hideModal('pred-modal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="save-pred-btn"><span class="material-icons-round">save</span>Save Prediction</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+const theme = localStorage.getItem('afro_theme')||'dark';
+document.documentElement.setAttribute('data-theme',theme);
+let predPage = 1;
+
+// Add spin animation for loading states
+(function(){ const s=document.createElement('style'); s.textContent='@keyframes spin{to{transform:rotate(360deg)}}'; document.head.appendChild(s); })();
+
+function describeScore(s) {
+  if (s >= 80) return 'Very High Confidence';
+  if (s >= 65) return 'High Confidence';
+  if (s >= 50) return 'Moderate Confidence';
+  if (s >= 35) return 'Low Confidence';
+  return 'Speculative';
+}
+
+async function loadPredictions(page) {
+  page = page||1;
+  const result     = document.getElementById('f-result').value;
+  const visibility = document.getElementById('f-visibility').value;
+  const date       = document.getElementById('f-date').value;
+  let url = `/api/admin/predictions?page=${page}&limit=20`;
+  if (result)     url += '&result='+result;
+  if (visibility) url += '&visibility='+visibility;
+  if (date)       url += '&date='+date;
+  document.getElementById('pred-loading').style.display='block';
+  document.getElementById('pred-table').style.display='none';
+  const json = await Admin.api('GET', url);
+  document.getElementById('pred-loading').style.display='none';
+  if (!json.success) return;
+  const d = json.data;
+  document.getElementById('pred-table').style.display='block';
+  document.getElementById('pred-tbody').innerHTML = d.predictions.map(p => `
+    <tr>
+      <td><div style="font-weight:600;font-size:0.85rem;">${p.home_team} vs ${p.away_team}</div></td>
+      <td style="font-size:0.8rem;color:var(--muted);">${p.league_name||'—'}</td>
+      <td style="font-weight:600;color:var(--red);font-size:0.85rem;">${p.tip||'TBD'}</td>
+      <td style="font-size:0.8rem;">${p.market}</td>
+      <td>${p.confidence_score ? p.confidence_score+'%' : '—'}</td>
+      <td>${Admin.badge(p.visibility)}</td>
+      <td>${Admin.badge(p.result)}</td>
+      <td style="font-size:0.78rem;color:var(--muted);">${Admin.fmtDate(p.match_date)}</td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          <button onclick="editPred(${p.id})" class="btn btn-outline btn-sm" style="padding:4px 8px;"><span class="material-icons-round" style="font-size:0.9rem;">edit</span></button>
+          <button onclick="deletePred(${p.id})" class="btn btn-sm" style="padding:4px 8px;background:rgba(233,69,96,0.1);color:var(--red);border:1px solid rgba(233,69,96,0.2);"><span class="material-icons-round" style="font-size:0.9rem;">delete</span></button>
+        </div>
+      </td>
+    </tr>`).join('');
+  const total = d.total; const limit = d.limit; const pages = Math.ceil(total/limit);
+  if (pages>1) {
+    document.getElementById('pred-pagination').style.display='flex';
+    document.getElementById('p-info').textContent='Page '+page+' of '+pages+' ('+total+' total)';
+    document.getElementById('p-prev').disabled=(page<=1);
+    document.getElementById('p-next').disabled=(page>=pages);
+  }
+}
+
+let editingId = null;
+function openNewModal() { editingId=null; document.getElementById('modal-title').textContent='New Prediction'; document.getElementById('edit-id').value=''; ['m-league','m-home','m-away','m-tip','m-odds','m-conf','m-analysis','m-hform','m-aform'].forEach(id=>document.getElementById(id).value=''); document.getElementById('m-vis').value='free'; document.getElementById('m-result').value='pending'; document.getElementById('m-published').checked=false; Admin.showModal('pred-modal'); }
+
+async function editPred(id) {
+  const json = await Admin.api('GET', '/api/admin/predictions?page=1&limit=200');
+  const p = json.data.predictions.find(x=>x.id===id);
+  if (!p) return;
+  editingId=id;
+  document.getElementById('modal-title').textContent='Edit Prediction';
+  document.getElementById('m-league').value  = p.league_id||'';
+  document.getElementById('m-home').value    = p.home_team;
+  document.getElementById('m-away').value    = p.away_team;
+  document.getElementById('m-date').value    = p.match_date?p.match_date.replace(' ','T').slice(0,16):'';
+  document.getElementById('m-tip').value     = p.tip||'';
+  document.getElementById('m-market').value  = p.market||'1X2';
+  document.getElementById('m-odds').value    = p.odds||'';
+  document.getElementById('m-conf').value    = p.confidence_score||'';
+  document.getElementById('m-vis').value     = p.visibility||'free';
+  document.getElementById('m-result').value  = p.result||'pending';
+  document.getElementById('m-analysis').value= p.analysis||'';
+  document.getElementById('m-hform').value   = p.home_form||'';
+  document.getElementById('m-aform').value   = p.away_form||'';
+  document.getElementById('m-published').checked = !!p.published_at;
+  Admin.showModal('pred-modal');
+}
+
+async function deletePred(id) {
+  Admin.confirm('Delete this prediction? This cannot be undone.', async () => {
+    const json = await Admin.api('DELETE', '/api/admin/predictions/'+id);
+    if (json.success) { Admin.toast('Prediction deleted'); loadPredictions(predPage); }
+    else Admin.toast(json.message||'Delete failed','error');
+  });
+}
+
+document.getElementById('save-pred-btn').addEventListener('click', async () => {
+  const body = {
+    league_id:        parseInt(document.getElementById('m-league').value),
+    home_team:        document.getElementById('m-home').value.trim(),
+    away_team:        document.getElementById('m-away').value.trim(),
+    match_date:       document.getElementById('m-date').value,
+    tip:              document.getElementById('m-tip').value.trim(),
+    market:           document.getElementById('m-market').value,
+    odds:             parseFloat(document.getElementById('m-odds').value)||null,
+    confidence_score: parseInt(document.getElementById('m-conf').value)||null,
+    visibility:       document.getElementById('m-vis').value,
+    result:           document.getElementById('m-result').value,
+    analysis:         document.getElementById('m-analysis').value.trim(),
+    home_form:        document.getElementById('m-hform').value.trim(),
+    away_form:        document.getElementById('m-aform').value.trim(),
+    published:        document.getElementById('m-published').checked,
+  };
+  const url    = editingId ? '/api/admin/predictions/'+editingId : '/api/admin/predictions';
+  const method = editingId ? 'PUT' : 'POST';
+  const json   = await Admin.api(method, url, body);
+  if (json.success) { Admin.toast(editingId?'Updated':'Created'); Admin.hideModal('pred-modal'); loadPredictions(predPage); }
+  else Admin.toast(json.message||'Save failed','error');
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  Admin.buildSidebar();
+  const user = await Admin.requireAdmin();
+  if (!user) return;
+  loadPredictions(1);
+  document.getElementById('new-pred-btn').addEventListener('click', openNewModal);
+  document.getElementById('apply-filters').addEventListener('click', () => loadPredictions(1));
+  document.getElementById('p-prev').addEventListener('click', () => loadPredictions(--predPage));
+  document.getElementById('p-next').addEventListener('click', () => loadPredictions(++predPage));
+
+  // Auto-Score single prediction (only works when editing an existing one)
+  document.getElementById('auto-score-btn').addEventListener('click', async () => {
+    if (!editingId) {
+      // For new predictions, score from the form fields directly
+      const pseudo = {
+        tip:          document.getElementById('m-tip').value.trim(),
+        market:       document.getElementById('m-market').value,
+        odds:         parseFloat(document.getElementById('m-odds').value) || null,
+        home_form:    document.getElementById('m-hform').value.trim(),
+        away_form:    document.getElementById('m-aform').value.trim(),
+        h2h_summary:  '',
+        league_id:    parseInt(document.getElementById('m-league').value) || 39,
+      };
+      const res  = await fetch('/api/admin/predictions/preview-score', {
+        method:'POST', credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(pseudo),
+      });
+      const json = await res.json();
+      if (json.success) {
+        document.getElementById('m-conf').value = json.data.score;
+        Admin.toast(`Score: ${json.data.score} — ${describeScore(json.data.score)}`);
+      } else {
+        Admin.toast(json.message || 'Score failed', 'error');
+      }
+      return;
+    }
+    const btn = document.getElementById('auto-score-btn');
+    btn.disabled = true;
+    const json = await Admin.api('POST', `/api/admin/predictions/${editingId}/score`);
+    btn.disabled = false;
+    if (json.success) {
+      document.getElementById('m-conf').value = json.data.score;
+      Admin.toast(`Score: ${json.data.score} — ${describeScore(json.data.score)}`);
+    } else {
+      Admin.toast(json.message || 'Scoring failed', 'error');
+    }
+  });
+
+  // Score All pending predictions
+  document.getElementById('score-all-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('score-all-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite;font-size:0.9rem;">refresh</span>Scoring...';
+    const json = await Admin.api('POST', '/api/admin/predictions/score-all');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round">auto_awesome</span>Score All';
+    if (json.success) {
+      Admin.toast(`${json.data.updated} predictions scored`);
+      loadPredictions(predPage);
+    } else {
+      Admin.toast(json.message || 'Batch score failed', 'error');
+    }
+  });
+  document.getElementById('save-pred-btn').addEventListener('click', async () => {
+    const body = {
+      league_id:        parseInt(document.getElementById('m-league').value),
+      home_team:        document.getElementById('m-home').value.trim(),
+      away_team:        document.getElementById('m-away').value.trim(),
+      match_date:       document.getElementById('m-date').value,
+      tip:              document.getElementById('m-tip').value.trim(),
+      market:           document.getElementById('m-market').value,
+      odds:             parseFloat(document.getElementById('m-odds').value)||null,
+      confidence_score: parseInt(document.getElementById('m-conf').value)||null,
+      visibility:       document.getElementById('m-vis').value,
+      result:           document.getElementById('m-result').value,
+      analysis:         document.getElementById('m-analysis').value.trim(),
+      home_form:        document.getElementById('m-hform').value.trim(),
+      away_form:        document.getElementById('m-aform').value.trim(),
+      published:        document.getElementById('m-published').checked,
+    };
+    if (!body.home_team || !body.away_team || !body.tip || !body.match_date) {
+      Admin.toast('Please fill in all required fields', 'error'); return;
+    }
+    const url    = editingId ? '/api/admin/predictions/'+editingId : '/api/admin/predictions';
+    const method = editingId ? 'PUT' : 'POST';
+    const json   = await Admin.api(method, url, body);
+    if (json.success) { Admin.toast(editingId?'Updated':'Created'); Admin.hideModal('pred-modal'); loadPredictions(predPage); }
+    else Admin.toast(json.message||'Save failed','error');
+  });
+});
+</script>
+</body></html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leagues | AfroPredict Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar"><span class="admin-topbar-title">Manage Leagues</span></div>
+<main class="admin-main">
+  <div id="leagues-loading" style="text-align:center;padding:40px;"><p style="color:var(--muted);">Loading leagues...</p></div>
+  <div class="card" id="leagues-table" style="display:none;overflow:hidden;">
+    <table class="leaderboard-table">
+      <thead><tr><th>League</th><th>Country</th><th>Continent</th><th>API ID</th><th>Popular</th><th>Active</th><th>Actions</th></tr></thead>
+      <tbody id="leagues-tbody"></tbody>
+    </table>
+  </div>
+</main>
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+const theme=localStorage.getItem('afro_theme')||'dark';document.documentElement.setAttribute('data-theme',theme);
+async function loadLeagues(){
+  const json=await Admin.api('GET','/api/admin/leagues');
+  document.getElementById('leagues-loading').style.display='none';
+  if(!json.success)return;
+  document.getElementById('leagues-table').style.display='block';
+  document.getElementById('leagues-tbody').innerHTML=json.data.map(l=>`
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:8px;">${l.logo_url?'<img src="'+l.logo_url+'" width="20" height="20" style="object-fit:contain;" onerror="this.style.display=\'none\'">':''}<span style="font-size:0.875rem;font-weight:600;">${l.name}</span></div></td>
+      <td style="font-size:0.82rem;">${l.country}</td>
+      <td style="font-size:0.82rem;color:var(--muted);">${l.continent}</td>
+      <td style="font-size:0.78rem;color:var(--muted);">${l.api_league_id}</td>
+      <td><button onclick="toggleLeague(${l.id},'is_popular',${l.is_popular})" class="btn btn-sm" style="padding:3px 10px;background:${l.is_popular?'rgba(22,163,74,0.1)':'var(--surface)'};color:${l.is_popular?'var(--green)':'var(--muted)'};border:1px solid ${l.is_popular?'rgba(22,163,74,0.3)':'var(--border)'};font-size:0.75rem;">${l.is_popular?'Yes':'No'}</button></td>
+      <td><button onclick="toggleLeague(${l.id},'is_active',${l.is_active})" class="btn btn-sm" style="padding:3px 10px;background:${l.is_active?'rgba(22,163,74,0.1)':'rgba(233,69,96,0.08)'};color:${l.is_active?'var(--green)':'var(--red)'};border:1px solid ${l.is_active?'rgba(22,163,74,0.3)':'rgba(233,69,96,0.2)'};font-size:0.75rem;">${l.is_active?'Active':'Disabled'}</button></td>
+      <td><span style="font-size:0.75rem;color:var(--muted);">Toggle above</span></td>
+    </tr>`).join('');
+}
+async function toggleLeague(id,field,current){
+  const body={};body[field]=current?0:1;
+  const json=await Admin.api('PUT','/api/admin/leagues/'+id,body);
+  if(json.success){Admin.toast('League updated');loadLeagues();}
+  else Admin.toast(json.message||'Failed','error');
+}
+document.addEventListener('DOMContentLoaded',async()=>{Admin.buildSidebar();const u=await Admin.requireAdmin();if(u)loadLeagues();});
+</script>
+</body></html>

@@ -1,0 +1,26 @@
+# Environment variables — NEVER commit
+.env
+
+# Dependencies
+node_modules/
+
+# Logs (keep folder, ignore contents)
+logs/*
+!logs/.gitkeep
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Claude Code memory (tool artifact — not project code)
+.claude/
+
+# Build artifacts
+dist/
+build/

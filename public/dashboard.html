@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard | AfroPredict</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+<main>
+  <div class="container" style="padding-top:32px;padding-bottom:60px;">
+    <!-- Welcome bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h1 style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--text);">My Dashboard</h1>
+        <p style="font-size:0.875rem;color:var(--muted);">Welcome back — here's your activity overview</p>
+      </div>
+      <!-- Upgrade banner for free users -->
+      <div id="upgrade-banner" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(233,69,96,0.1);border:1px solid rgba(233,69,96,0.3);border-radius:var(--radius);">
+        <span class="material-icons-round" style="color:var(--red);">workspace_premium</span>
+        <span style="font-size:0.85rem;color:var(--text);">Free account — </span>
+        <a href="/pricing.html" class="btn btn-primary btn-sm">Upgrade to VIP</a>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;">
+      <div class="card" style="padding:20px;text-align:center;">
+        <div style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--text);" id="stat-bookmarks">0</div>
+        <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">Bookmarks</div>
+      </div>
+      <div class="card" style="padding:20px;text-align:center;">
+        <div style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--text);" id="stat-bets">0</div>
+        <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">Bets Tracked</div>
+      </div>
+      <div class="card" style="padding:20px;text-align:center;">
+        <div style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--green);" id="stat-profit">$0.00</div>
+        <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">Total P&amp;L</div>
+      </div>
+      <div class="card" style="padding:20px;text-align:center;">
+        <div style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--text);" id="stat-winrate">0%</div>
+        <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">Win Rate</div>
+      </div>
+    </div>
+
+    <div class="page-layout">
+      <div>
+        <!-- Quick nav -->
+        <div class="card" style="padding:20px;margin-bottom:20px;">
+          <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">dashboard</span>Quick Access</h2>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+            <a href="/predictions.html" style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
+              <span class="material-icons-round" style="color:var(--red);">sports_soccer</span>
+              <span style="font-weight:600;font-size:0.875rem;">Today's Tips</span>
+            </a>
+            <a href="/bookmarks.html" style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
+              <span class="material-icons-round" style="color:var(--red);">bookmark</span>
+              <span style="font-weight:600;font-size:0.875rem;">My Bookmarks</span>
+            </a>
+            <a href="/bet-history.html" style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
+              <span class="material-icons-round" style="color:var(--red);">history</span>
+              <span style="font-weight:600;font-size:0.875rem;">Bet History</span>
+            </a>
+            <a href="/profile.html" style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
+              <span class="material-icons-round" style="color:var(--red);">manage_accounts</span>
+              <span style="font-weight:600;font-size:0.875rem;">Profile Settings</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Recent bookmarks -->
+        <div class="card" style="padding:20px;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">bookmark</span>Recent Bookmarks</h2>
+            <a href="/bookmarks.html" style="font-size:0.82rem;color:var(--red);font-weight:600;">View all</a>
+          </div>
+          <div id="recent-bookmarks">
+            <div style="text-align:center;padding:32px;color:var(--muted);">
+              <span class="material-icons-round" style="font-size:2.5rem;display:block;margin-bottom:8px;color:var(--border);">bookmark_border</span>
+              <p style="font-size:0.875rem;">No bookmarks yet.</p>
+              <a href="/predictions.html" class="btn btn-outline btn-sm" style="margin-top:12px;">Browse Predictions</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent bet history -->
+        <div class="card" style="padding:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">history</span>Recent Bets</h2>
+            <a href="/bet-history.html" style="font-size:0.82rem;color:var(--red);font-weight:600;">View all</a>
+          </div>
+          <div id="recent-bets">
+            <div style="text-align:center;padding:32px;color:var(--muted);">
+              <span class="material-icons-round" style="font-size:2.5rem;display:block;margin-bottom:8px;color:var(--border);">receipt_long</span>
+              <p style="font-size:0.875rem;">No bets tracked yet.</p>
+              <a href="/bet-history.html" class="btn btn-outline btn-sm" style="margin-top:12px;">Log a Bet</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <!-- VIP upgrade CTA (shown to free users) -->
+        <div class="sidebar-card" id="vip-upgrade-card" style="background:linear-gradient(135deg,var(--navy),var(--midnight));border-color:rgba(233,69,96,0.3);">
+          <div style="padding:20px;text-align:center;">
+            <span class="material-icons-round" style="font-size:2rem;color:var(--red);">workspace_premium</span>
+            <h3 style="font-family:var(--font-head);font-size:1.2rem;font-weight:800;color:#fff;margin:8px 0 6px;">Unlock VIP Tips</h3>
+            <p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;">Premium picks, early access &amp; Telegram alerts from $4.89/month.</p>
+            <a href="/pricing.html" class="btn btn-primary" style="width:100%;justify-content:center;">Start Free Trial</a>
+            <p style="font-size:0.72rem;color:rgba(255,255,255,0.4);margin-top:8px;">3 days free — cancel anytime</p>
+          </div>
+        </div>
+
+        <!-- VIP subscription status (shown to VIP members) -->
+        <div class="sidebar-card" id="vip-status-card" style="display:none;border-color:rgba(34,197,94,0.3);">
+          <div class="sidebar-card-header" style="color:var(--green);"><span class="material-icons-round">workspace_premium</span>VIP Membership</div>
+          <div class="sidebar-card-body">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);">
+                <span style="color:var(--muted);">Status</span>
+                <span id="sub-status-badge"></span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);">
+                <span style="color:var(--muted);">Plan</span>
+                <span style="font-weight:600;text-transform:capitalize;" id="sub-plan">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);">
+                <span style="color:var(--muted);">Expires</span>
+                <span style="font-weight:600;" id="sub-expires">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;" id="sub-trial-row" style="display:none;">
+                <span style="color:var(--muted);">Trial ends</span>
+                <span style="font-weight:600;color:var(--red);" id="sub-trial-ends">—</span>
+              </div>
+            </div>
+            <a href="/pricing.html" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:14px;"><span class="material-icons-round">upgrade</span>Change Plan</a>
+            <button id="cancel-sub-btn" class="btn btn-sm" style="width:100%;justify-content:center;margin-top:8px;background:rgba(233,69,96,0.08);color:var(--red);border:1px solid rgba(233,69,96,0.2);">
+              <span class="material-icons-round">cancel</span>Cancel Subscription
+            </button>
+          </div>
+        </div>
+
+        <!-- Account info -->
+        <div class="sidebar-card">
+          <div class="sidebar-card-header"><span class="material-icons-round">person</span>Account</div>
+          <div class="sidebar-card-body">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--muted);">Plan</span><span style="font-weight:600;" id="user-plan">Free</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--muted);">Member since</span><span style="font-weight:600;" id="user-since">—</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;"><span style="color:var(--muted);">Country</span><span style="font-weight:600;" id="user-country">—</span></div>
+            </div>
+            <a href="/profile.html" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:14px;"><span class="material-icons-round">settings</span>Edit Profile</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/js/app.js"></script>
+<script src="/js/content-protection.js"></script>
+<script>
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function showToast(msg, type) {
+  type = type || 'success';
+  const colors = { success:'#22c55e', error:'#e94560', info:'#3b82f6' };
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;background:${colors[type]};
+    color:#fff;padding:12px 20px;border-radius:8px;font-size:0.875rem;font-weight:600;
+    display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3);`;
+  el.innerHTML = `<span class="material-icons-round" style="font-size:1.1rem;">${type==='error'?'error':'check_circle'}</span>${msg}`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
+
+async function apiFetch(method, url, body) {
+  const token = localStorage.getItem('afro_token');
+  const opts = { method, credentials:'include', headers:{} };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body)  { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  const res = await fetch(url, opts);
+  return res.json();
+}
+
+async function loadSubscription() {
+  try {
+    const json = await apiFetch('GET', '/api/subscriptions/status');
+    if (!json.success || !json.data) return;
+    const sub = json.data;
+
+    if (sub.status === 'active' || sub.status === 'trialing') {
+      document.getElementById('vip-upgrade-card').style.display = 'none';
+      document.getElementById('upgrade-banner').style.display   = 'none';
+      document.getElementById('vip-status-card').style.display  = 'block';
+
+      // Status badge
+      const badge = sub.status === 'trialing'
+        ? '<span class="badge badge-pending">Trial</span>'
+        : '<span class="badge badge-won">Active</span>';
+      document.getElementById('sub-status-badge').innerHTML = badge;
+      document.getElementById('sub-plan').textContent    = sub.plan || '—';
+      document.getElementById('sub-expires').textContent = fmtDate(sub.expires_at);
+
+      if (sub.status === 'trialing' && sub.trial_ends_at) {
+        const row = document.getElementById('sub-trial-row');
+        if (row) { row.style.display = 'flex'; }
+        document.getElementById('sub-trial-ends').textContent = fmtDate(sub.trial_ends_at);
+      }
+    } else if (sub.status === 'cancelled') {
+      document.getElementById('vip-status-card').style.display = 'block';
+      document.getElementById('vip-upgrade-card').style.display = 'none';
+      document.getElementById('sub-status-badge').innerHTML = '<span class="badge badge-lost">Cancelled</span>';
+      document.getElementById('sub-plan').textContent    = sub.plan || '—';
+      document.getElementById('sub-expires').textContent = fmtDate(sub.expires_at);
+      const cancelBtn = document.getElementById('cancel-sub-btn');
+      if (cancelBtn) cancelBtn.style.display = 'none';
+    }
+  } catch(e) { /* subscription endpoint not critical */ }
+}
+
+async function checkAuth() {
+  try {
+    const res = await fetch('/api/auth/me', { credentials:'include' });
+    if (!res.ok) { window.location.href = '/login.html'; return; }
+    const { data } = await res.json();
+    if (!data) { window.location.href = '/login.html'; return; }
+
+    document.getElementById('user-plan').textContent    = data.role === 'vip' ? 'VIP ✦' : data.role === 'admin' ? 'Admin' : 'Free';
+    document.getElementById('user-country').textContent = data.country || '—';
+    document.getElementById('user-since').textContent   = data.created_at
+      ? new Date(data.created_at).toLocaleDateString('en-GB', { month:'short', year:'numeric' }) : '—';
+
+    if (data.role === 'vip' || data.role === 'admin') {
+      document.getElementById('upgrade-banner').style.display = 'none';
+    }
+
+    await loadSubscription();
+  } catch(e) { /* stay on page during dev */ }
+}
+
+// Cancel subscription
+document.getElementById('cancel-sub-btn')?.addEventListener('click', async () => {
+  if (!confirm('Cancel your VIP subscription? You will keep access until the expiry date.')) return;
+  const btn = document.getElementById('cancel-sub-btn');
+  btn.disabled = true;
+  btn.textContent = 'Cancelling...';
+  const json = await apiFetch('POST', '/api/subscriptions/cancel');
+  if (json.success) {
+    showToast('Subscription cancelled. Access continues until expiry.', 'info');
+    setTimeout(() => location.reload(), 2000);
+  } else {
+    showToast(json.message || 'Failed to cancel.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round">cancel</span>Cancel Subscription';
+  }
+});
+
+// VIP success toast on redirect back from payment
+const params = new URLSearchParams(window.location.search);
+if (params.get('vip') === 'success') {
+  showToast('🎉 Welcome to VIP! Your subscription is now active.', 'success');
+  history.replaceState({}, '', '/dashboard.html');
+}
+
+checkAuth();
+</script>
+</body>
+</html>

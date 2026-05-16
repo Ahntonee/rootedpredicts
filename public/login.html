@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | AfroPredict</title>
+  <meta name="description" content="Log in to your AfroPredict account to access bookmarks, bet history, and VIP tips.">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://www.afropredict.com/login">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <a href="/index.html" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+        <span class="logo-mark">AP</span>
+        <span class="logo-text" style="color:var(--text);">AFRO<span style="color:var(--red);">PREDICT</span></span>
+      </a>
+    </div>
+    <h1 class="auth-title">Welcome Back</h1>
+    <p class="auth-sub">Log in to access your dashboard and predictions</p>
+
+    <div id="login-error" style="display:none;background:rgba(233,69,96,0.1);border:1px solid rgba(233,69,96,0.3);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:0.85rem;color:var(--red);align-items:center;gap:8px;">
+      <span class="material-icons-round" style="font-size:1rem;">error</span>
+      <span id="login-error-msg"></span>
+    </div>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <div class="input-icon-wrap">
+          <span class="material-icons-round">email</span>
+          <input type="email" id="email" name="email" class="form-control" placeholder="your@email.com" autocomplete="email" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="input-icon-wrap">
+          <span class="material-icons-round">lock</span>
+          <input type="password" id="password" name="password" class="form-control" placeholder="Your password" autocomplete="current-password" required>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--muted);cursor:pointer;-webkit-user-select:text;user-select:text;">
+          <input type="checkbox" name="remember" style="width:16px;height:16px;"> Remember me
+        </label>
+        <a href="/forgot-password.html" style="font-size:0.82rem;color:var(--red);">Forgot password?</a>
+      </div>
+      <button type="submit" id="login-btn" class="btn btn-primary" style="width:100%;justify-content:center;">
+        <span class="material-icons-round">login</span>Log In
+      </button>
+    </form>
+
+    <div class="auth-footer">Don't have an account? <a href="/register.html">Create one free</a></div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);text-align:center;">
+      <a href="/pricing.html" style="font-size:0.82rem;color:var(--muted);">Want VIP access? <span style="color:var(--red);font-weight:600;">Plans from $4.89/month</span></a>
+    </div>
+  </div>
+</div>
+<script src="/js/content-protection.js"></script>
+<script>
+  // If already logged in, redirect to dashboard
+  fetch('/api/auth/me', { credentials: 'include' }).then(r => r.json()).then(j => {
+    if (j.success) window.location.href = '/dashboard.html';
+  }).catch(() => {});
+
+  document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn    = document.getElementById('login-btn');
+    const errBox = document.getElementById('login-error');
+    const errMsg = document.getElementById('login-error-msg');
+    errBox.style.display = 'none';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons-round">hourglass_empty</span>Logging in...';
+
+    try {
+      const res  = await fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:    document.getElementById('email').value.trim(),
+          password: document.getElementById('password').value,
+        }),
+      });
+      const json = await res.json();
+
+      if (json.success) {
+        // Redirect to intended page or dashboard
+        const params  = new URLSearchParams(window.location.search);
+        const redirect = params.get('redirect') || '/dashboard.html';
+        window.location.href = redirect;
+      } else {
+        errMsg.textContent = json.message || 'Invalid email or password.';
+        errBox.style.display = 'flex';
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-icons-round">login</span>Log In';
+      }
+    } catch(err) {
+      errMsg.textContent = 'Network error. Please try again.';
+      errBox.style.display = 'flex';
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-icons-round">login</span>Log In';
+    }
+  });
+</script>
+</body>
+</html>

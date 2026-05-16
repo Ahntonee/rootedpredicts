@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Sync | AfroPredict Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar"><span class="admin-topbar-title">API-Football Data Sync</span></div>
+<main class="admin-main">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;">
+
+    <!-- API Status -->
+    <div class="card" style="padding:20px;">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">monitor_heart</span>API Status</h3>
+      <div id="api-status" style="font-size:0.875rem;color:var(--muted);">Loading...</div>
+      <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="loadApiStatus()"><span class="material-icons-round">refresh</span>Refresh</button>
+    </div>
+
+    <!-- Sync Leagues -->
+    <div class="card" style="padding:20px;">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">emoji_events</span>Sync All Leagues</h3>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">Pull all 1,200+ leagues from API-Football. Run once a week. Uses ~1 request.</p>
+      <button class="btn btn-primary btn-sm" id="sync-leagues-btn"><span class="material-icons-round">sync</span>Sync Leagues</button>
+      <div id="sync-leagues-result" style="margin-top:10px;font-size:0.82rem;color:var(--muted);"></div>
+    </div>
+
+    <!-- Sync Today -->
+    <div class="card" style="padding:20px;">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">today</span>Sync Today + Tomorrow</h3>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">Fetch fixtures for today and tomorrow across popular leagues. Uses ~20 requests.</p>
+      <button class="btn btn-primary btn-sm" id="sync-today-btn"><span class="material-icons-round">sync</span>Sync Today</button>
+      <div id="sync-today-result" style="margin-top:10px;font-size:0.82rem;color:var(--muted);"></div>
+    </div>
+
+    <!-- Sync Fixtures by Date -->
+    <div class="card" style="padding:20px;">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">calendar_month</span>Sync by Date</h3>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">Sync all fixtures for a specific date.</p>
+      <input type="date" class="form-control" id="sync-date" style="margin-bottom:10px;">
+      <button class="btn btn-primary btn-sm" id="sync-date-btn"><span class="material-icons-round">sync</span>Sync Date</button>
+      <div id="sync-date-result" style="margin-top:10px;font-size:0.82rem;color:var(--muted);"></div>
+    </div>
+
+    <!-- Update Results -->
+    <div class="card" style="padding:20px;">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">scoreboard</span>Update Results</h3>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">Update won/lost results for finished matches.</p>
+      <input type="date" class="form-control" id="results-date" style="margin-bottom:10px;">
+      <button class="btn btn-primary btn-sm" id="sync-results-btn"><span class="material-icons-round">update</span>Update Results</button>
+      <div id="sync-results-result" style="margin-top:10px;font-size:0.82rem;color:var(--muted);"></div>
+    </div>
+
+    <!-- Sync Log -->
+    <div class="card" style="padding:20px;grid-column:1/-1;">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:10px;">Sync Log</h3>
+      <div id="sync-log" style="background:var(--surface);border-radius:8px;padding:14px;font-family:monospace;font-size:0.78rem;color:var(--text-soft);height:200px;overflow-y:auto;border:1px solid var(--border);">Waiting for sync actions...</div>
+    </div>
+  </div>
+</main>
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+const theme = localStorage.getItem('afro_theme')||'dark';
+document.documentElement.setAttribute('data-theme',theme);
+
+function log(msg, type) {
+  const el  = document.getElementById('sync-log');
+  const ts  = new Date().toLocaleTimeString('en-GB');
+  const colors = { success:'var(--green)', error:'var(--red)', info:'var(--text-soft)' };
+  el.innerHTML += `<div style="color:${colors[type]||colors.info};">[${ts}] ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+async function loadApiStatus() {
+  const json = await Admin.api('GET','/api/sync/status');
+  if (json.success) {
+    document.getElementById('api-status').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;justify-content:space-between;"><span>Requests Used Today</span><strong>${json.data.requests_used}</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span>Remaining</span><strong style="color:var(--green);">${json.data.requests_remaining}</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span>Daily Limit</span><strong>${json.data.daily_limit}</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span>Season</span><strong>${json.data.season}</strong></div>
+      </div>`;
+  } else {
+    document.getElementById('api-status').textContent = 'Could not load API status. Check API key in .env';
+  }
+}
+
+async function runSync(btnId, url, resultId, method, body) {
+  const btn = document.getElementById(btnId);
+  const res = document.getElementById(resultId);
+  btn.disabled=true; btn.innerHTML='<span class="material-icons-round" style="animation:spin 1s linear infinite">sync</span>Syncing...';
+  log('Starting: '+url, 'info');
+  try {
+    const json = await Admin.api(method||'POST', url, body||undefined);
+    if (json.success) {
+      res.textContent = JSON.stringify(json.data||json.message);
+      log('Success: '+JSON.stringify(json.data||json.message), 'success');
+      Admin.toast('Sync complete');
+    } else {
+      res.textContent = json.message||'Sync failed';
+      log('Error: '+(json.message||'Unknown'), 'error');
+      Admin.toast(json.message||'Sync failed','error');
+    }
+  } catch(e) { log('Network error: '+e.message,'error'); Admin.toast('Network error','error'); }
+  btn.disabled=false; btn.innerHTML='<span class="material-icons-round">sync</span>'+btn.textContent.replace('Syncing...','Sync');
+}
+
+document.getElementById('sync-leagues-btn').addEventListener('click',()=>runSync('sync-leagues-btn','/api/sync/leagues','sync-leagues-result'));
+document.getElementById('sync-today-btn').addEventListener('click',()=>runSync('sync-today-btn','/api/sync/today','sync-today-result'));
+document.getElementById('sync-date-btn').addEventListener('click',()=>{
+  const date = document.getElementById('sync-date').value;
+  if (!date) { Admin.toast('Select a date first','error'); return; }
+  runSync('sync-date-btn','/api/sync/fixtures','sync-date-result','POST',{date});
+});
+document.getElementById('sync-results-btn').addEventListener('click',()=>{
+  const date = document.getElementById('results-date').value || new Date().toISOString().split('T')[0];
+  runSync('sync-results-btn','/api/sync/results','sync-results-result','POST',{date});
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  Admin.buildSidebar();
+  const user = await Admin.requireAdmin();
+  if (user) { loadApiStatus(); document.getElementById('sync-date').value = new Date().toISOString().split('T')[0]; document.getElementById('results-date').value = new Date().toISOString().split('T')[0]; }
+});
+</script>
+</body></html>

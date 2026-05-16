@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bet History & Tracker | AfroPredict</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+<main>
+  <div class="container" style="padding-top:32px;padding-bottom:60px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <nav style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <a href="/dashboard.html" style="color:var(--muted);">Dashboard</a>
+          <span class="material-icons-round" style="font-size:0.8rem;">chevron_right</span><span>Bet History</span>
+        </nav>
+        <h1 style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--text);">Bet History & Tracker</h1>
+      </div>
+      <button class="btn btn-primary" id="add-bet-btn"><span class="material-icons-round">add</span>Log a Bet</button>
+    </div>
+
+    <!-- Summary stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;">
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--text);" id="s-total">—</div><div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Total Bets</div></div>
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--green);" id="s-won">—</div><div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Won</div></div>
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--red);" id="s-lost">—</div><div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Lost</div></div>
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;" id="s-pl">$0.00</div><div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Net P&L</div></div>
+    </div>
+
+    <!-- Add bet form (hidden by default) -->
+    <div id="add-bet-form" class="card" style="display:none;padding:24px;margin-bottom:20px;">
+      <h3 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">add_circle</span>Log New Bet</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group" style="margin-bottom:0;"><label class="form-label">Match / Description</label><input type="text" class="form-control" id="b-match" placeholder="e.g. Arsenal vs Chelsea"></div>
+        <div class="form-group" style="margin-bottom:0;"><label class="form-label">Tip / Selection</label><input type="text" class="form-control" id="b-tip" placeholder="e.g. Arsenal Win, Over 2.5"></div>
+        <div class="form-group" style="margin-bottom:0;"><label class="form-label">Stake (USD)</label><input type="number" class="form-control" id="b-stake" placeholder="10.00" min="0" step="0.01"></div>
+        <div class="form-group" style="margin-bottom:0;"><label class="form-label">Odds</label><input type="number" class="form-control" id="b-odds" placeholder="1.85" min="1.01" step="0.01"></div>
+        <div class="form-group" style="margin-bottom:0;"><label class="form-label">Result</label>
+          <select class="form-control" id="b-result"><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option><option value="void">Void</option></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;"><label class="form-label">Notes (optional)</label><input type="text" class="form-control" id="b-notes" placeholder="Any notes..."></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-primary" id="save-bet-btn"><span class="material-icons-round">save</span>Save Bet</button>
+        <button class="btn btn-outline" id="cancel-bet-btn">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Result filter tabs -->
+    <div class="market-tabs" style="margin-bottom:16px;">
+      <button class="market-tab active" data-result="all">All Bets</button>
+      <button class="market-tab" data-result="won">Won</button>
+      <button class="market-tab" data-result="lost">Lost</button>
+      <button class="market-tab" data-result="pending">Pending</button>
+    </div>
+
+    <!-- Bets table -->
+    <div class="card" style="overflow:hidden;">
+      <div id="bet-loading" style="text-align:center;padding:48px;">
+        <span class="material-icons-round" style="font-size:2.5rem;color:var(--border);display:block;margin-bottom:8px;">hourglass_empty</span>
+        <p style="color:var(--muted);">Loading bet history...</p>
+      </div>
+      <div id="bet-table-wrap" style="display:none;overflow-x:auto;">
+        <table class="leaderboard-table" style="width:100%;">
+          <thead><tr><th>Match / Tip</th><th>Stake</th><th>Odds</th><th>Potential</th><th>Result</th><th>P&L</th><th>Date</th><th></th></tr></thead>
+          <tbody id="bet-tbody"></tbody>
+        </table>
+      </div>
+      <div id="bet-empty" style="display:none;text-align:center;padding:48px;">
+        <span class="material-icons-round" style="font-size:3rem;color:var(--border);display:block;margin-bottom:10px;">receipt_long</span>
+        <p style="font-size:0.875rem;color:var(--muted);margin-bottom:16px;">No bets logged yet. Click "Log a Bet" to start tracking.</p>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('add-bet-btn').click()"><span class="material-icons-round">add</span>Log First Bet</button>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div id="bet-pagination" style="display:none;justify-content:center;gap:8px;margin-top:16px;align-items:center;">
+      <button id="bet-prev" class="btn btn-outline btn-sm" disabled><span class="material-icons-round">chevron_left</span></button>
+      <span id="bet-page-info" style="font-size:0.85rem;color:var(--muted);"></span>
+      <button id="bet-next" class="btn btn-outline btn-sm"><span class="material-icons-round">chevron_right</span></button>
+    </div>
+  </div>
+</main>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/js/app.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/dashboard.js"></script>
+<script src="/js/content-protection.js"></script>
+<script>
+let betPage = 1, betFilter = 'all';
+
+async function loadStats() {
+  try {
+    const res  = await fetch('/api/users/stats', { credentials: 'include' });
+    const json = await res.json();
+    if (!json.success) return;
+    const s = json.data;
+    document.getElementById('s-total').textContent = s.bets || 0;
+    document.getElementById('s-won').textContent   = s.won  || 0;
+    document.getElementById('s-lost').textContent  = s.lost || 0;
+    const pl   = parseFloat(s.net_pl || 0);
+    const plEl = document.getElementById('s-pl');
+    plEl.textContent = (pl >= 0 ? '+' : '-') + '$' + Math.abs(pl).toFixed(2);
+    plEl.style.color = pl >= 0 ? 'var(--green)' : 'var(--red)';
+  } catch(e) {}
+}
+
+async function loadBets(page) {
+  page = page || 1;
+  document.getElementById('bet-loading').style.display    = 'block';
+  document.getElementById('bet-table-wrap').style.display = 'none';
+  document.getElementById('bet-empty').style.display      = 'none';
+  document.getElementById('bet-pagination').style.display = 'none';
+
+  try {
+    let url = '/api/users/bet-history?page=' + page + '&limit=15';
+    if (betFilter !== 'all') url += '&result=' + betFilter;
+    const res  = await fetch(url, { credentials: 'include' });
+    const json = await res.json();
+    document.getElementById('bet-loading').style.display = 'none';
+    if (!json.success) return;
+
+    const bets       = json.data.bets;
+    const pagination = json.data.pagination;
+
+    if (!bets.length) { document.getElementById('bet-empty').style.display='block'; return; }
+
+    document.getElementById('bet-table-wrap').style.display = 'block';
+    document.getElementById('bet-tbody').innerHTML = bets.map(b => {
+      const potential = (parseFloat(b.stake) * parseFloat(b.odds)).toFixed(2);
+      const pl        = parseFloat(b.profit_loss || 0);
+      const plText    = b.profit_loss !== null ? (pl >= 0 ? '+' : '-') + '$' + Math.abs(pl).toFixed(2) : '—';
+      const plColor   = pl >= 0 ? 'var(--green)' : 'var(--red)';
+      return `<tr>
+        <td>
+          <div style="font-weight:600;font-size:0.875rem;">${b.notes || 'Bet'}</div>
+          <div style="font-size:0.75rem;color:var(--muted);">${b.home_team && b.away_team ? b.home_team + ' vs ' + b.away_team : ''}</div>
+        </td>
+        <td>$${parseFloat(b.stake).toFixed(2)}</td>
+        <td>${b.odds}</td>
+        <td style="color:var(--muted);">$${potential}</td>
+        <td>${DashUtils.resultBadge(b.result)}</td>
+        <td style="font-weight:700;color:${plColor};">${plText}</td>
+        <td style="font-size:0.78rem;color:var(--muted);">${DashUtils.formatDate(b.created_at)}</td>
+        <td>
+          <button onclick="deleteBet(${b.id})" style="background:none;border:none;cursor:pointer;color:var(--muted);" title="Delete">
+            <span class="material-icons-round" style="font-size:1rem;">delete</span>
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    if (pagination.totalPages > 1) {
+      document.getElementById('bet-pagination').style.display = 'flex';
+      document.getElementById('bet-page-info').textContent = 'Page ' + pagination.page + ' of ' + pagination.totalPages;
+      document.getElementById('bet-prev').disabled = !pagination.hasPrev;
+      document.getElementById('bet-next').disabled = !pagination.hasNext;
+    }
+  } catch(e) { document.getElementById('bet-loading').style.display='none'; }
+}
+
+async function deleteBet(id) {
+  if (!confirm('Delete this bet entry?')) return;
+  try {
+    const res = await fetch('/api/users/bet-history/' + id, { method: 'DELETE', credentials: 'include' });
+    const json = await res.json();
+    if (json.success) { DashUtils.toast('Bet deleted'); loadBets(betPage); loadStats(); }
+  } catch(e) {}
+}
+
+// Add bet
+document.getElementById('add-bet-btn').addEventListener('click', () => {
+  const f = document.getElementById('add-bet-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('cancel-bet-btn').addEventListener('click', () => {
+  document.getElementById('add-bet-form').style.display = 'none';
+});
+document.getElementById('save-bet-btn').addEventListener('click', async () => {
+  const stake  = parseFloat(document.getElementById('b-stake').value);
+  const odds   = parseFloat(document.getElementById('b-odds').value);
+  const notes  = document.getElementById('b-match').value.trim() + (document.getElementById('b-tip').value ? ' — ' + document.getElementById('b-tip').value.trim() : '');
+  const result = document.getElementById('b-result').value;
+  const extra  = document.getElementById('b-notes').value.trim();
+
+  if (!notes || isNaN(stake) || stake <= 0 || isNaN(odds) || odds < 1.01) {
+    DashUtils.toast('Please fill in match, stake and odds correctly', 'error'); return;
+  }
+
+  const btn = document.getElementById('save-bet-btn');
+  btn.disabled = true;
+  try {
+    const res  = await fetch('/api/users/bet-history', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stake, odds, result, notes: notes + (extra ? ' | ' + extra : ''), currency: 'USD' }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      DashUtils.toast('Bet logged successfully');
+      document.getElementById('add-bet-form').style.display = 'none';
+      ['b-match','b-tip','b-stake','b-odds','b-notes'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('b-result').value = 'pending';
+      loadBets(1); loadStats();
+    } else { DashUtils.toast(json.message || 'Failed to save', 'error'); }
+  } catch(e) { DashUtils.toast('Network error', 'error'); }
+  btn.disabled = false;
+});
+
+// Filter tabs
+document.querySelectorAll('.market-tab[data-result]').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.market-tab[data-result]').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    betFilter = this.dataset.result;
+    betPage   = 1;
+    loadBets(1);
+  });
+});
+
+document.getElementById('bet-prev').addEventListener('click', () => loadBets(--betPage));
+document.getElementById('bet-next').addEventListener('click', () => loadBets(++betPage));
+
+// Init
+(async () => {
+  const user = await AfroAuth.requireAuth('/bet-history.html');
+  if (user) { loadStats(); loadBets(1); }
+})();
+</script>
+</body>
+</html>

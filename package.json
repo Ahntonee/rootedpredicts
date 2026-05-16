@@ -1,0 +1,40 @@
+{
+  "name": "afropredict",
+  "version": "1.0.0",
+  "description": "AfroPredict — Precision Tips. Global Reach. Real Results.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "migrate": "node config/migrate.js",
+    "prod": "NODE_ENV=production node server.js",
+    "pm2:start": "pm2 start ecosystem.config.js --env production",
+    "pm2:reload": "pm2 reload afropredict --update-env",
+    "pm2:stop": "pm2 stop afropredict",
+    "pm2:logs": "pm2 logs afropredict"
+  },
+  "keywords": ["football", "predictions", "sports", "betting", "tips", "afropredict"],
+  "author": "AfroPredict",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.16.0",
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.22.3",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.7",
+    "slugify": "^1.6.9",
+    "stripe": "^22.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

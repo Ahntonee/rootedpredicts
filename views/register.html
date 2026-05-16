@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create a Free Account | AfroPredict</title>
+  <meta name="description" content="Register for a free AfroPredict account to save predictions, track your bets, comment on tips, and upgrade to VIP for premium football predictions.">
+  <meta name="keywords" content="AfroPredict register, free football tips account, create account">
+  <link rel="canonical" href="https://www.afropredict.com/register">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <a href="/" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+        <span class="logo-mark">G33</span>
+        <span class="logo-text" style="color:var(--text);">PUNTER</span>
+      </a>
+    </div>
+    <h1 class="auth-title">Create Free Account</h1>
+    <p class="auth-sub">Join 50,000+ bettors getting daily football predictions</p>
+    <form id="register-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="name">Full Name</label>
+        <div class="input-icon-wrap">
+          <span class="material-icons-round">person</span>
+          <input type="text" id="name" name="name" class="form-control" placeholder="Your full name" autocomplete="name" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <div class="input-icon-wrap">
+          <span class="material-icons-round">email</span>
+          <input type="email" id="email" name="email" class="form-control" placeholder="your@email.com" autocomplete="email" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="input-icon-wrap">
+          <span class="material-icons-round">lock</span>
+          <input type="password" id="password" name="password" class="form-control" placeholder="Min 8 chars, 1 uppercase, 1 number" autocomplete="new-password" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="country">Country</label>
+        <div class="input-icon-wrap">
+          <span class="material-icons-round">public</span>
+          <select id="country" name="country" class="form-control">
+            <option value="">Select your country</option>
+            <optgroup label="Popular">
+              <option value="GB">United Kingdom</option>
+              <option value="NG">Nigeria</option>
+              <option value="GH">Ghana</option>
+              <option value="KE">Kenya</option>
+              <option value="ZA">South Africa</option>
+              <option value="US">United States</option>
+              <option value="AU">Australia</option>
+              <option value="IN">India</option>
+              <option value="ID">Indonesia</option>
+              <option value="PH">Philippines</option>
+            </optgroup>
+            <optgroup label="Europe">
+              <option value="DE">Germany</option>
+              <option value="ES">Spain</option>
+              <option value="IT">Italy</option>
+              <option value="FR">France</option>
+              <option value="NL">Netherlands</option>
+              <option value="PT">Portugal</option>
+            </optgroup>
+            <optgroup label="Americas">
+              <option value="BR">Brazil</option>
+              <option value="MX">Mexico</option>
+              <option value="AR">Argentina</option>
+              <option value="CA">Canada</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:20px;">
+        <input type="checkbox" id="agree" name="agree" style="margin-top:3px;width:16px;height:16px;flex-shrink:0;cursor:pointer;" required>
+        <label for="agree" style="font-size:0.82rem;color:var(--muted);cursor:pointer;-webkit-user-select:text;user-select:text;">I agree to the <a href="/terms.html" style="color:var(--red);">Terms of Service</a> and <a href="/privacy.html" style="color:var(--red);">Privacy Policy</a>. I am 18 years of age or older.</label>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+        <span class="material-icons-round">person_add</span>Create Free Account
+      </button>
+    </form>
+    <div class="auth-divider"><span>or</span></div>
+    <a href="/pricing.html?plan=monthly" class="btn btn-outline" style="width:100%;justify-content:center;">
+      <span class="material-icons-round">workspace_premium</span>Register & Start VIP Trial
+    </a>
+    <div class="auth-footer">
+      Already have an account? <a href="/login.html">Log In</a>
+    </div>
+    <p style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:16px;line-height:1.6;">By creating an account you confirm you are 18+ and understand that predictions are for informational purposes only. Please gamble responsibly.</p>
+  </div>
+</div>
+<script src="/js/content-protection.js"></script>
+<script>
+document.getElementById('register-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = this.querySelector('button[type="submit"]');
+  btn.textContent = 'Creating account...';
+  btn.disabled = true;
+  const data = {
+    name: document.getElementById('name').value,
+    email: document.getElementById('email').value,
+    password: document.getElementById('password').value,
+    country: document.getElementById('country').value,
+  };
+  try {
+    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    const json = await res.json();
+    if (json.success) { window.location.href = '/dashboard.html'; }
+    else { alert(json.message || 'Registration failed. Please try again.'); btn.textContent = 'Create Free Account'; btn.disabled = false; }
+  } catch(err) { alert('Network error. Please try again.'); btn.textContent = 'Create Free Account'; btn.disabled = false; }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog Posts | AfroPredict Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar"><span class="admin-topbar-title">Blog Post CMS</span><button class="btn btn-primary btn-sm" id="new-post-btn"><span class="material-icons-round">add</span>New Post</button></div>
+<main class="admin-main">
+  <div class="card" style="overflow:hidden;">
+    <div id="blog-loading" style="text-align:center;padding:40px;"><p style="color:var(--muted);">Loading posts...</p></div>
+    <table class="leaderboard-table" id="blog-table" style="display:none;">
+      <thead><tr><th>Title</th><th>Category</th><th>Author</th><th>Status</th><th>Published</th><th>Actions</th></tr></thead>
+      <tbody id="blog-tbody"></tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Blog Modal -->
+<div id="blog-modal" class="admin-modal-overlay" style="display:none;">
+  <div class="admin-modal" style="max-width:720px;">
+    <div class="admin-modal-header"><span class="admin-modal-title" id="blog-modal-title">New Blog Post</span><button class="admin-close-btn" onclick="Admin.hideModal('blog-modal')"><span class="material-icons-round">close</span></button></div>
+    <div class="admin-modal-body">
+      <input type="hidden" id="blog-id">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group" style="margin:0;"><label class="form-label">Title *</label><input type="text" class="form-control" id="b-title" placeholder="Article title"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group" style="margin:0;"><label class="form-label">Category</label><input type="text" class="form-control" id="b-cat" placeholder="e.g. Betting Guide, Match Preview"></div>
+          <div class="form-group" style="margin:0;"><label class="form-label">Meta Title</label><input type="text" class="form-control" id="b-meta-title" placeholder="SEO title"></div>
+        </div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Excerpt</label><textarea class="form-control" id="b-excerpt" rows="2" placeholder="Short summary for blog listing page..."></textarea></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Content *</label><textarea class="form-control" id="b-content" rows="8" placeholder="Full article content (HTML supported)..."></textarea></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Meta Description</label><textarea class="form-control" id="b-meta-desc" rows="2" placeholder="SEO meta description (max 160 chars)..."></textarea></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Keywords</label><input type="text" class="form-control" id="b-keywords" placeholder="comma, separated, keywords"></div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-user-select:text;user-select:text;"><input type="checkbox" id="b-published"><span class="form-label" style="margin:0;">Publish immediately</span></label>
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="Admin.hideModal('blog-modal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="save-blog-btn"><span class="material-icons-round">save</span>Save Post</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+const theme=localStorage.getItem('afro_theme')||'dark';document.documentElement.setAttribute('data-theme',theme);
+let blogEditId=null;
+async function loadPosts(){
+  const json=await Admin.api('GET','/api/admin/blog');
+  document.getElementById('blog-loading').style.display='none';
+  if(!json.success)return;
+  document.getElementById('blog-table').style.display='table';
+  document.getElementById('blog-tbody').innerHTML=json.data.map(p=>`
+    <tr>
+      <td style="font-weight:600;font-size:0.875rem;">${p.title}</td>
+      <td style="font-size:0.82rem;color:var(--muted);">${p.category||'—'}</td>
+      <td style="font-size:0.82rem;">${p.author_name||'—'}</td>
+      <td>${p.is_published?'<span class="badge badge-won">Published</span>':'<span class="badge badge-pending">Draft</span>'}</td>
+      <td style="font-size:0.78rem;color:var(--muted);">${Admin.fmtDate(p.published_at)}</td>
+      <td><div style="display:flex;gap:4px;">
+        <button onclick="editPost(${p.id})" class="btn btn-outline btn-sm" style="padding:4px 8px;"><span class="material-icons-round" style="font-size:0.9rem;">edit</span></button>
+        <button onclick="deletePost(${p.id})" class="btn btn-sm" style="padding:4px 8px;background:rgba(233,69,96,0.1);color:var(--red);border:1px solid rgba(233,69,96,0.2);"><span class="material-icons-round" style="font-size:0.9rem;">delete</span></button>
+      </div></td>
+    </tr>`).join('');
+}
+function openNew(){blogEditId=null;document.getElementById('blog-modal-title').textContent='New Blog Post';['b-title','b-excerpt','b-content','b-meta-title','b-meta-desc','b-keywords','b-cat'].forEach(id=>document.getElementById(id).value='');document.getElementById('b-published').checked=false;Admin.showModal('blog-modal');}
+async function editPost(id){
+  const json=await Admin.api('GET','/api/admin/blog');
+  const p=json.data.find(x=>x.id===id);
+  if(!p)return;
+  blogEditId=id;
+  document.getElementById('blog-modal-title').textContent='Edit Post';
+  document.getElementById('b-title').value=p.title;
+  document.getElementById('b-cat').value=p.category||'';
+  document.getElementById('b-published').checked=!!p.is_published;
+  Admin.showModal('blog-modal');
+}
+async function deletePost(id){
+  Admin.confirm('Delete this blog post?',async()=>{
+    const json=await Admin.api('DELETE','/api/admin/blog/'+id);
+    if(json.success){Admin.toast('Post deleted');loadPosts();}
+    else Admin.toast(json.message||'Failed','error');
+  });
+}
+document.getElementById('save-blog-btn').addEventListener('click',async()=>{
+  const body={title:document.getElementById('b-title').value.trim(),content:document.getElementById('b-content').value.trim(),excerpt:document.getElementById('b-excerpt').value.trim(),category:document.getElementById('b-cat').value.trim(),meta_title:document.getElementById('b-meta-title').value.trim(),meta_description:document.getElementById('b-meta-desc').value.trim(),keywords:document.getElementById('b-keywords').value.trim(),published:document.getElementById('b-published').checked};
+  const url=blogEditId?'/api/admin/blog/'+blogEditId:'/api/admin/blog';
+  const method=blogEditId?'PUT':'POST';
+  const json=await Admin.api(method,url,body);
+  if(json.success){Admin.toast(blogEditId?'Post updated':'Post created');Admin.hideModal('blog-modal');loadPosts();}
+  else Admin.toast(json.message||'Save failed','error');
+});
+document.addEventListener('DOMContentLoaded',async()=>{
+  Admin.buildSidebar();
+  const u=await Admin.requireAdmin();
+  if(!u)return;
+  loadPosts();
+  document.getElementById('new-post-btn').addEventListener('click',openNew);
+  document.getElementById('save-blog-btn').addEventListener('click',async()=>{
+    const body={
+      title:document.getElementById('b-title').value.trim(),
+      content:document.getElementById('b-content').value.trim(),
+      excerpt:document.getElementById('b-excerpt').value.trim(),
+      category:document.getElementById('b-cat').value.trim(),
+      meta_title:document.getElementById('b-meta-title').value.trim(),
+      meta_description:document.getElementById('b-meta-desc').value.trim(),
+      keywords:document.getElementById('b-keywords').value.trim(),
+      published:document.getElementById('b-published').checked
+    };
+    if(!body.title||!body.content){Admin.toast('Title and content are required','error');return;}
+    const url=blogEditId?'/api/admin/blog/'+blogEditId:'/api/admin/blog';
+    const method=blogEditId?'PUT':'POST';
+    const json=await Admin.api(method,url,body);
+    if(json.success){Admin.toast(blogEditId?'Post updated':'Post created');Admin.hideModal('blog-modal');loadPosts();}
+    else Admin.toast(json.message||'Save failed','error');
+  });
+});
+</script>
+</body></html>

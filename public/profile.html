@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Settings | AfroPredict</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+<main>
+  <div class="container" style="padding-top:32px;padding-bottom:60px;max-width:760px;">
+    <nav style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:16px;"><a href="/dashboard.html" style="color:var(--muted);">Dashboard</a><span class="material-icons-round" style="font-size:0.8rem;">chevron_right</span><span>Profile</span></nav>
+    <h1 style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--text);margin-bottom:24px;">Profile Settings</h1>
+
+    <!-- Success message -->
+    <div id="save-success" style="display:none;padding:12px 16px;background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.3);border-radius:8px;color:var(--green);font-size:0.875rem;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+      <span class="material-icons-round">check_circle</span>Changes saved successfully.
+    </div>
+
+    <!-- Personal info -->
+    <div class="card" style="padding:24px;margin-bottom:20px;">
+      <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">person</span>Personal Information</h2>
+      <form id="profile-form">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Full Name</label>
+            <div class="input-icon-wrap"><span class="material-icons-round">person</span><input type="text" class="form-control" id="p-name" placeholder="Your name"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Email Address</label>
+            <div class="input-icon-wrap"><span class="material-icons-round">email</span><input type="email" class="form-control" id="p-email" placeholder="your@email.com"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Country</label>
+            <select class="form-control" id="p-country">
+              <option value="">Select country</option>
+              <option>United Kingdom</option><option>Nigeria</option><option>Ghana</option>
+              <option>Kenya</option><option>South Africa</option><option>United States</option>
+              <option>Australia</option><option>India</option><option>Indonesia</option>
+              <option>Germany</option><option>Spain</option><option>France</option><option>Brazil</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Timezone</label>
+            <select class="form-control" id="p-timezone">
+              <option>UTC</option><option>Europe/London</option><option>Europe/Paris</option>
+              <option>Europe/Berlin</option><option>Africa/Lagos</option><option>Africa/Nairobi</option>
+              <option>America/New_York</option><option>America/Los_Angeles</option>
+              <option>America/Sao_Paulo</option><option>Asia/Kolkata</option>
+              <option>Asia/Jakarta</option><option>Australia/Sydney</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:20px;"><span class="material-icons-round">save</span>Save Changes</button>
+      </form>
+    </div>
+
+    <!-- Change password -->
+    <div class="card" style="padding:24px;margin-bottom:20px;">
+      <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">lock</span>Change Password</h2>
+      <form id="password-form">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Current Password</label>
+            <div class="input-icon-wrap"><span class="material-icons-round">lock</span><input type="password" class="form-control" placeholder="Current password" autocomplete="current-password"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">New Password</label>
+            <div class="input-icon-wrap"><span class="material-icons-round">lock_reset</span><input type="password" class="form-control" placeholder="Min 8 chars, 1 uppercase, 1 number" autocomplete="new-password"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Confirm New Password</label>
+            <div class="input-icon-wrap"><span class="material-icons-round">lock_reset</span><input type="password" class="form-control" placeholder="Repeat new password" autocomplete="new-password"></div>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-outline" style="margin-top:20px;"><span class="material-icons-round">lock_reset</span>Update Password</button>
+      </form>
+    </div>
+
+    <!-- Subscription info -->
+    <div class="card" style="padding:24px;margin-bottom:20px;">
+      <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">workspace_premium</span>Subscription</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);">
+        <div><div style="font-weight:600;" id="sub-plan">Free Plan</div><div style="font-size:0.82rem;color:var(--muted);margin-top:2px;" id="sub-info">Upgrade to access VIP tips</div></div>
+        <a href="/pricing.html" class="btn btn-primary btn-sm"><span class="material-icons-round">workspace_premium</span>Upgrade to VIP</a>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="card" style="padding:24px;border-color:rgba(233,69,96,0.3);">
+      <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin-bottom:8px;color:var(--red);display:flex;align-items:center;gap:8px;"><span class="material-icons-round">warning</span>Danger Zone</h2>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;">Deleting your account is permanent and cannot be undone. All your data, bookmarks, and bet history will be removed.</p>
+      <button class="btn btn-sm" style="background:rgba(233,69,96,0.1);color:var(--red);border:1px solid rgba(233,69,96,0.3);" onclick="if(confirm('Are you sure? This action cannot be undone.')) alert('Account deletion request sent. You will receive a confirmation email.')">
+        <span class="material-icons-round">delete_forever</span>Delete My Account
+      </button>
+    </div>
+  </div>
+</main>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/js/app.js"></script>
+<script src="/js/content-protection.js"></script>
+<script>
+document.getElementById('profile-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round">hourglass_empty</span>Saving...';
+  setTimeout(() => {
+    document.getElementById('save-success').style.display = 'flex';
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round">save</span>Save Changes';
+    setTimeout(() => { document.getElementById('save-success').style.display = 'none'; }, 3000);
+  }, 800);
+});
+document.getElementById('password-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  alert('Password updated successfully. (Phase 4 wires this to the real API)');
+});
+</script>
+</body>
+</html>

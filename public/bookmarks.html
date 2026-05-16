@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookmarks | AfroPredict</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+<main>
+  <div class="container" style="padding-top:32px;padding-bottom:60px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <nav style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <a href="/dashboard.html" style="color:var(--muted);">Dashboard</a>
+          <span class="material-icons-round" style="font-size:0.8rem;">chevron_right</span>
+          <span>Bookmarks</span>
+        </nav>
+        <h1 style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--text);">My Bookmarks</h1>
+        <p style="font-size:0.875rem;color:var(--muted);" id="bm-count">Loading...</p>
+      </div>
+      <a href="/predictions.html" class="btn btn-outline btn-sm">
+        <span class="material-icons-round">add</span>Browse Predictions
+      </a>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="market-tabs" style="margin-bottom:20px;">
+      <button class="market-tab active" data-filter="all">All</button>
+      <button class="market-tab" data-filter="pending">Pending</button>
+      <button class="market-tab" data-filter="won">Won</button>
+      <button class="market-tab" data-filter="lost">Lost</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="bm-loading" style="text-align:center;padding:48px;">
+      <span class="material-icons-round" style="font-size:2.5rem;color:var(--border);display:block;margin-bottom:8px;">hourglass_empty</span>
+      <p style="color:var(--muted);">Loading bookmarks...</p>
+    </div>
+
+    <!-- Bookmarks list -->
+    <div id="bm-list" style="display:none;flex-direction:column;gap:10px;"></div>
+
+    <!-- Empty state -->
+    <div id="bm-empty" style="display:none;">
+      <div class="card" style="padding:60px 24px;text-align:center;">
+        <span class="material-icons-round" style="font-size:3.5rem;color:var(--border);display:block;margin-bottom:12px;">bookmark_border</span>
+        <h2 style="font-family:var(--font-head);font-size:1.3rem;font-weight:700;color:var(--text);margin-bottom:8px;">No bookmarks yet</h2>
+        <p style="font-size:0.875rem;color:var(--muted);margin-bottom:20px;">Click the bookmark icon on any prediction card to save it here.</p>
+        <a href="/predictions.html" class="btn btn-primary"><span class="material-icons-round">sports_soccer</span>Browse Today's Tips</a>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div id="bm-pagination" style="display:none;justify-content:center;gap:8px;margin-top:24px;align-items:center;">
+      <button id="bm-prev" class="btn btn-outline btn-sm" disabled><span class="material-icons-round">chevron_left</span>Prev</button>
+      <span id="bm-page-info" style="font-size:0.85rem;color:var(--muted);"></span>
+      <button id="bm-next" class="btn btn-outline btn-sm"><span class="material-icons-round">chevron_right</span>Next</button>
+    </div>
+  </div>
+</main>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/js/app.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/dashboard.js"></script>
+<script src="/js/content-protection.js"></script>
+<script>
+let currentPage   = 1;
+let currentFilter = 'all';
+let allBookmarks  = [];
+
+async function loadBookmarks(page) {
+  page = page || 1;
+  document.getElementById('bm-loading').style.display = 'block';
+  document.getElementById('bm-list').style.display    = 'none';
+  document.getElementById('bm-empty').style.display   = 'none';
+  document.getElementById('bm-pagination').style.display = 'none';
+
+  try {
+    const res  = await fetch('/api/users/bookmarks?page=' + page + '&limit=15', { credentials: 'include' });
+    const json = await res.json();
+    if (!json.success) { document.getElementById('bm-loading').style.display='none'; return; }
+
+    allBookmarks = json.data.bookmarks;
+    const pagination = json.data.pagination;
+    const filtered   = currentFilter === 'all' ? allBookmarks : allBookmarks.filter(b => b.result === currentFilter);
+
+    document.getElementById('bm-count').textContent = pagination.total + ' saved prediction' + (pagination.total !== 1 ? 's' : '');
+    document.getElementById('bm-loading').style.display = 'none';
+
+    if (!filtered.length) {
+      document.getElementById('bm-empty').style.display = 'block'; return;
+    }
+
+    const list = document.getElementById('bm-list');
+    list.style.display = 'flex';
+    list.innerHTML = filtered.map(b => `
+      <div class="card" style="padding:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;" data-id="${b.id}">
+        ${b.league_logo ? `<img src="${b.league_logo}" width="24" height="24" style="object-fit:contain;flex-shrink:0;" alt="" onerror="this.style.display='none'">` : `<span class="material-icons-round" style="color:var(--muted);">sports_soccer</span>`}
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:0.9rem;">${b.home_team} vs ${b.away_team}</div>
+          <div style="font-size:0.78rem;color:var(--muted);">${b.league_name || ''} &middot; ${b.market || ''} &middot; ${DashUtils.formatDate(b.match_date)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+          ${b.tip ? `<span style="font-size:0.82rem;font-weight:700;color:var(--red);">${b.tip}</span>` : ''}
+          ${b.odds ? `<span style="font-size:0.78rem;color:var(--muted);">@ ${parseFloat(b.odds).toFixed(2)}</span>` : ''}
+          ${DashUtils.resultBadge(b.result)}
+          <a href="/prediction-detail.html?slug=${b.slug}" class="btn btn-outline btn-sm" style="padding:5px 10px;font-size:0.75rem;">
+            <span class="material-icons-round" style="font-size:0.85rem;">open_in_new</span>View
+          </a>
+          <button onclick="removeBookmark(${b.id}, this)" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;" title="Remove bookmark">
+            <span class="material-icons-round" style="font-size:1.1rem;">bookmark_remove</span>
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    // Pagination
+    if (pagination.totalPages > 1) {
+      const pgEl = document.getElementById('bm-pagination');
+      pgEl.style.display = 'flex';
+      document.getElementById('bm-page-info').textContent = 'Page ' + pagination.page + ' of ' + pagination.totalPages;
+      document.getElementById('bm-prev').disabled = !pagination.hasPrev;
+      document.getElementById('bm-next').disabled = !pagination.hasNext;
+    }
+
+  } catch(e) { document.getElementById('bm-loading').style.display='none'; }
+}
+
+async function removeBookmark(id, btn) {
+  try {
+    const res = await fetch('/api/users/bookmarks/' + id, { method: 'DELETE', credentials: 'include' });
+    const json = await res.json();
+    if (json.success) {
+      btn.closest('[data-id]').remove();
+      DashUtils.toast('Bookmark removed');
+      const remaining = document.querySelectorAll('#bm-list [data-id]').length;
+      if (!remaining) loadBookmarks(currentPage);
+    }
+  } catch(e) {}
+}
+
+// Tab filter
+document.querySelectorAll('.market-tab[data-filter]').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.market-tab[data-filter]').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    currentFilter = this.dataset.filter;
+    const filtered = currentFilter === 'all' ? allBookmarks : allBookmarks.filter(b => b.result === currentFilter);
+    if (!filtered.length) {
+      document.getElementById('bm-list').style.display  = 'none';
+      document.getElementById('bm-empty').style.display = 'block';
+    } else {
+      document.getElementById('bm-empty').style.display = 'none';
+      const list = document.getElementById('bm-list');
+      list.style.display = 'flex';
+      list.innerHTML = filtered.map(b => `
+        <div class="card" style="padding:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;" data-id="${b.id}">
+          <span class="material-icons-round" style="color:var(--muted);">sports_soccer</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:0.9rem;">${b.home_team} vs ${b.away_team}</div>
+            <div style="font-size:0.78rem;color:var(--muted);">${b.league_name||''} &middot; ${DashUtils.formatDate(b.match_date)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            ${DashUtils.resultBadge(b.result)}
+            <button onclick="removeBookmark(${b.id},this)" style="background:none;border:none;cursor:pointer;color:var(--muted);"><span class="material-icons-round">bookmark_remove</span></button>
+          </div>
+        </div>
+      `).join('');
+    }
+  });
+});
+
+document.getElementById('bm-prev').addEventListener('click', () => loadBookmarks(--currentPage));
+document.getElementById('bm-next').addEventListener('click', () => loadBookmarks(++currentPage));
+
+// Init — require auth
+(async () => {
+  const user = await AfroAuth.requireAuth('/bookmarks.html');
+  if (user) loadBookmarks(1);
+})();
+</script>
+</body>
+</html>
