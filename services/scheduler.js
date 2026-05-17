@@ -29,6 +29,16 @@ async function runDailySync() {
     } catch(e) { console.error(`[SCHEDULER] Sync failed league ${leagueId}:`, e.message); errors++; }
   }
   console.log(`[SCHEDULER] Daily sync done: ${totalCreated} new fixtures, ${errors} errors`);
+
+  // Auto-generate predictions from enriched data (runs after fixtures are in DB)
+  if (totalCreated > 0) {
+    console.log('[SCHEDULER] Running auto-predict on new fixtures...');
+    try {
+      await sleep(2000);
+      const result = await apiSvc.autoPredictFixtures(db, { limit: 30, minConfidence: 55, autoPublish: true });
+      console.log(`[SCHEDULER] Auto-predict: ${result.enriched} enriched, ${result.errors} errors`);
+    } catch(e) { console.error('[SCHEDULER] Auto-predict failed:', e.message); }
+  }
 }
 
 async function runResultsSync() {

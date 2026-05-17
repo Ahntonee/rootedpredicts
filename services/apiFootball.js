@@ -227,7 +227,7 @@ function evaluateTip(tip, market, goals, teams) {
   return null;
 }
 
-// ── H2H, form, standings, stats (used by algorithm in Phase 8)
+// ── H2H, form, standings, stats
 async function fetchH2H(team1Id, team2Id, last = 10) {
   const { data } = await request('/fixtures/headtohead', { h2h:`${team1Id}-${team2Id}`, last });
   return data;
@@ -252,6 +252,232 @@ function calculateFormString(fixtures, teamId) {
   }).join('');
 }
 
+// ── Generate a tip suggestion from enriched data ──────────────────────────────
+function generateTipSuggestion(homeForm, awayForm, h2hData, homeStats, awayStats) {
+  const homeScore = scoreForm(homeForm);
+  const awayScore = scoreForm(awayForm);
+  const diff      = homeScore - awayScore;
+
+  // H2H advantage
+  let h2hAdvantage = 0;
+  if (h2hData && h2hData.length) {
+    const last10 = h2hData.slice(0, 10);
+    const homeWins = last10.filter(f => f.teams.home.winner).length;
+    const awayWins = last10.filter(f => f.teams.away.winner).length;
+    h2hAdvantage = (homeWins - awayWins) / last10.length;
+  }
+
+  // Goals average
+  let avgGoals = null;
+  if (homeStats && awayStats) {
+    const hg = parseFloat(homeStats.goals?.for?.average?.total) || null;
+    const ag = parseFloat(awayStats.goals?.for?.average?.total) || null;
+    if (hg !== null && ag !== null) avgGoals = hg + ag;
+  }
+
+  const combinedDiff = diff * 0.6 + h2hAdvantage * 0.4;
+
+  // Over/Under suggestion based on goals average
+  if (avgGoals !== null) {
+    if (avgGoals > 3.0) return { tip: 'Over 2.5', market: 'Over/Under', reason: `Combined goals avg: ${avgGoals.toFixed(1)}` };
+    if (avgGoals < 1.8) return { tip: 'Under 2.5', market: 'Over/Under', reason: `Combined goals avg: ${avgGoals.toFixed(1)}` };
+  }
+
+  // Win/Draw suggestion
+  if (combinedDiff > 0.25)  return { tip: 'Home Win', market: '1X2', reason: `Home advantage: form ${(homeScore*100).toFixed(0)}% vs ${(awayScore*100).toFixed(0)}%` };
+  if (combinedDiff < -0.25) return { tip: 'Away Win', market: '1X2', reason: `Away stronger: form ${(awayScore*100).toFixed(0)}% vs ${(homeScore*100).toFixed(0)}%` };
+  return { tip: 'Draw', market: '1X2', reason: `Evenly matched: home ${(homeScore*100).toFixed(0)}% away ${(awayScore*100).toFixed(0)}%` };
+}
+
+function scoreForm(formStr) {
+  if (!formStr) return 0.5;
+  const chars = formStr.toUpperCase().replace(/[^WDL]/g, '').slice(0, 5).split('');
+  if (!chars.length) return 0.5;
+  const weights = [1.5, 1.2, 1.0, 0.8, 0.5];
+  let s = 0, t = 0;
+  chars.forEach((c, i) => { const w = weights[i]||0.5; s += w*(c==='W'?1:c==='D'?0.4:0); t += w; });
+  return t > 0 ? s / t : 0.5;
+}
+
+// ── Research a single fixture — returns enriched data for admin display ────────
+async function researchFixture(fixtureId) {
+  // Get the prediction from DB to find team API IDs
+  const fixtureInfo = await request('/fixtures', { id: fixtureId });
+  if (!fixtureInfo.data.length) throw new Error('Fixture not found in API');
+
+  const fix      = fixtureInfo.data[0];
+  const homeId   = fix.teams.home.id;
+  const awayId   = fix.teams.away.id;
+  const leagueId = fix.league.id;
+
+  const [homeFormRaw, awayFormRaw, h2hRaw, homeStatsRaw, awayStatsRaw, standingsRaw] = await Promise.all([
+    fetchTeamForm(homeId, 5).catch(() => []),
+    fetchTeamForm(awayId, 5).catch(() => []),
+    fetchH2H(homeId, awayId, 10).catch(() => []),
+    fetchTeamStats(homeId, leagueId).catch(() => null),
+    fetchTeamStats(awayId, leagueId).catch(() => null),
+    fetchStandings(leagueId).catch(() => []),
+  ]);
+
+  const homeForm = calculateFormString(homeFormRaw, homeId);
+  const awayForm = calculateFormString(awayFormRaw, awayId);
+
+  // H2H summary string
+  const h2hHomeWins = h2hRaw.filter(f => f.teams.home.winner === true || (f.teams.home.id === homeId && f.teams.home.winner)).length;
+  const h2hAwayWins = h2hRaw.filter(f => f.teams.away.winner === true || (f.teams.away.id === awayId && f.teams.away.winner)).length;
+  const h2hDraws    = h2hRaw.length - h2hHomeWins - h2hAwayWins;
+  const h2hSummary  = h2hRaw.length ? `H${h2hHomeWins}-A${h2hAwayWins}-D${h2hDraws}` : null;
+
+  // Recent results detail
+  const homeRecent = homeFormRaw.slice(0, 5).map(f => ({
+    date:     f.fixture.date?.split('T')[0],
+    home:     f.teams.home.name,
+    away:     f.teams.away.name,
+    score:    `${f.goals.home}-${f.goals.away}`,
+    result:   f.teams.home.id === homeId ? (f.teams.home.winner ? 'W' : f.teams.away.winner ? 'L' : 'D') : (f.teams.away.winner ? 'W' : f.teams.home.winner ? 'L' : 'D'),
+  }));
+  const awayRecent = awayFormRaw.slice(0, 5).map(f => ({
+    date:     f.fixture.date?.split('T')[0],
+    home:     f.teams.home.name,
+    away:     f.teams.away.name,
+    score:    `${f.goals.home}-${f.goals.away}`,
+    result:   f.teams.home.id === awayId ? (f.teams.home.winner ? 'W' : f.teams.away.winner ? 'L' : 'D') : (f.teams.away.winner ? 'W' : f.teams.home.winner ? 'L' : 'D'),
+  }));
+
+  // Standings position
+  let homeStanding = null, awayStanding = null;
+  if (standingsRaw.length && standingsRaw[0]?.league?.standings) {
+    const table = standingsRaw[0].league.standings.flat();
+    homeStanding = table.find(t => t.team.id === homeId);
+    awayStanding = table.find(t => t.team.id === awayId);
+  }
+
+  const suggestion = generateTipSuggestion(homeForm, awayForm, h2hRaw, homeStatsRaw, awayStatsRaw);
+
+  return {
+    fixture: {
+      id:      fix.fixture.id,
+      date:    fix.fixture.date,
+      home:    { id: homeId, name: fix.teams.home.name, logo: fix.teams.home.logo },
+      away:    { id: awayId, name: fix.teams.away.name, logo: fix.teams.away.logo },
+      league:  { id: leagueId, name: fix.league.name, logo: fix.league.logo },
+    },
+    home_form:    homeForm,
+    away_form:    awayForm,
+    home_recent:  homeRecent,
+    away_recent:  awayRecent,
+    h2h_summary:  h2hSummary,
+    h2h_recent:   h2hRaw.slice(0, 5).map(f => ({
+      date:  f.fixture.date?.split('T')[0],
+      home:  f.teams.home.name,
+      away:  f.teams.away.name,
+      score: `${f.goals.home}-${f.goals.away}`,
+    })),
+    home_standing: homeStanding ? { rank: homeStanding.rank, points: homeStanding.points, played: homeStanding.all.played, gd: homeStanding.goalsDiff } : null,
+    away_standing: awayStanding ? { rank: awayStanding.rank, points: awayStanding.points, played: awayStanding.all.played, gd: awayStanding.goalsDiff } : null,
+    home_stats: homeStatsRaw ? {
+      goals_for_avg:     homeStatsRaw.goals?.for?.average?.total,
+      goals_against_avg: homeStatsRaw.goals?.against?.average?.total,
+      wins:              homeStatsRaw.fixtures?.wins?.total,
+      draws:             homeStatsRaw.fixtures?.draws?.total,
+      losses:            homeStatsRaw.fixtures?.loses?.total,
+    } : null,
+    away_stats: awayStatsRaw ? {
+      goals_for_avg:     awayStatsRaw.goals?.for?.average?.total,
+      goals_against_avg: awayStatsRaw.goals?.against?.average?.total,
+      wins:              awayStatsRaw.fixtures?.wins?.total,
+      draws:             awayStatsRaw.fixtures?.draws?.total,
+      losses:            awayStatsRaw.fixtures?.loses?.total,
+    } : null,
+    suggestion,
+  };
+}
+
+// ── Auto-predict: enrich pending TBD predictions with form/H2H and generate tips
+async function autoPredictFixtures(db, options = {}) {
+  const limit     = options.limit || 20;
+  const minConf   = options.minConfidence || 55;
+  const autoPublish = options.autoPublish !== false;
+
+  const [rows] = await db.query(
+    `SELECT p.id, p.fixture_id, p.home_team, p.away_team, p.league_id,
+            l.api_league_id
+     FROM predictions p
+     LEFT JOIN leagues l ON l.id = p.league_id
+     WHERE p.tip = 'TBD' AND p.result = 'pending'
+       AND p.match_date >= NOW()
+     ORDER BY p.match_date ASC
+     LIMIT ?`,
+    [limit]
+  );
+
+  const confidence = require('./confidence');
+  let enriched = 0, skipped = 0, errors = 0;
+  const log = [];
+
+  for (const row of rows) {
+    if (!row.fixture_id) { skipped++; continue; }
+    try {
+      await new Promise(r => setTimeout(r, 500)); // rate limit spacing
+
+      const data = await researchFixture(row.fixture_id);
+
+      const suggestion  = data.suggestion;
+      const h2hSummary  = data.h2h_summary;
+      const homeForm    = data.home_form;
+      const awayForm    = data.away_form;
+
+      // Score with enriched data
+      const { score: confScore } = confidence.score({
+        tip:         suggestion.tip,
+        market:      suggestion.market,
+        odds:        null,
+        home_form:   homeForm,
+        away_form:   awayForm,
+        h2h_summary: h2hSummary,
+        league_id:   row.league_id,
+      });
+
+      const shouldPublish = autoPublish && confScore >= minConf;
+
+      await db.query(
+        `UPDATE predictions SET
+           tip              = ?,
+           market           = ?,
+           home_form        = ?,
+           away_form        = ?,
+           h2h_summary      = ?,
+           confidence_score = ?,
+           analysis         = ?,
+           published_at     = ?,
+           updated_at       = NOW()
+         WHERE id = ?`,
+        [
+          suggestion.tip,
+          suggestion.market,
+          homeForm || null,
+          awayForm || null,
+          h2hSummary || null,
+          confScore,
+          suggestion.reason || null,
+          shouldPublish ? new Date() : null,
+          row.id,
+        ]
+      );
+
+      log.push({ id: row.id, match: `${row.home_team} vs ${row.away_team}`, tip: suggestion.tip, confidence: confScore, published: shouldPublish });
+      enriched++;
+    } catch(e) {
+      console.error(`[AUTO-PREDICT] Failed fixture ${row.fixture_id}:`, e.message);
+      errors++;
+      log.push({ id: row.id, match: `${row.home_team} vs ${row.away_team}`, error: e.message });
+    }
+  }
+
+  console.log(`[AUTO-PREDICT] Done: ${enriched} enriched, ${skipped} skipped, ${errors} errors`);
+  return { enriched, skipped, errors, total: rows.length, log };
+}
+
 function getRequestCount()   { return dailyRequestCount; }
 function getRemainingCount() { checkAndResetDaily(); return 7400 - dailyRequestCount; }
 
@@ -260,4 +486,5 @@ module.exports = {
   fetchH2H, fetchTeamForm, fetchStandings, fetchTeamStats,
   calculateFormString, evaluateTip, mapCountryToContinent,
   isPopularLeague, getRequestCount, getRemainingCount, CURRENT_SEASON,
+  researchFixture, autoPredictFixtures,
 };

@@ -59,6 +59,34 @@
       <div id="sync-results-result" style="margin-top:10px;font-size:0.82rem;color:var(--muted);"></div>
     </div>
 
+    <!-- Auto-Predict -->
+    <div class="card" style="padding:20px;grid-column:1/-1;border:1px solid rgba(233,69,96,0.3);">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span class="material-icons-round" style="color:var(--red);">auto_awesome</span>Auto-Predict Engine
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;color:var(--red);background:rgba(233,69,96,0.12);border:1px solid rgba(233,69,96,0.25);border-radius:4px;padding:2px 8px;text-transform:uppercase;">AI</span>
+      </h3>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">Fetches form, H2H, standings and stats for all pending TBD fixtures, generates tips automatically, and publishes high-confidence predictions. <strong style="color:var(--text);">Uses ~6 API requests per fixture.</strong></p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px;">
+        <div>
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Fixtures to process</label>
+          <input type="number" id="ap-limit" value="10" min="1" max="50" class="form-control" style="width:90px;">
+        </div>
+        <div>
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Min confidence to publish</label>
+          <input type="number" id="ap-confidence" value="55" min="1" max="99" class="form-control" style="width:90px;">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding-bottom:2px;">
+          <input type="checkbox" id="ap-publish" checked style="width:16px;height:16px;accent-color:var(--red);">
+          <label for="ap-publish" style="font-size:0.82rem;font-weight:500;cursor:pointer;">Auto-publish high-confidence tips</label>
+        </div>
+        <button class="btn btn-primary btn-sm" id="auto-predict-btn"><span class="material-icons-round">auto_awesome</span>Run Auto-Predict</button>
+      </div>
+      <div id="auto-predict-result" style="display:none;background:var(--surface);border-radius:8px;padding:12px;border:1px solid var(--border);">
+        <div id="ap-summary" style="font-size:0.85rem;font-weight:600;margin-bottom:10px;"></div>
+        <div id="ap-log" style="font-family:monospace;font-size:0.76rem;color:var(--text-soft);max-height:220px;overflow-y:auto;"></div>
+      </div>
+    </div>
+
     <!-- Sync Log -->
     <div class="card" style="padding:20px;grid-column:1/-1;">
       <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:10px;">Sync Log</h3>
@@ -125,6 +153,53 @@ document.getElementById('sync-date-btn').addEventListener('click',()=>{
 document.getElementById('sync-results-btn').addEventListener('click',()=>{
   const date = document.getElementById('results-date').value || new Date().toISOString().split('T')[0];
   runSync('sync-results-btn','/api/sync/results','sync-results-result','POST',{date});
+});
+
+document.getElementById('auto-predict-btn').addEventListener('click', async () => {
+  const btn   = document.getElementById('auto-predict-btn');
+  const limit = parseInt(document.getElementById('ap-limit').value) || 10;
+  const conf  = parseInt(document.getElementById('ap-confidence').value) || 55;
+  const pub   = document.getElementById('ap-publish').checked;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite">refresh</span>Running...';
+  log(`Auto-predict started: ${limit} fixtures, min confidence ${conf}`, 'info');
+
+  try {
+    const json = await Admin.api('POST', '/api/sync/auto-predict', {
+      limit, min_confidence: conf, auto_publish: pub
+    });
+
+    document.getElementById('auto-predict-result').style.display = 'block';
+
+    if (json.success) {
+      const d = json.data;
+      document.getElementById('ap-summary').innerHTML =
+        `<span style="color:var(--green);">✓ ${d.enriched} predictions generated</span> &nbsp;·&nbsp; ` +
+        `${d.skipped} skipped &nbsp;·&nbsp; ` +
+        `<span style="color:${d.errors>0?'var(--red)':'var(--muted)'};">${d.errors} errors</span> &nbsp;·&nbsp; ` +
+        `${d.total} total processed`;
+
+      document.getElementById('ap-log').innerHTML = (d.log||[]).map(entry =>
+        entry.error
+          ? `<div style="color:var(--red);">✗ ${entry.match}: ${entry.error}</div>`
+          : `<div style="color:${entry.published?'var(--green)':'var(--text-soft)'};">${entry.published?'✓ Published':'◎ Draft'} — ${entry.match} → <strong>${entry.tip}</strong> (${entry.confidence}%)</div>`
+      ).join('');
+
+      log(`Auto-predict done: ${d.enriched} generated, ${d.errors} errors`, d.errors > 0 ? 'error' : 'success');
+      Admin.toast(`Auto-predict: ${d.enriched} predictions generated`);
+    } else {
+      document.getElementById('ap-summary').innerHTML = `<span style="color:var(--red);">✗ ${json.message}</span>`;
+      log('Auto-predict error: ' + json.message, 'error');
+      Admin.toast(json.message || 'Auto-predict failed', 'error');
+    }
+  } catch(e) {
+    log('Network error: ' + e.message, 'error');
+    Admin.toast('Network error', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-icons-round">auto_awesome</span>Run Auto-Predict';
 });
 
 document.addEventListener('DOMContentLoaded', async () => {

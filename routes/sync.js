@@ -65,6 +65,34 @@ router.post('/teams/:leagueId', asyncHandler(async (req, res) => {
   return successResponse(res, { synced: count }, `${count} teams synced for league ${leagueId}`);
 }));
 
+// ── POST /api/sync/auto-predict
+// Body: { limit?: number, min_confidence?: number, auto_publish?: boolean }
+router.post('/auto-predict', asyncHandler(async (req, res) => {
+  if (!process.env.API_FOOTBALL_KEY) {
+    return errorResponse(res, 'API_FOOTBALL_KEY not configured in .env', 400);
+  }
+  const db      = require('../config/db');
+  const options = {
+    limit:         parseInt(req.body.limit)          || 20,
+    minConfidence: parseInt(req.body.min_confidence) || 55,
+    autoPublish:   req.body.auto_publish !== false,
+  };
+  const result = await apiSvc.autoPredictFixtures(db, options);
+  return successResponse(res, result,
+    `Auto-predict done: ${result.enriched} predictions generated, ${result.errors} errors`);
+}));
+
+// ── GET /api/sync/research/:fixtureId — Live research data for a fixture
+router.get('/research/:fixtureId', asyncHandler(async (req, res) => {
+  if (!process.env.API_FOOTBALL_KEY) {
+    return errorResponse(res, 'API_FOOTBALL_KEY not configured in .env', 400);
+  }
+  const fixtureId = parseInt(req.params.fixtureId);
+  if (isNaN(fixtureId)) return errorResponse(res, 'Valid fixture ID required', 400);
+  const data = await apiSvc.researchFixture(fixtureId);
+  return successResponse(res, data);
+}));
+
 // ── POST /api/sync/today — Sync today + tomorrow fixtures for popular leagues
 router.post('/today', asyncHandler(async (req, res) => {
   const today    = new Date().toISOString().split('T')[0];

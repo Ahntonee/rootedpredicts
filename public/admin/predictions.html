@@ -97,6 +97,28 @@
   </div>
 </div>
 
+<!-- Research Modal -->
+<div id="research-modal" class="admin-modal-overlay" style="display:none;">
+  <div class="admin-modal" style="max-width:780px;width:96vw;">
+    <div class="admin-modal-header">
+      <span class="admin-modal-title" id="research-title">Match Research</span>
+      <button class="admin-close-btn" onclick="Admin.hideModal('research-modal')"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="admin-modal-body" id="research-body" style="max-height:75vh;overflow-y:auto;">
+      <div id="research-loading" style="text-align:center;padding:40px;">
+        <span class="material-icons-round" style="font-size:2.5rem;color:var(--border);display:block;margin-bottom:8px;animation:spin 1s linear infinite;">refresh</span>
+        <p style="color:var(--muted);">Fetching live data from API-Football...</p>
+        <p style="color:var(--muted);font-size:0.78rem;margin-top:6px;">Form, H2H, standings, stats — may take 5-10 seconds</p>
+      </div>
+      <div id="research-content" style="display:none;"></div>
+    </div>
+    <div class="admin-modal-footer" id="research-footer" style="display:none;">
+      <button class="btn btn-outline btn-sm" onclick="Admin.hideModal('research-modal')">Close</button>
+      <button class="btn btn-primary btn-sm" id="apply-suggestion-btn"><span class="material-icons-round">auto_awesome</span>Apply Suggestion to Edit Form</button>
+    </div>
+  </div>
+</div>
+
 <script src="/js/app.js"></script>
 <script src="/js/admin.js"></script>
 <script>
@@ -143,6 +165,7 @@ async function loadPredictions(page) {
       <td style="font-size:0.78rem;color:var(--muted);">${Admin.fmtDate(p.match_date)}</td>
       <td>
         <div style="display:flex;gap:4px;">
+          ${p.fixture_id ? `<button onclick="researchPred(${p.fixture_id},'${p.home_team} vs ${p.away_team}')" class="btn btn-sm" style="padding:4px 8px;background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);" title="Research match data"><span class="material-icons-round" style="font-size:0.9rem;">insights</span></button>` : ''}
           <button onclick="editPred(${p.id})" class="btn btn-outline btn-sm" style="padding:4px 8px;"><span class="material-icons-round" style="font-size:0.9rem;">edit</span></button>
           <button onclick="deletePred(${p.id})" class="btn btn-sm" style="padding:4px 8px;background:rgba(233,69,96,0.1);color:var(--red);border:1px solid rgba(233,69,96,0.2);"><span class="material-icons-round" style="font-size:0.9rem;">delete</span></button>
         </div>
@@ -215,12 +238,129 @@ document.getElementById('save-pred-btn').addEventListener('click', async () => {
   else Admin.toast(json.message||'Save failed','error');
 });
 
+let researchSuggestion = null;
+
+async function researchPred(fixtureId, matchName) {
+  researchSuggestion = null;
+  document.getElementById('research-title').textContent = 'Research: ' + matchName;
+  document.getElementById('research-loading').style.display = 'block';
+  document.getElementById('research-content').style.display = 'none';
+  document.getElementById('research-footer').style.display = 'none';
+  Admin.showModal('research-modal');
+
+  const json = await Admin.api('GET', '/api/sync/research/' + fixtureId);
+
+  document.getElementById('research-loading').style.display = 'none';
+
+  if (!json.success) {
+    document.getElementById('research-content').style.display = 'block';
+    document.getElementById('research-content').innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">${json.message || 'Failed to fetch research data'}</p>`;
+    return;
+  }
+
+  const d = json.data;
+  researchSuggestion = d.suggestion;
+
+  function formBadges(formStr) {
+    if (!formStr) return '<span style="color:var(--muted);">No data</span>';
+    return formStr.split('').map(c => {
+      const colors = { W:'#16a34a', D:'#d97706', L:'#e94560' };
+      return `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:4px;background:${colors[c]||'#6b7280'};color:#fff;font-size:0.72rem;font-weight:700;margin-right:3px;">${c}</span>`;
+    }).join('');
+  }
+
+  function recentTable(rows) {
+    if (!rows || !rows.length) return '<p style="color:var(--muted);font-size:0.82rem;">No recent matches</p>';
+    return `<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+      <thead><tr style="border-bottom:1px solid var(--border);">
+        <th style="text-align:left;padding:4px 6px;color:var(--muted);">Date</th>
+        <th style="text-align:left;padding:4px 6px;color:var(--muted);">Match</th>
+        <th style="text-align:center;padding:4px 6px;color:var(--muted);">Score</th>
+        <th style="text-align:center;padding:4px 6px;color:var(--muted);">Result</th>
+      </tr></thead>
+      <tbody>${rows.map(r => {
+        const rc = {W:'var(--green)',D:'var(--yellow)',L:'var(--red)'}[r.result]||'var(--muted)';
+        return `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:5px 6px;color:var(--muted);">${r.date||'—'}</td>
+          <td style="padding:5px 6px;">${r.home} vs ${r.away}</td>
+          <td style="padding:5px 6px;text-align:center;font-weight:700;">${r.score}</td>
+          <td style="padding:5px 6px;text-align:center;color:${rc};font-weight:700;">${r.result}</td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  }
+
+  const hs = d.home_stats, as_ = d.away_stats;
+  const hst = d.home_standing, ast = d.away_standing;
+
+  document.getElementById('research-content').innerHTML = `
+    <!-- Suggestion banner -->
+    <div style="background:rgba(233,69,96,0.08);border:1px solid rgba(233,69,96,0.25);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Algorithm Suggestion</div>
+        <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--red);">${d.suggestion.tip}</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${d.suggestion.market} — ${d.suggestion.reason}</div>
+      </div>
+      <div style="text-align:right;">
+        ${d.h2h_summary ? `<div style="font-size:0.78rem;color:var(--muted);">H2H: <strong style="color:var(--text);">${d.h2h_summary}</strong></div>` : ''}
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">Home form: <strong>${d.home_form||'—'}</strong> &nbsp;|&nbsp; Away form: <strong>${d.away_form||'—'}</strong></div>
+      </div>
+    </div>
+
+    <!-- Form + Standings side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div style="background:var(--surface);border-radius:8px;padding:14px;border:1px solid var(--border);">
+        <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;">${d.fixture.home.name}</div>
+        <div style="margin-bottom:8px;">${formBadges(d.home_form)}</div>
+        ${hst ? `<div style="font-size:0.78rem;color:var(--muted);">Rank <strong style="color:var(--text);">#${hst.rank}</strong> · ${hst.points} pts · ${hst.played} played · GD ${hst.gd>0?'+':''}${hst.gd}</div>` : ''}
+        ${hs ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:6px;">Goals for: <strong>${hs.goals_for_avg}</strong>/game · Against: <strong>${hs.goals_against_avg}</strong>/game</div>` : ''}
+      </div>
+      <div style="background:var(--surface);border-radius:8px;padding:14px;border:1px solid var(--border);">
+        <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;">${d.fixture.away.name}</div>
+        <div style="margin-bottom:8px;">${formBadges(d.away_form)}</div>
+        ${ast ? `<div style="font-size:0.78rem;color:var(--muted);">Rank <strong style="color:var(--text);">#${ast.rank}</strong> · ${ast.points} pts · ${ast.played} played · GD ${ast.gd>0?'+':''}${ast.gd}</div>` : ''}
+        ${as_ ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:6px;">Goals for: <strong>${as_.goals_for_avg}</strong>/game · Against: <strong>${as_.goals_against_avg}</strong>/game</div>` : ''}
+      </div>
+    </div>
+
+    <!-- Recent form detail -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div>
+        <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">${d.fixture.home.name} — Last 5</div>
+        ${recentTable(d.home_recent)}
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">${d.fixture.away.name} — Last 5</div>
+        ${recentTable(d.away_recent)}
+      </div>
+    </div>
+
+    <!-- H2H -->
+    ${d.h2h_recent && d.h2h_recent.length ? `
+    <div>
+      <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Head to Head — Last 5 Meetings</div>
+      ${recentTable(d.h2h_recent)}
+    </div>` : ''}
+  `;
+
+  document.getElementById('research-content').style.display = 'block';
+  document.getElementById('research-footer').style.display = 'flex';
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   Admin.buildSidebar();
   const user = await Admin.requireAdmin();
   if (!user) return;
   loadPredictions(1);
   document.getElementById('new-pred-btn').addEventListener('click', openNewModal);
+
+  document.getElementById('apply-suggestion-btn').addEventListener('click', () => {
+    if (!researchSuggestion) return;
+    Admin.hideModal('research-modal');
+    document.getElementById('m-tip').value    = researchSuggestion.tip;
+    document.getElementById('m-market').value = researchSuggestion.market;
+    Admin.showModal('pred-modal');
+    Admin.toast('Suggestion applied — review and save');
+  });
   document.getElementById('apply-filters').addEventListener('click', () => loadPredictions(1));
   document.getElementById('p-prev').addEventListener('click', () => loadPredictions(--predPage));
   document.getElementById('p-next').addEventListener('click', () => loadPredictions(++predPage));
