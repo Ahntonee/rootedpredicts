@@ -1139,25 +1139,176 @@ img { max-width: 100%; display: block; }
 .gap-12 { gap: 12px; }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────── */
+
+/* Tablet */
 @media (max-width: 1024px) {
   .page-layout { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .footer-top { grid-template-columns: 1fr 1fr; }
-  .pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
+  .footer-top { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
   .pricing-card.featured { transform: scale(1); }
   .blog-grid { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
 }
 
+/* Mobile — 768px and below */
 @media (max-width: 768px) {
-  .main-nav { display: none; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: var(--navy); padding: 12px; border-bottom: 1px solid var(--nav-border); }
+  /* ── Base ── */
+  html { font-size: 15px; }
+  .container { padding: 0 16px; }
+  .section { padding: 32px 0; }
+
+  /* ── Header ── */
+  .header-inner { height: 58px; gap: 8px; }
+  .logo-text { font-size: 1.2rem; }
+  .logo-mark { font-size: 1rem; padding: 5px 8px; }
+  .main-nav {
+    display: none;
+    flex-direction: column;
+    position: fixed;
+    top: 58px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--navy);
+    padding: 16px;
+    border-top: 1px solid var(--nav-border);
+    overflow-y: auto;
+    z-index: 999;
+  }
   .main-nav.open { display: flex; }
-  .nav-toggle { display: flex; }
+  .nav-link {
+    padding: 14px 16px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .nav-link:last-child { border-bottom: none; }
+  .nav-toggle { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
   .header-actions .btn-login { display: none; }
-  .hero { padding: 40px 0 32px; }
-  .footer-top { grid-template-columns: 1fr; gap: 24px; }
-  .stats-inner { gap: 8px; }
+  .header-actions .btn-vip { padding: 7px 12px; font-size: 0.75rem; }
+
+  /* ── Hero ── */
+  .hero { padding: 32px 0 28px; }
+  .hero h1 { font-size: clamp(1.9rem, 8vw, 2.8rem); }
+  .hero-sub { font-size: 0.95rem; margin-bottom: 24px; }
+  .hero-cta { gap: 10px; }
+  .hero-cta .btn { padding: 12px 20px; font-size: 0.875rem; }
+
+  /* ── Stats bar ── */
+  .stats-inner { gap: 0; justify-content: space-between; }
+  .stat-item { flex: 1; }
+  .stat-value { font-size: 1.3rem; }
+  .stat-label { font-size: 0.65rem; }
   .stat-divider { display: none; }
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+
+  /* ── Prediction cards ── */
+  .pred-card-header { padding: 10px 12px; }
+  .pred-card-body { padding: 12px; }
+  .team-logo { width: 36px; height: 36px; }
+  .team-logo-placeholder { width: 36px; height: 36px; }
+  .team-name { font-size: 0.78rem; }
+  .pred-teams { gap: 8px; margin-bottom: 10px; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; gap: 16px; }
   .blog-grid { grid-template-columns: 1fr; }
-  .auth-card { padding: 24px; }
+
+  /* ── Section headers ── */
+  .section-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .section-title { font-size: 1.4rem; }
+
+  /* ── Tabs & filters ── */
+  .market-tabs { gap: 6px; padding-bottom: 6px; }
+  .market-tab { padding: 8px 12px; font-size: 0.78rem; }
+  .date-btn { min-width: 52px; padding: 6px 10px; }
+  .date-btn .day-num { font-size: 1.05rem; }
+
+  /* ── League dropdown ── */
+  .league-dropdown {
+    width: calc(100vw - 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    max-height: 60vh;
+  }
+
+  /* ── Pricing ── */
+  .pricing-grid { max-width: 100%; }
+  .pricing-card { padding: 24px 20px; }
+  .pricing-price { font-size: 2.4rem; }
+
+  /* ── Blog ── */
+  .blog-card img { height: 160px; }
+  .blog-card-body { padding: 16px; }
+
+  /* ── Auth ── */
+  .auth-wrap { padding: 16px; align-items: flex-start; padding-top: 40px; }
+  .auth-card { padding: 24px 20px; }
+  .auth-title { font-size: 1.5rem; }
+
+  /* ── Leaderboard table ── */
+  .leaderboard-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Footer ── */
+  .footer-top { grid-template-columns: 1fr; gap: 20px; padding: 32px 0 24px; }
+  .footer-brand p { max-width: 100%; }
+  .footer-bottom { flex-direction: column; text-align: center; gap: 6px; }
+
+  /* ── Buttons ── */
+  .btn { padding: 12px 20px; }
+  .btn-lg { padding: 14px 24px; font-size: 0.95rem; }
+
+  /* ── Ticker ── */
+  .ticker-wrap { height: 32px; }
+  .ticker-label { padding: 0 10px; font-size: 0.65rem; }
+  .ticker-item { font-size: 0.72rem; }
+
+  /* ── Ads ── */
+  .ad-slot-header { min-height: 60px; }
+  .ad-slot-sidebar { display: none; }
+}
+
+/* Small mobile — 480px and below */
+@media (max-width: 480px) {
+  html { font-size: 14px; }
+  .container { padding: 0 12px; }
+
+  /* ── Header ── */
+  .header-inner { height: 54px; }
+  .logo-text { display: none; }
+
+  /* ── Hero ── */
+  .hero { padding: 24px 0 20px; }
+  .hero h1 { font-size: clamp(1.7rem, 9vw, 2.2rem); }
+  .hero-sub { font-size: 0.875rem; }
+  .hero-cta { flex-direction: column; align-items: stretch; }
+  .hero-cta .btn { width: 100%; justify-content: center; }
+
+  /* ── Stats ── */
+  .stat-value { font-size: 1.15rem; }
+  .stat-label { font-size: 0.6rem; }
+
+  /* ── Cards ── */
+  .pred-card-header { flex-wrap: wrap; }
+  .pred-meta { width: 100%; justify-content: flex-end; margin-top: 4px; }
+  .team-logo { width: 32px; height: 32px; }
+  .team-logo-placeholder { width: 32px; height: 32px; }
+
+  /* ── Pricing ── */
+  .pricing-price { font-size: 2rem; }
+  .pricing-features li { font-size: 0.82rem; }
+
+  /* ── Auth ── */
+  .auth-card { padding: 20px 16px; }
+
+  /* ── Section title ── */
+  .section-title { font-size: 1.25rem; }
+
+  /* ── Tabs ── */
+  .market-tab { padding: 7px 10px; font-size: 0.75rem; }
+
+  /* ── Footer ── */
+  .footer-col h4 { font-size: 0.85rem; }
+  .footer-links a { font-size: 0.8rem; }
 }
