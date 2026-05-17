@@ -728,13 +728,66 @@ img { max-width: 100%; display: block; }
   flex-shrink: 0;
 }
 
+/* ── Filters bar (predictions page) ────────────────────────── */
+.filters-bar {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.filters-row-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.filters-selects {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.filters-selects .form-control {
+  width: auto;
+  padding: 9px 14px;
+  flex: 1;
+  min-width: 120px;
+}
+
+/* ── Section filters wrap (homepage) ───────────────────────── */
+.section-filters-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.section-filters-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 /* ── Date picker row ────────────────────────────────────────── */
+.date-nav-wrap {
+  width: 100%;
+  overflow: hidden;
+}
 .date-nav {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  width: 100%;
 }
 .date-nav::-webkit-scrollbar { display: none; }
 .date-btn {
@@ -747,10 +800,10 @@ img { max-width: 100%; display: block; }
   transition: all var(--transition);
   border: 1px solid var(--border);
   background: var(--card-bg);
-  min-width: 64px;
-  flex-shrink: 0;
+  min-width: 58px;
+  flex: 0 0 auto;
 }
-.date-btn .day-name { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.date-btn .day-name { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
 .date-btn .day-num  { font-family: var(--font-head); font-size: 1.2rem; font-weight: 700; color: var(--text); }
 .date-btn:hover { border-color: var(--red); }
 .date-btn.active { background: var(--navy); border-color: var(--navy); }
@@ -1222,8 +1275,23 @@ img { max-width: 100%; display: block; }
   /* ── Tabs & filters ── */
   .market-tabs { gap: 6px; padding-bottom: 6px; }
   .market-tab { padding: 8px 12px; font-size: 0.78rem; }
-  .date-btn { min-width: 52px; padding: 6px 10px; }
-  .date-btn .day-num { font-size: 1.05rem; }
+
+  /* ── Date nav — full width scrollable row ── */
+  .date-nav-wrap { width: 100%; overflow: hidden; }
+  .date-nav { width: 100%; gap: 5px; }
+  .date-btn { min-width: 50px; padding: 7px 8px; }
+  .date-btn .day-num { font-size: 1rem; }
+  .date-btn .day-name { font-size: 0.6rem; }
+
+  /* ── Filter rows that contain date-nav — stack vertically ── */
+  .filters-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .filters-row .date-nav-wrap,
+  .filters-row [style*="flex:1"],
+  .filters-row [style*="flex: 1"] { width: 100%; flex: none !important; }
 
   /* ── League dropdown ── */
   .league-dropdown {

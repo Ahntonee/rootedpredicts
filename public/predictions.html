@@ -43,23 +43,29 @@
     <!-- AdSense slot: below-header-predictions -->
     <div class="ad-slot-header" aria-label="Advertisement">Advertisement</div>
     <!-- Filters bar -->
-    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
-      <div id="league-filter-predictions"></div>
-      <div class="date-nav" id="date-nav-pred" style="flex:1;"></div>
-      <select class="form-control" style="width:auto;padding:9px 14px;" id="market-select">
-        <option value="all">All Markets</option>
-        <option value="1x2">1X2</option>
-        <option value="over-2-5">Over 2.5 Goals</option>
-        <option value="btts">BTTS / GG</option>
-        <option value="correct-score">Correct Score</option>
-        <option value="draw">Draw No Bet</option>
-        <option value="acca">Accumulators</option>
-      </select>
-      <select class="form-control" style="width:auto;padding:9px 14px;" id="visibility-select">
-        <option value="all">Free &amp; VIP</option>
-        <option value="free">Free Only</option>
-        <option value="vip">VIP Only</option>
-      </select>
+    <div class="filters-bar">
+      <div class="filters-row-top">
+        <div id="league-filter-predictions"></div>
+        <div class="filters-selects">
+          <select class="form-control" id="market-select">
+            <option value="all">All Markets</option>
+            <option value="1x2">1X2</option>
+            <option value="over-2-5">Over 2.5 Goals</option>
+            <option value="btts">BTTS / GG</option>
+            <option value="correct-score">Correct Score</option>
+            <option value="draw">Draw No Bet</option>
+            <option value="acca">Accumulators</option>
+          </select>
+          <select class="form-control" id="visibility-select">
+            <option value="all">Free &amp; VIP</option>
+            <option value="free">Free Only</option>
+            <option value="vip">VIP Only</option>
+          </select>
+        </div>
+      </div>
+      <div class="date-nav-wrap">
+        <div class="date-nav" id="date-nav-pred"></div>
+      </div>
     </div>
     <!-- Market quick tabs -->
     <div class="market-tabs" style="margin-bottom:20px;" id="market-tabs-pred">
