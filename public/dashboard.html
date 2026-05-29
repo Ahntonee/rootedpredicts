@@ -21,12 +21,6 @@
         <h1 style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--text);">My Dashboard</h1>
         <p style="font-size:0.875rem;color:var(--muted);">Welcome back — here's your activity overview</p>
       </div>
-      <!-- Upgrade banner for free users -->
-      <div id="upgrade-banner" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(233,69,96,0.1);border:1px solid rgba(233,69,96,0.3);border-radius:var(--radius);">
-        <span class="material-icons-round" style="color:var(--red);">workspace_premium</span>
-        <span style="font-size:0.85rem;color:var(--text);">Free account — </span>
-        <a href="/pricing.html" class="btn btn-primary btn-sm">Upgrade to VIP</a>
-      </div>
     </div>
 
     <!-- Stats row -->
@@ -108,44 +102,7 @@
       <!-- Sidebar -->
       <aside class="sidebar">
         <!-- VIP upgrade CTA (shown to free users) -->
-        <div class="sidebar-card" id="vip-upgrade-card" style="background:linear-gradient(135deg,var(--navy),var(--midnight));border-color:rgba(233,69,96,0.3);">
-          <div style="padding:20px;text-align:center;">
-            <span class="material-icons-round" style="font-size:2rem;color:var(--red);">workspace_premium</span>
-            <h3 style="font-family:var(--font-head);font-size:1.2rem;font-weight:800;color:#fff;margin:8px 0 6px;">Unlock VIP Tips</h3>
-            <p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;">Premium picks, early access &amp; Telegram alerts from $4.89/month.</p>
-            <a href="/pricing.html" class="btn btn-primary" style="width:100%;justify-content:center;">Start Free Trial</a>
-            <p style="font-size:0.72rem;color:rgba(255,255,255,0.4);margin-top:8px;">3 days free — cancel anytime</p>
-          </div>
-        </div>
-
-        <!-- VIP subscription status (shown to VIP members) -->
-        <div class="sidebar-card" id="vip-status-card" style="display:none;border-color:rgba(34,197,94,0.3);">
-          <div class="sidebar-card-header" style="color:var(--green);"><span class="material-icons-round">workspace_premium</span>VIP Membership</div>
-          <div class="sidebar-card-body">
-            <div style="display:flex;flex-direction:column;gap:10px;">
-              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);">
-                <span style="color:var(--muted);">Status</span>
-                <span id="sub-status-badge"></span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);">
-                <span style="color:var(--muted);">Plan</span>
-                <span style="font-weight:600;text-transform:capitalize;" id="sub-plan">—</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);">
-                <span style="color:var(--muted);">Expires</span>
-                <span style="font-weight:600;" id="sub-expires">—</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;" id="sub-trial-row" style="display:none;">
-                <span style="color:var(--muted);">Trial ends</span>
-                <span style="font-weight:600;color:var(--red);" id="sub-trial-ends">—</span>
-              </div>
-            </div>
-            <a href="/pricing.html" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:14px;"><span class="material-icons-round">upgrade</span>Change Plan</a>
-            <button id="cancel-sub-btn" class="btn btn-sm" style="width:100%;justify-content:center;margin-top:8px;background:rgba(233,69,96,0.08);color:var(--red);border:1px solid rgba(233,69,96,0.2);">
-              <span class="material-icons-round">cancel</span>Cancel Subscription
-            </button>
-          </div>
-        </div>
+        <div class="sidebar-card" style="background:linear-gradient(135deg,var(--navy),var(--midnight));border-color:rgba(26,138,68,0.3);"><div style="padding:20px;text-align:center;"><svg viewBox="0 0 24 24" fill="currentColor" style="width:32px;height:32px;color:#26A5E4;margin:0 auto 8px;display:block;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg><h3 style="font-family:var(--font-head);font-size:1.2rem;font-weight:800;color:#fff;margin:8px 0 6px;">Join Our Telegram</h3><p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;">Get daily free tips straight to your phone.</p><a href="https://t.me/afropredict" target="_blank" rel="noopener" class="btn-telegram" style="width:100%;justify-content:center;">Join @afropredict</a></div></div>
 
         <!-- Account info -->
         <div class="sidebar-card">
@@ -193,42 +150,6 @@ async function apiFetch(method, url, body) {
   return res.json();
 }
 
-async function loadSubscription() {
-  try {
-    const json = await apiFetch('GET', '/api/subscriptions/status');
-    if (!json.success || !json.data) return;
-    const sub = json.data;
-
-    if (sub.status === 'active' || sub.status === 'trialing') {
-      document.getElementById('vip-upgrade-card').style.display = 'none';
-      document.getElementById('upgrade-banner').style.display   = 'none';
-      document.getElementById('vip-status-card').style.display  = 'block';
-
-      // Status badge
-      const badge = sub.status === 'trialing'
-        ? '<span class="badge badge-pending">Trial</span>'
-        : '<span class="badge badge-won">Active</span>';
-      document.getElementById('sub-status-badge').innerHTML = badge;
-      document.getElementById('sub-plan').textContent    = sub.plan || '—';
-      document.getElementById('sub-expires').textContent = fmtDate(sub.expires_at);
-
-      if (sub.status === 'trialing' && sub.trial_ends_at) {
-        const row = document.getElementById('sub-trial-row');
-        if (row) { row.style.display = 'flex'; }
-        document.getElementById('sub-trial-ends').textContent = fmtDate(sub.trial_ends_at);
-      }
-    } else if (sub.status === 'cancelled') {
-      document.getElementById('vip-status-card').style.display = 'block';
-      document.getElementById('vip-upgrade-card').style.display = 'none';
-      document.getElementById('sub-status-badge').innerHTML = '<span class="badge badge-lost">Cancelled</span>';
-      document.getElementById('sub-plan').textContent    = sub.plan || '—';
-      document.getElementById('sub-expires').textContent = fmtDate(sub.expires_at);
-      const cancelBtn = document.getElementById('cancel-sub-btn');
-      if (cancelBtn) cancelBtn.style.display = 'none';
-    }
-  } catch(e) { /* subscription endpoint not critical */ }
-}
-
 async function checkAuth() {
   try {
     const res = await fetch('/api/auth/me', { credentials:'include' });
@@ -236,41 +157,11 @@ async function checkAuth() {
     const { data } = await res.json();
     if (!data) { window.location.href = '/login.html'; return; }
 
-    document.getElementById('user-plan').textContent    = data.role === 'vip' ? 'VIP ✦' : data.role === 'admin' ? 'Admin' : 'Free';
+    document.getElementById('user-plan').textContent    = data.role === 'admin' ? 'Admin' : 'Free';
     document.getElementById('user-country').textContent = data.country || '—';
     document.getElementById('user-since').textContent   = data.created_at
       ? new Date(data.created_at).toLocaleDateString('en-GB', { month:'short', year:'numeric' }) : '—';
-
-    if (data.role === 'vip' || data.role === 'admin') {
-      document.getElementById('upgrade-banner').style.display = 'none';
-    }
-
-    await loadSubscription();
   } catch(e) { /* stay on page during dev */ }
-}
-
-// Cancel subscription
-document.getElementById('cancel-sub-btn')?.addEventListener('click', async () => {
-  if (!confirm('Cancel your VIP subscription? You will keep access until the expiry date.')) return;
-  const btn = document.getElementById('cancel-sub-btn');
-  btn.disabled = true;
-  btn.textContent = 'Cancelling...';
-  const json = await apiFetch('POST', '/api/subscriptions/cancel');
-  if (json.success) {
-    showToast('Subscription cancelled. Access continues until expiry.', 'info');
-    setTimeout(() => location.reload(), 2000);
-  } else {
-    showToast(json.message || 'Failed to cancel.', 'error');
-    btn.disabled = false;
-    btn.innerHTML = '<span class="material-icons-round">cancel</span>Cancel Subscription';
-  }
-});
-
-// VIP success toast on redirect back from payment
-const params = new URLSearchParams(window.location.search);
-if (params.get('vip') === 'success') {
-  showToast('🎉 Welcome to VIP! Your subscription is now active.', 'success');
-  history.replaceState({}, '', '/dashboard.html');
 }
 
 checkAuth();

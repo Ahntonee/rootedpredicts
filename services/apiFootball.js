@@ -229,12 +229,19 @@ function evaluateTip(tip, market, goals, teams) {
 
 // ── H2H, form, standings, stats
 async function fetchH2H(team1Id, team2Id, last = 10) {
-  const { data } = await request('/fixtures/headtohead', { h2h:`${team1Id}-${team2Id}`, last });
-  return data;
+  // 'last' is a paid-plan parameter — fetch by season instead and slice client-side
+  const { data } = await request('/fixtures/headtohead', {
+    h2h:    `${team1Id}-${team2Id}`,
+    season: CURRENT_SEASON,
+  });
+  return data.slice(0, last);
 }
 async function fetchTeamForm(teamId, last = 5) {
-  const { data } = await request('/fixtures', { team: teamId, last, season: CURRENT_SEASON });
-  return data;
+  // 'last' is a paid-plan parameter — fetch by season and slice client-side
+  const { data } = await request('/fixtures', { team: teamId, season: CURRENT_SEASON });
+  // Sort descending by date so slice(0, last) gives the most recent
+  data.sort((a, b) => new Date(b.fixture.date) - new Date(a.fixture.date));
+  return data.slice(0, last);
 }
 async function fetchStandings(leagueId, season = CURRENT_SEASON) {
   const { data } = await request('/standings', { league: leagueId, season });
@@ -481,9 +488,23 @@ async function autoPredictFixtures(db, options = {}) {
 function getRequestCount()   { return dailyRequestCount; }
 function getRemainingCount() { checkAndResetDaily(); return 7400 - dailyRequestCount; }
 
+// ── Fetch finished fixtures for a league (for rate/metric calculations)
+async function fetchLeagueFixtures(leagueId, season = CURRENT_SEASON, opts = {}) {
+  const params = { league: leagueId, season, ...opts };
+  return request('/fixtures', params);
+}
+
+// ── Fetch fixtures by date (optionally filtered by league)
+async function fetchFixturesByDate(date, leagueId = null, season = CURRENT_SEASON) {
+  const params = { date, season, timezone: 'UTC' };
+  if (leagueId) params.league = leagueId;
+  return request('/fixtures', params);
+}
+
 module.exports = {
   syncLeagues, syncTeams, syncFixtures, syncResults,
   fetchH2H, fetchTeamForm, fetchStandings, fetchTeamStats,
+  fetchLeagueFixtures, fetchFixturesByDate,
   calculateFormString, evaluateTip, mapCountryToContinent,
   isPopularLeague, getRequestCount, getRemainingCount, CURRENT_SEASON,
   researchFixture, autoPredictFixtures,

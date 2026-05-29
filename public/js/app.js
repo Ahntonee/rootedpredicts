@@ -111,15 +111,15 @@
             <a href="/leagues.html"         class="nav-link ${active('/leagues.html')}">Leagues</a>
             <a href="/leaderboard.html"     class="nav-link ${active('/leaderboard.html')}">Leaderboard</a>
             <a href="/blog.html"            class="nav-link ${active('/blog.html')}">Blog</a>
-            <a href="/pricing.html"         class="nav-link ${active('/pricing.html')}">VIP</a>
           </nav>
           <div class="header-actions">
             <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
               <span class="material-icons-round" id="theme-icon">light_mode</span>
             </button>
             <a href="/login.html" class="btn-login">Log In</a>
-            <a href="/pricing.html" class="btn-vip">
-              <span class="material-icons-round" style="font-size:0.85rem;vertical-align:middle;margin-right:4px;">workspace_premium</span>Get VIP
+            <a href="https://t.me/afropredict" target="_blank" rel="noopener noreferrer" class="btn-telegram">
+              <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
+              Telegram
             </a>
             <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
               <span class="material-icons-round">menu</span>
@@ -159,29 +159,6 @@
 
     el.innerHTML = `
       <div class="container">
-        <div class="ad-slot-footer" aria-label="Advertisement">
-          <!--
-            ══════════════════════════════════════════════════
-            GOOGLE ADSENSE — ABOVE FOOTER SLOT
-            ══════════════════════════════════════════════════
-            STEP 1: Add this to <head> of every page (or app.js injectHeader):
-              <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
-
-            STEP 2: Replace the content of this div with:
-              <ins class="adsbygoogle"
-                   style="display:block"
-                   data-ad-client="ca-pub-XXXXXXXXXXXXXXXXX"
-                   data-ad-slot="XXXXXXXXXX"
-                   data-ad-format="auto"
-                   data-full-width-responsive="true"></ins>
-              <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-
-            Replace XXXXXXXXXXXXXXXXX with your AdSense publisher ID
-            Replace XXXXXXXXXX with the slot ID for this placement
-            ══════════════════════════════════════════════════
-          -->
-          Advertisement
-        </div>
         <div class="gambling-notice">
           <p><strong>Responsible Gambling Notice:</strong> AfroPredict provides football predictions for informational and entertainment purposes only. We do not guarantee any results. Please gamble responsibly. Only bet what you can afford to lose. If gambling is causing you problems, visit <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" style="color:var(--red);">BeGambleAware.org</a> or call <strong style="color:#fff;">0808 8020 133</strong>.</p>
         </div>
@@ -191,7 +168,7 @@
               <span class="logo-mark">AP</span>
               <span class="logo-text" style="color:#fff;">AFRO<span>PREDICT</span></span>
             </a>
-            <p>Precision football predictions powered by data. Covering 1,200+ leagues worldwide. Free tips daily. VIP tips for serious bettors.</p>
+            <p>Precision football predictions powered by data. Free daily tips for the Premier League, La Liga, and Champions League. Bet smarter. Every single day.</p>
           </div>
           <div class="footer-col">
             <h4>Predictions</h4>
@@ -209,9 +186,9 @@
             <ul class="footer-links">
               <li><a href="/about.html">About AfroPredict</a></li>
               <li><a href="/blog.html">Blog</a></li>
-              <li><a href="/pricing.html">VIP Plans</a></li>
               <li><a href="/contact.html">Contact Us</a></li>
               <li><a href="/leagues.html">All Leagues</a></li>
+              <li><a href="https://t.me/afropredict" target="_blank" rel="noopener">Telegram Channel</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -374,8 +351,8 @@
   }
 
   // ── Render prediction cards from API data
-  function renderPredictionCard(pred, isVipUser = false) {
-    const isLocked = pred.locked || (pred.visibility === 'vip' && !isVipUser);
+  function renderPredictionCard(pred) {
+    const isLocked = false;
     const confClass = pred.confidence_score >= 80 ? 'high' : pred.confidence_score >= 65 ? 'medium' : 'low';
     const confWidth = pred.confidence_score || 0;
 
@@ -419,7 +396,7 @@
       : '';
 
     return `
-      <article class="pred-card${pred.visibility==='vip'?' vip-card':''}"
+      <article class="pred-card"
                data-market="${pred.market||''}"
                data-league="${pred.league_id||''}"
                data-continent="${pred.continent||''}"
@@ -432,9 +409,8 @@
             <span class="league-name">${pred.league_name||'League'} &middot; ${pred.league_country||''}</span>
           </div>
           <div class="pred-meta">
-            <span class="badge badge-${pred.visibility==='vip'?'vip':'free'}">
-              <span class="material-icons-round">${pred.visibility==='vip'?'workspace_premium':'lock_open'}</span>
-              ${pred.visibility==='vip'?'VIP':'FREE'}
+            <span class="badge badge-free">
+              <span class="material-icons-round">lock_open</span>FREE
             </span>
             ${resultBadge}
           </div>

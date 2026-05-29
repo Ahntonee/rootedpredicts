@@ -118,6 +118,7 @@
         <a href="/admin/index.html"       class="admin-nav-link"><span class="material-icons-round">dashboard</span>Dashboard</a>
         <div class="admin-nav-section">Content</div>
         <a href="/admin/predictions.html" class="admin-nav-link"><span class="material-icons-round">sports_soccer</span>Predictions</a>
+        <a href="/admin/analytics.html"   class="admin-nav-link"><span class="material-icons-round">insights</span>Intelligence</a>
         <a href="/admin/blog.html"        class="admin-nav-link"><span class="material-icons-round">article</span>Blog Posts</a>
         <div class="admin-nav-section">Management</div>
         <a href="/admin/users.html"       class="admin-nav-link"><span class="material-icons-round">people</span>Users</a>

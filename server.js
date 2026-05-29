@@ -180,12 +180,14 @@ app.use('/api/users',         require('./routes/users'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/blog',          require('./routes/blog'));
 app.use('/api/admin',         require('./routes/admin'));
+app.use('/api/admin/analytics', require('./routes/analytics'));
 app.use('/api/webhooks',      require('./routes/webhooks'));
 
 // ── Block invalid admin paths — only /admin/index.html is valid
 const VALID_ADMIN_PATHS = [
   '/admin/index.html',
   '/admin/predictions.html',
+  '/admin/analytics.html',
   '/admin/blog.html',
   '/admin/users.html',
   '/admin/leagues.html',
