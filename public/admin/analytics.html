@@ -146,6 +146,9 @@
     <button class="intel-tab" data-tab="intel">
       <span class="material-icons-round">manage_search</span>Match Intel
     </button>
+    <button class="intel-tab" data-tab="accuracy">
+      <span class="material-icons-round">track_changes</span>Accuracy Tracker
+    </button>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
@@ -369,6 +372,12 @@
               </div>
             </div>
 
+            <!-- Poisson Probabilities (populated after research) -->
+            <div id="ip-poisson-section" style="display:none;margin-bottom:20px;">
+              <div class="section-title"><span class="material-icons-round">functions</span>Poisson Probability Model</div>
+              <div id="ip-poisson-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+            </div>
+
             <!-- Stats comparison table -->
             <div class="section-title"><span class="material-icons-round">compare_arrows</span>Season Stats Comparison</div>
             <div id="ip-stats-compare" style="margin-bottom:20px;"></div>
@@ -421,6 +430,73 @@
       </div><!-- /intel-panel -->
     </div><!-- /#intel-panel -->
   </div><!-- /tab-intel -->
+
+  <!-- ═══════════════════════════════════════════════════
+       TAB 4 — ACCURACY TRACKER
+  ═══════════════════════════════════════════════════ -->
+  <div id="tab-accuracy" class="tab-content">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <h2 style="font-size:1.1rem;font-weight:700;margin:0;">Prediction Accuracy Tracker</h2>
+        <p style="font-size:0.8rem;color:var(--muted);margin:4px 0 0;">
+          Auto-updated nightly at 23:45 UTC after results sync. Tracks every resolved prediction.
+        </p>
+      </div>
+      <button class="btn btn-outline btn-sm" id="acc-refresh-btn">
+        <span class="material-icons-round">refresh</span>Refresh Now
+      </button>
+    </div>
+
+    <!-- Overall stats cards -->
+    <div class="metric-grid" id="acc-summary-cards">
+      <div class="metric-card">
+        <div class="m-val" id="acc-total">—</div>
+        <div class="m-label">Total Resolved</div>
+      </div>
+      <div class="metric-card green">
+        <div class="m-val" id="acc-won">—</div>
+        <div class="m-label">Won</div>
+      </div>
+      <div class="metric-card red">
+        <div class="m-val" id="acc-lost">—</div>
+        <div class="m-label">Lost</div>
+      </div>
+      <div class="metric-card yellow">
+        <div class="m-val" id="acc-pct">—</div>
+        <div class="m-label">Accuracy</div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-bottom:24px;">
+      <!-- By Market -->
+      <div class="card" style="padding:16px 20px;">
+        <div class="section-title"><span class="material-icons-round">category</span>By Market</div>
+        <div id="acc-by-market-wrap">
+          <p style="color:var(--muted);font-size:0.85rem;">Loading...</p>
+        </div>
+      </div>
+      <!-- By Confidence Band -->
+      <div class="card" style="padding:16px 20px;">
+        <div class="section-title"><span class="material-icons-round">speed</span>By Confidence Band</div>
+        <div id="acc-by-conf-wrap">
+          <p style="color:var(--muted);font-size:0.85rem;">Loading...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calibration table -->
+    <div class="card" style="padding:16px 20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div class="section-title" style="margin:0;"><span class="material-icons-round">table_chart</span>Calibration Table</div>
+        <span style="font-size:0.75rem;color:var(--muted);">Min 10 predictions per band to appear</span>
+      </div>
+      <div id="acc-calibration-wrap">
+        <p style="color:var(--muted);font-size:0.85rem;">Loading calibration data...</p>
+      </div>
+    </div>
+
+  </div><!-- /tab-accuracy -->
 
 </main>
 
@@ -528,12 +604,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('ip-create-btn').addEventListener('click', () => openCreateModal(false));
   document.getElementById('ip-edit-create-btn').addEventListener('click', () => openCreateModal(true));
   document.getElementById('cp-save-btn').addEventListener('click', savePrediction);
+
+  // Accuracy tab refresh button
+  document.getElementById('acc-refresh-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('acc-refresh-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite">refresh</span>Refreshing...';
+    try {
+      const json = await Admin.api('POST', '/api/admin/analytics/accuracy-refresh');
+      if (json.success) {
+        Admin.toast(json.data.message, 'success');
+        await loadAccuracyTab();
+      } else {
+        Admin.toast(json.message || 'Refresh failed', 'error');
+      }
+    } catch(e) { Admin.toast('Error: ' + e.message, 'error'); }
+    finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-icons-round">refresh</span>Refresh Now';
+    }
+  });
 });
 
 // ── Switch Tab ───────────────────────────────────────────────
 function switchTab(tab) {
   document.querySelectorAll('.intel-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+  if (tab === 'accuracy') loadAccuracyTab();
 }
 
 // ── Load Leagues ─────────────────────────────────────────────
@@ -938,15 +1035,25 @@ function renderFixtureIntel(d) {
       `${d.away_standing.rank}th · ${d.away_standing.points}pts`;
   }
 
-  // Form pips
-  document.getElementById('ip-home-form-label').textContent = d.fixture.home.name;
-  document.getElementById('ip-away-form-label').textContent = d.fixture.away.name;
-  document.getElementById('ip-home-form-pips').innerHTML = renderFormPips(d.home_form);
-  document.getElementById('ip-away-form-pips').innerHTML = renderFormPips(d.away_form);
+  // Form pips — show venue-specific form in brackets when available
+  document.getElementById('ip-home-form-label').textContent = d.fixture.home.name +
+    (d.home_form_venue ? ' (home)' : '');
+  document.getElementById('ip-away-form-label').textContent = d.fixture.away.name +
+    (d.away_form_venue ? ' (away)' : '');
+  document.getElementById('ip-home-form-pips').innerHTML =
+    renderFormPips(d.home_form_venue || d.home_form) +
+    (d.home_form_venue && d.home_form_venue !== d.home_form
+      ? `<span style="font-size:0.65rem;color:var(--muted);margin-left:4px;">(overall: ${d.home_form})</span>` : '');
+  document.getElementById('ip-away-form-pips').innerHTML =
+    renderFormPips(d.away_form_venue || d.away_form) +
+    (d.away_form_venue && d.away_form_venue !== d.away_form
+      ? `<span style="font-size:0.65rem;color:var(--muted);margin-left:4px;">(overall: ${d.away_form})</span>` : '');
 
-  // H2H
+  // H2H — handle recent|older pipe format
   const h2hSummary = d.h2h_summary || 'H0-A0-D0';
-  const m = h2hSummary.match(/H(\d+)-A(\d+)-D(\d+)/);
+  // Extract first block (recent, or full if no pipe)
+  const h2hFirst = h2hSummary.split('|')[0];
+  const m = h2hFirst.match(/H(\d+)-A(\d+)-D(\d+)/);
   if (m) {
     document.getElementById('ip-h2h-home-wins').textContent = m[1];
     document.getElementById('ip-h2h-draws').textContent     = m[3];
@@ -955,17 +1062,43 @@ function renderFixtureIntel(d) {
   document.getElementById('ip-h2h-home-label').textContent = d.fixture.home.name + ' Wins';
   document.getElementById('ip-h2h-away-label').textContent = d.fixture.away.name + ' Wins';
   const h2hTotal = m ? (parseInt(m[1]) + parseInt(m[2]) + parseInt(m[3])) : 0;
-  document.getElementById('ip-h2h-note').textContent = h2hTotal ? `Last ${h2hTotal} H2H meetings` : 'No H2H data available';
+  const isRecent  = h2hSummary.includes('|');
+  document.getElementById('ip-h2h-note').textContent =
+    h2hTotal ? `Last ${h2hTotal} ${isRecent ? 'recent' : ''} H2H meetings` : 'No H2H data available';
+
+  // Poisson probabilities panel
+  if (d.poisson) {
+    const p = d.poisson;
+    document.getElementById('ip-poisson-grid').innerHTML = `
+      ${poissonChip('Home Win', p.home_win + '%', p.home_win >= 48 ? 'green' : '')}
+      ${poissonChip('Draw', p.draw + '%', '')}
+      ${poissonChip('Away Win', p.away_win + '%', p.away_win >= 40 ? 'red' : '')}
+      ${poissonChip('Over 1.5', p.over15 + '%', p.over15 >= 70 ? 'green' : '')}
+      ${poissonChip('Over 2.5', p.over25 + '%', p.over25 >= 55 ? 'green' : '')}
+      ${poissonChip('Over 3.5', p.over35 + '%', p.over35 >= 45 ? 'yellow' : '')}
+      ${poissonChip('BTTS', p.btts + '%', p.btts >= 55 ? 'green' : '')}
+      ${poissonChip('Under 2.5', p.under25 + '%', p.under25 >= 55 ? 'blue' : '')}
+    `;
+    document.getElementById('ip-poisson-section').style.display = 'block';
+  } else {
+    document.getElementById('ip-poisson-section').style.display = 'none';
+  }
 
   // Stats comparison
   if (d.home_stats && d.away_stats) {
     const hs = d.home_stats, as = d.away_stats;
     document.getElementById('ip-stats-compare').innerHTML = `
       <table class="rank-table">
-        <thead><tr><th style="text-align:right;">${escHtml(d.fixture.home.name)}</th><th>Stat</th><th>${escHtml(d.fixture.away.name)}</th></tr></thead>
+        <thead><tr>
+          <th style="text-align:right;">${escHtml(d.fixture.home.name)}</th>
+          <th style="text-align:center;">Stat</th>
+          <th>${escHtml(d.fixture.away.name)}</th>
+        </tr></thead>
         <tbody>
-          ${statRow('Goals Scored Avg', hs.goals_for_avg, as.goals_for_avg, 'higher-green')}
-          ${statRow('Goals Conceded Avg', hs.goals_against_avg, as.goals_against_avg, 'lower-green')}
+          ${statRow('Goals Scored Avg (Total)', hs.goals_for_avg, as.goals_for_avg, 'higher-green')}
+          ${statRow('Goals Scored Avg (Venue)', hs.goals_for_avg_home || hs.goals_for_avg, as.goals_for_avg_away || as.goals_for_avg, 'higher-green')}
+          ${statRow('Goals Conceded Avg (Total)', hs.goals_against_avg, as.goals_against_avg, 'lower-green')}
+          ${statRow('Goals Conceded Avg (Venue)', hs.goals_against_home || hs.goals_against_avg, as.goals_against_away || as.goals_against_avg, 'lower-green')}
           ${statRow('Wins', hs.wins, as.wins, 'higher-green')}
           ${statRow('Draws', hs.draws, as.draws, 'neutral')}
           ${statRow('Losses', hs.losses, as.losses, 'lower-green')}
@@ -1117,6 +1250,103 @@ async function savePrediction() {
     btn.disabled = false;
     btn.innerHTML = '<span class="material-icons-round">save</span>Save Prediction';
   }
+}
+
+// ── Accuracy Tab ──────────────────────────────────────────────
+async function loadAccuracyTab() {
+  try {
+    const [sumJson, calJson] = await Promise.all([
+      Admin.api('GET', '/api/admin/analytics/accuracy-summary'),
+      Admin.api('GET', '/api/admin/analytics/accuracy-calibration'),
+    ]);
+
+    if (sumJson.success) {
+      const s = sumJson.data;
+      const ov = s.overall || {};
+      document.getElementById('acc-total').textContent = ov.total || 0;
+      document.getElementById('acc-won').textContent   = ov.won   || 0;
+      const lost = (ov.total || 0) - (ov.won || 0);
+      document.getElementById('acc-lost').textContent  = lost >= 0 ? lost : 0;
+      document.getElementById('acc-pct').textContent   =
+        ov.total > 0 ? (ov.accuracy_pct || 0) + '%' : '—';
+
+      // By market
+      const bm = s.by_market || [];
+      document.getElementById('acc-by-market-wrap').innerHTML = bm.length
+        ? `<table class="rank-table">
+             <thead><tr><th>Market</th><th>Total</th><th>Won</th><th>Accuracy</th></tr></thead>
+             <tbody>${bm.map(r => `<tr>
+               <td>${r.market}</td>
+               <td>${r.total}</td>
+               <td style="color:var(--green);font-weight:600;">${r.won}</td>
+               <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
+             </tr>`).join('')}</tbody>
+           </table>`
+        : '<p style="color:var(--muted);font-size:0.85rem;">No resolved predictions yet.</p>';
+
+      // By confidence band
+      const bc = s.by_confidence || [];
+      document.getElementById('acc-by-conf-wrap').innerHTML = bc.length
+        ? `<table class="rank-table">
+             <thead><tr><th>Confidence Band</th><th>Total</th><th>Won</th><th>Accuracy</th></tr></thead>
+             <tbody>${bc.map(r => `<tr>
+               <td><span style="font-family:var(--font-head);font-weight:700;">${r.confidence_band}–${r.confidence_band+4}%</span></td>
+               <td>${r.total}</td>
+               <td style="color:var(--green);font-weight:600;">${r.won}</td>
+               <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
+             </tr>`).join('')}</tbody>
+           </table>`
+        : '<p style="color:var(--muted);font-size:0.85rem;">No data yet.</p>';
+    }
+
+    if (calJson.success) {
+      const rows = calJson.data || [];
+      document.getElementById('acc-calibration-wrap').innerHTML = rows.length
+        ? `<table class="rank-table">
+             <thead><tr>
+               <th>Market</th><th>Band</th><th>Total</th>
+               <th>Won</th><th>Accuracy</th><th>Last Updated</th>
+             </tr></thead>
+             <tbody>${rows.map(r => `<tr>
+               <td>${r.market}</td>
+               <td><span style="font-family:var(--font-head);font-weight:700;">${r.confidence_band}–${r.confidence_band+4}%</span></td>
+               <td>${r.total_predictions}</td>
+               <td style="color:var(--green);font-weight:600;">${r.correct_predictions}</td>
+               <td>${accBadge(r.accuracy_pct)}<strong>${r.accuracy_pct}%</strong></td>
+               <td style="font-size:0.75rem;color:var(--muted);">${r.last_updated ? r.last_updated.split('T')[0] : '—'}</td>
+             </tr>`).join('')}</tbody>
+           </table>`
+        : '<p style="color:var(--muted);font-size:0.85rem;">Not enough data yet. Needs 10+ resolved predictions per band.</p>';
+    }
+  } catch(e) {
+    Admin.toast('Error loading accuracy data: ' + e.message, 'error');
+  }
+}
+
+function accBadge(pct) {
+  const p = parseFloat(pct) || 0;
+  const color = p >= 65 ? 'var(--green)' : p >= 50 ? 'var(--yellow)' : 'var(--red)';
+  return `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle;"></span>`;
+}
+
+// ── Poisson chip for match intel panel ────────────────────────
+function poissonChip(label, value, color) {
+  const bg = color === 'green' ? 'rgba(26,138,68,.1)' :
+             color === 'yellow' ? 'rgba(212,160,23,.1)' :
+             color === 'red'    ? 'rgba(231,76,60,.08)' :
+             color === 'blue'   ? 'rgba(38,165,228,.08)' : 'var(--surface)';
+  const border = color === 'green' ? 'rgba(26,138,68,.3)' :
+                 color === 'yellow' ? 'rgba(212,160,23,.3)' :
+                 color === 'red'    ? 'rgba(231,76,60,.25)' :
+                 color === 'blue'   ? 'rgba(38,165,228,.25)' : 'var(--border)';
+  const textColor = color === 'green' ? 'var(--green)' :
+                    color === 'yellow' ? 'var(--yellow)' :
+                    color === 'red'    ? 'var(--red)' :
+                    color === 'blue'   ? '#26A5E4' : 'var(--text)';
+  return `<div style="background:${bg};border:1px solid ${border};border-radius:8px;padding:10px;text-align:center;">
+    <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:${textColor};line-height:1;">${value}</div>
+    <div style="font-size:0.7rem;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em;">${label}</div>
+  </div>`;
 }
 
 // ── Utilities ─────────────────────────────────────────────────

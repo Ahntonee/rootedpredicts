@@ -6,6 +6,7 @@ const cron       = require('node-cron');
 const db         = require('../config/db');
 const apiSvc     = require('./apiFootball');
 const confidence = require('./confidence');
+const accuracy   = require('./accuracy');
 
 const SYNC_SCHEDULE    = process.env.SYNC_CRON_SCHEDULE || '0 6 * * *';
 const DAILY_SYNC_LEAGUES = [39, 140, 135, 78, 61, 2, 3, 253, 71, 6, 323];
@@ -35,7 +36,7 @@ async function runDailySync() {
     console.log('[SCHEDULER] Running auto-predict on new fixtures...');
     try {
       await sleep(2000);
-      const result = await apiSvc.autoPredictFixtures(db, { limit: 30, minConfidence: 55, autoPublish: true });
+      const result = await apiSvc.autoPredictFixtures(db, { limit: 30, minConfidence: 65, autoPublish: true });
       console.log(`[SCHEDULER] Auto-predict: ${result.enriched} enriched, ${result.errors} errors`);
     } catch(e) { console.error('[SCHEDULER] Auto-predict failed:', e.message); }
   }
@@ -83,16 +84,35 @@ async function runConfidenceScoring() {
   } catch(e) { console.error('[SCHEDULER] Confidence scoring error:', e.message); }
 }
 
+// ── Run after results sync — logs outcomes and recalculates accuracy stats ────
+async function runAccuracyTracking() {
+  console.log('[SCHEDULER] Accuracy tracking started');
+  try {
+    const logged = await accuracy.logUntracked(db);
+    if (logged > 0) {
+      await accuracy.recalculateStats(db);
+      console.log(`[SCHEDULER] Accuracy tracking: ${logged} new outcomes logged and stats updated`);
+    } else {
+      console.log('[SCHEDULER] Accuracy tracking: no new outcomes to log');
+    }
+  } catch(e) { console.error('[SCHEDULER] Accuracy tracking error:', e.message); }
+}
+
 function startScheduler() {
   if (!cron.validate(SYNC_SCHEDULE)) { console.error(`[SCHEDULER] Invalid cron: ${SYNC_SCHEDULE}`); return; }
   cron.schedule(SYNC_SCHEDULE, runDailySync, { timezone: 'UTC' });
   console.log(`[SCHEDULER] Daily fixture sync: ${SYNC_SCHEDULE} UTC`);
-  cron.schedule('30 23 * * *', runResultsSync, { timezone: 'UTC' });
+  cron.schedule('30 23 * * *', runResultsSync,           { timezone: 'UTC' });
   console.log('[SCHEDULER] Results sync: 23:30 UTC daily');
-  cron.schedule('0 * * * *', runSubscriptionExpiryCheck, { timezone: 'UTC' });
+  cron.schedule('45 23 * * *', runAccuracyTracking,       { timezone: 'UTC' });
+  console.log('[SCHEDULER] Accuracy tracking: 23:45 UTC daily (after results sync)');
+  cron.schedule('0 * * * *',   runSubscriptionExpiryCheck, { timezone: 'UTC' });
   console.log('[SCHEDULER] Subscription expiry check: every hour');
-  cron.schedule('15 6 * * *', runConfidenceScoring, { timezone: 'UTC' });
+  cron.schedule('15 6 * * *',  runConfidenceScoring,      { timezone: 'UTC' });
   console.log('[SCHEDULER] Confidence scoring: 06:15 UTC daily');
 }
 
-module.exports = { startScheduler, runDailySync, runResultsSync, runSubscriptionExpiryCheck };
+module.exports = {
+  startScheduler, runDailySync, runResultsSync,
+  runSubscriptionExpiryCheck, runAccuracyTracking,
+};

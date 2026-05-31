@@ -7,6 +7,7 @@ const express  = require('express');
 const router   = express.Router();
 const db       = require('../config/db');
 const api      = require('../services/apiFootball');
+const accuracy = require('../services/accuracy');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { asyncHandler, successResponse, errorResponse } = require('../utils/helpers');
 
@@ -246,13 +247,35 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
 }));
 
 // ── GET /api/admin/analytics/fixture-intel?fixture_id=12345
-// Full match research: H2H, form, standings, stats, AI tip suggestion
+// Full match research: H2H, form, standings, stats, Poisson probabilities, AI tip suggestion
 router.get('/fixture-intel', asyncHandler(async (req, res) => {
   const { fixture_id } = req.query;
   if (!fixture_id) return errorResponse(res, 'fixture_id is required', 400);
 
   const data = await api.researchFixture(parseInt(fixture_id));
   return successResponse(res, data);
+}));
+
+// ── GET /api/admin/analytics/accuracy-summary
+// Overall accuracy stats and per-market/confidence-band breakdown
+router.get('/accuracy-summary', asyncHandler(async (req, res) => {
+  const summary = await accuracy.getSummary(db);
+  return successResponse(res, summary);
+}));
+
+// ── GET /api/admin/analytics/accuracy-calibration
+// Per-market + confidence-band accuracy table (min 10 predictions)
+router.get('/accuracy-calibration', asyncHandler(async (req, res) => {
+  const calibration = await accuracy.getCalibration(db);
+  return successResponse(res, calibration);
+}));
+
+// ── POST /api/admin/analytics/accuracy-refresh
+// Manually trigger accuracy log + stats recalculation
+router.post('/accuracy-refresh', asyncHandler(async (req, res) => {
+  const logged = await accuracy.logUntracked(db);
+  if (logged > 0) await accuracy.recalculateStats(db);
+  return successResponse(res, { logged, message: `${logged} new outcomes logged and stats updated` });
 }));
 
 module.exports = router;

@@ -422,7 +422,59 @@ const MIGRATIONS = [
   },
 
   // ----------------------------------------------------------
-  // 15. SEED: Default admin user
+  // 15. ACCURACY LOG — tracks every resolved prediction
+  //     so we can measure real-world accuracy per market/band
+  // ----------------------------------------------------------
+  {
+    name: 'Create prediction_accuracy_log table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS prediction_accuracy_log (
+        id              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+        prediction_id   INT UNSIGNED    NOT NULL,
+        market          VARCHAR(50)     NOT NULL DEFAULT '1X2',
+        tip             VARCHAR(100)    NOT NULL DEFAULT '',
+        confidence_band TINYINT UNSIGNED NOT NULL DEFAULT 50,
+        league_id       INT UNSIGNED    DEFAULT NULL,
+        result          ENUM('won','lost') NOT NULL,
+        created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+        PRIMARY KEY (id),
+        UNIQUE KEY uniq_pred   (prediction_id),
+        INDEX idx_market       (market),
+        INDEX idx_band         (confidence_band),
+        INDEX idx_league       (league_id),
+        INDEX idx_result       (result)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `,
+  },
+
+  // ----------------------------------------------------------
+  // 16. ACCURACY STATS — aggregated win-rate by market + band
+  //     Updated by the accuracy service after every results sync
+  // ----------------------------------------------------------
+  {
+    name: 'Create accuracy_stats table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS accuracy_stats (
+        id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+        market              VARCHAR(50)     NOT NULL DEFAULT '1X2',
+        confidence_band     TINYINT UNSIGNED NOT NULL DEFAULT 50,
+        league_id           INT UNSIGNED    DEFAULT NULL,
+        total_predictions   INT UNSIGNED    NOT NULL DEFAULT 0,
+        correct_predictions INT UNSIGNED    NOT NULL DEFAULT 0,
+        accuracy_pct        DECIMAL(5,2)    NOT NULL DEFAULT 0.00,
+        last_updated        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+        PRIMARY KEY (id),
+        UNIQUE KEY uniq_band (market, confidence_band, league_id),
+        INDEX idx_accuracy   (accuracy_pct DESC)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `,
+  },
+
+  // ----------------------------------------------------------
+  // 17. SEED: Default admin user
   //     Password: Admin@Afro! (bcrypt hash — CHANGE IMMEDIATELY)
   // ----------------------------------------------------------
   {

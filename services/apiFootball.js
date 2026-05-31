@@ -204,26 +204,44 @@ async function syncResults(date) {
   return { updated };
 }
 
-// ── Evaluate tip outcome
+// ── Evaluate tip outcome — handles all standard tip formats ───────────────────
 function evaluateTip(tip, market, goals, teams) {
-  const homeGoals = goals.home ?? 0;
-  const awayGoals = goals.away ?? 0;
+  const homeGoals = goals?.home ?? 0;
+  const awayGoals = goals?.away ?? 0;
   const total     = homeGoals + awayGoals;
-  const homeWon   = teams.home.winner === true;
-  const awayWon   = teams.away.winner === true;
+  const homeWon   = teams?.home?.winner === true;
+  const awayWon   = teams?.away?.winner === true;
   const isDraw    = !homeWon && !awayWon;
-  const t         = (tip || '').toLowerCase();
+  const t         = (tip || '').trim().toLowerCase();
 
-  if (t.includes('over 2.5'))  return total > 2.5  ? 'won' : 'lost';
-  if (t.includes('over 1.5'))  return total > 1.5  ? 'won' : 'lost';
-  if (t.includes('over 3.5'))  return total > 3.5  ? 'won' : 'lost';
-  if (t.includes('under 2.5')) return total < 2.5  ? 'won' : 'lost';
-  if (t.includes('under 1.5')) return total < 1.5  ? 'won' : 'lost';
-  if (t.includes('btts - yes') || t === 'btts yes') return (homeGoals>0&&awayGoals>0) ? 'won':'lost';
-  if (t.includes('btts - no')  || t === 'btts no')  return (homeGoals>0&&awayGoals>0) ? 'lost':'won';
-  if (t.includes('home win'))  return homeWon ? 'won' : 'lost';
-  if (t.includes('away win'))  return awayWon ? 'won' : 'lost';
-  if (t.includes('draw'))      return isDraw  ? 'won' : 'lost';
+  // ── Over/Under: regex captures any line (1.5, 2.5, 3.5, 4.5, 0.5…)
+  const overM  = t.match(/over\s+(\d+(?:\.\d+)?)/);
+  const underM = t.match(/under\s+(\d+(?:\.\d+)?)/);
+  if (overM)  return total > parseFloat(overM[1])  ? 'won' : 'lost';
+  if (underM) return total < parseFloat(underM[1]) ? 'won' : 'lost';
+
+  // ── BTTS
+  const bothScore = homeGoals > 0 && awayGoals > 0;
+  if (t.includes('both teams not to score')) return bothScore ? 'lost' : 'won';
+  if (t.includes('both teams to score'))     return bothScore ? 'won'  : 'lost';
+  if (t === 'btts' || t === 'btts yes' || t === 'btts - yes') return bothScore ? 'won'  : 'lost';
+  if (t === 'btts no' || t === 'btts - no')                   return bothScore ? 'lost' : 'won';
+
+  // ── 1X2 short notation (exact match only — must come before keyword checks)
+  if (t === '1')  return homeWon ? 'won' : 'lost';
+  if (t === 'x')  return isDraw  ? 'won' : 'lost';
+  if (t === '2')  return awayWon ? 'won' : 'lost';
+
+  // ── Double chance
+  if (t === '1x' || t.includes('home or draw')) return (homeWon || isDraw) ? 'won' : 'lost';
+  if (t === '2x' || t.includes('away or draw')) return (awayWon || isDraw) ? 'won' : 'lost';
+  if (t === '12' || t.includes('home or away')) return !isDraw             ? 'won' : 'lost';
+
+  // ── 1X2 long form
+  if (t.includes('home win') || t.includes('home victory') || t === 'home') return homeWon ? 'won' : 'lost';
+  if (t.includes('away win') || t.includes('away victory') || t === 'away') return awayWon ? 'won' : 'lost';
+  if (t.includes('draw'))                                                    return isDraw  ? 'won' : 'lost';
+
   return null;
 }
 
@@ -259,52 +277,152 @@ function calculateFormString(fixtures, teamId) {
   }).join('');
 }
 
-// ── Generate a tip suggestion from enriched data ──────────────────────────────
-function generateTipSuggestion(homeForm, awayForm, h2hData, homeStats, awayStats) {
-  const homeScore = scoreForm(homeForm);
-  const awayScore = scoreForm(awayForm);
-  const diff      = homeScore - awayScore;
-
-  // H2H advantage
-  let h2hAdvantage = 0;
-  if (h2hData && h2hData.length) {
-    const last10 = h2hData.slice(0, 10);
-    const homeWins = last10.filter(f => f.teams.home.winner).length;
-    const awayWins = last10.filter(f => f.teams.away.winner).length;
-    h2hAdvantage = (homeWins - awayWins) / last10.length;
-  }
-
-  // Goals average
-  let avgGoals = null;
-  if (homeStats && awayStats) {
-    const hg = parseFloat(homeStats.goals?.for?.average?.total) || null;
-    const ag = parseFloat(awayStats.goals?.for?.average?.total) || null;
-    if (hg !== null && ag !== null) avgGoals = hg + ag;
-  }
-
-  const combinedDiff = diff * 0.6 + h2hAdvantage * 0.4;
-
-  // Over/Under suggestion based on goals average
-  if (avgGoals !== null) {
-    if (avgGoals > 3.0) return { tip: 'Over 2.5', market: 'Over/Under', reason: `Combined goals avg: ${avgGoals.toFixed(1)}` };
-    if (avgGoals < 1.8) return { tip: 'Under 2.5', market: 'Over/Under', reason: `Combined goals avg: ${avgGoals.toFixed(1)}` };
-  }
-
-  // Win/Draw suggestion
-  if (combinedDiff > 0.25)  return { tip: 'Home Win', market: '1X2', reason: `Home advantage: form ${(homeScore*100).toFixed(0)}% vs ${(awayScore*100).toFixed(0)}%` };
-  if (combinedDiff < -0.25) return { tip: 'Away Win', market: '1X2', reason: `Away stronger: form ${(awayScore*100).toFixed(0)}% vs ${(homeScore*100).toFixed(0)}%` };
-  return { tip: 'Draw', market: '1X2', reason: `Evenly matched: home ${(homeScore*100).toFixed(0)}% away ${(awayScore*100).toFixed(0)}%` };
+// ── Poisson distribution helpers ──────────────────────────────────────────────
+function poissonPMF(lambda, k) {
+  if (lambda <= 0) return k === 0 ? 1 : 0;
+  let p = Math.exp(-lambda);
+  for (let i = 1; i <= k; i++) p *= lambda / i;
+  return Math.max(0, p);
 }
 
+/**
+ * Compute goal-market probabilities using a joint Poisson model.
+ * Home goals ~ Poisson(lambda_h), Away goals ~ Poisson(lambda_a), independent.
+ * Returns: { home, draw, away, over05, over15, over25, over35, under25, under15, btts }
+ */
+function goalProbabilities(lambda_h, lambda_a, maxG = 10) {
+  const ph = Array.from({ length: maxG + 1 }, (_, k) => poissonPMF(lambda_h, k));
+  const pa = Array.from({ length: maxG + 1 }, (_, k) => poissonPMF(lambda_a, k));
+  let pHome = 0, pDraw = 0, pAway = 0;
+  const pTotal = new Array(maxG * 2 + 2).fill(0);
+  for (let h = 0; h <= maxG; h++) {
+    for (let a = 0; a <= maxG; a++) {
+      const p = ph[h] * pa[a];
+      pTotal[h + a] += p;
+      if (h > a) pHome += p; else if (h === a) pDraw += p; else pAway += p;
+    }
+  }
+  return {
+    home:    pHome,
+    draw:    pDraw,
+    away:    pAway,
+    over05:  1 - pTotal[0],
+    over15:  1 - pTotal[0] - pTotal[1],
+    over25:  1 - pTotal[0] - pTotal[1] - pTotal[2],
+    over35:  1 - pTotal[0] - pTotal[1] - pTotal[2] - pTotal[3],
+    under25: pTotal[0] + pTotal[1] + pTotal[2],
+    under15: pTotal[0] + pTotal[1],
+    btts:    (1 - ph[0]) * (1 - pa[0]),  // P(home≥1) × P(away≥1)
+  };
+}
+
+// ── Form scorer: exponentially weighted W/D/L string ──────────────────────────
 function scoreForm(formStr) {
   if (!formStr) return 0.5;
   const chars = formStr.toUpperCase().replace(/[^WDL]/g, '').slice(0, 5).split('');
   if (!chars.length) return 0.5;
   const weights = [1.5, 1.2, 1.0, 0.8, 0.5];
   let s = 0, t = 0;
-  chars.forEach((c, i) => { const w = weights[i]||0.5; s += w*(c==='W'?1:c==='D'?0.4:0); t += w; });
+  chars.forEach((c, i) => { const w = weights[i] || 0.5; s += w * (c === 'W' ? 1 : c === 'D' ? 0.4 : 0); t += w; });
   return t > 0 ? s / t : 0.5;
 }
+
+// ── Generate a tip suggestion using Poisson model + form + H2H ────────────────
+/**
+ * Returns the highest-confidence tip from multiple signals:
+ *   1. Poisson model (uses home/away venue stats)
+ *   2. Form-based 1X2 signal with recency-weighted H2H
+ *
+ * @param {string} homeForm      Overall home-team form string (e.g. "WWDLW")
+ * @param {string} awayForm      Overall away-team form string
+ * @param {Array}  h2hData       Raw H2H fixture array (newest first)
+ * @param {object} homeStats     API /teams/statistics for home team
+ * @param {object} awayStats     API /teams/statistics for away team
+ * @param {string} homeFormVenue Home team's form specifically in HOME games
+ * @param {string} awayFormVenue Away team's form specifically in AWAY games
+ */
+function generateTipSuggestion(homeForm, awayForm, h2hData, homeStats, awayStats,
+                                homeFormVenue, awayFormVenue) {
+  const candidates = [];
+
+  // ── 1. Poisson model (requires team stats) ─────────────────────────────────
+  if (homeStats && awayStats) {
+    // Use venue-specific averages when available (home attack at home, away attack away)
+    const homeAtkH = parseFloat(homeStats.goals?.for?.average?.home  || homeStats.goals?.for?.average?.total)  || 0;
+    const homeDefH = parseFloat(homeStats.goals?.against?.average?.home || homeStats.goals?.against?.average?.total) || 0;
+    const awayAtkA = parseFloat(awayStats.goals?.for?.average?.away  || awayStats.goals?.for?.average?.total)  || 0;
+    const awayDefA = parseFloat(awayStats.goals?.against?.average?.away || awayStats.goals?.against?.average?.total) || 0;
+
+    if (homeAtkH > 0 && awayAtkA > 0) {
+      // λ_h = blend of home team's home scoring and away team's away conceding
+      const lambda_h = Math.max((homeAtkH + awayDefA) / 2, 0.1);
+      const lambda_a = Math.max((awayAtkA + homeDefH) / 2, 0.1);
+      const probs    = goalProbabilities(lambda_h, lambda_a);
+      const lambdaStr = `λ=${(lambda_h + lambda_a).toFixed(2)}`;
+
+      if (probs.over35 >= 0.45)
+        candidates.push({ tip: 'Over 3.5',  market: 'Over/Under', conf: probs.over35,
+          reason: `Poisson: P(>3.5g)=${pct(probs.over35)}% (${lambdaStr})` });
+      if (probs.over25 >= 0.55)
+        candidates.push({ tip: 'Over 2.5',  market: 'Over/Under', conf: probs.over25,
+          reason: `Poisson: P(>2.5g)=${pct(probs.over25)}% (${lambdaStr})` });
+      if (probs.over15 >= 0.72)
+        candidates.push({ tip: 'Over 1.5',  market: 'Over/Under', conf: probs.over15,
+          reason: `Poisson: P(>1.5g)=${pct(probs.over15)}% (${lambdaStr})` });
+      if (probs.under25 >= 0.58)
+        candidates.push({ tip: 'Under 2.5', market: 'Over/Under', conf: probs.under25,
+          reason: `Poisson: P(<2.5g)=${pct(probs.under25)}% (${lambdaStr})` });
+      if (probs.btts >= 0.60)
+        candidates.push({ tip: 'BTTS - Yes', market: 'BTTS', conf: probs.btts,
+          reason: `Poisson: P(BTTS)=${pct(probs.btts)}% (${lambdaStr})` });
+
+      // Poisson 1X2
+      if (probs.home >= 0.48)
+        candidates.push({ tip: 'Home Win',  market: '1X2', conf: probs.home,
+          reason: `Poisson: P(Home)=${pct(probs.home)}% (${lambdaStr})` });
+      else if (probs.away >= 0.42)
+        candidates.push({ tip: 'Away Win',  market: '1X2', conf: probs.away,
+          reason: `Poisson: P(Away)=${pct(probs.away)}% (${lambdaStr})` });
+    }
+  }
+
+  // ── 2. Form + recency-weighted H2H signal ──────────────────────────────────
+  // Prefer venue-specific form if available (home team at home / away team away)
+  const hFS = scoreForm(homeFormVenue || homeForm);
+  const aFS = scoreForm(awayFormVenue || awayForm);
+
+  let h2hAdv = 0;
+  if (h2hData && h2hData.length) {
+    let hwW = 0, awW = 0, tot = 0;
+    h2hData.slice(0, 10).forEach((f, i) => {
+      const w = Math.pow(0.80, i);  // exponential decay — recent matches worth more
+      if (f.teams.home.winner === true)      hwW += w;
+      else if (f.teams.away.winner === true) awW += w;
+      tot += w;
+    });
+    h2hAdv = tot > 0 ? (hwW - awW) / tot : 0;
+  }
+
+  const formDiff = hFS * 0.6 - aFS * 0.6 + h2hAdv * 0.4;
+  const formConf = 0.42 + Math.min(Math.abs(formDiff) * 0.55, 0.28);
+
+  if (formDiff > 0.12)
+    candidates.push({ tip: 'Home Win', market: '1X2', conf: formConf,
+      reason: `Form: home ${pct(hFS)}% vs away ${pct(aFS)}% + H2H` });
+  else if (formDiff < -0.12)
+    candidates.push({ tip: 'Away Win', market: '1X2', conf: formConf,
+      reason: `Form: away ${pct(aFS)}% vs home ${pct(hFS)}% + H2H` });
+  else
+    candidates.push({ tip: 'Draw', market: '1X2', conf: 0.35,
+      reason: `Evenly matched: home ${pct(hFS)}% away ${pct(aFS)}%` });
+
+  // Return highest-confidence candidate
+  candidates.sort((a, b) => b.conf - a.conf);
+  const best = candidates[0] || { tip: 'Home Win', market: '1X2', conf: 0.45, reason: 'Fallback' };
+  return { tip: best.tip, market: best.market, reason: best.reason };
+}
+
+function pct(v) { return Math.round((v || 0) * 100); }
 
 // ── Research a single fixture — returns enriched data for admin display ────────
 async function researchFixture(fixtureId) {
@@ -317,9 +435,10 @@ async function researchFixture(fixtureId) {
   const awayId   = fix.teams.away.id;
   const leagueId = fix.league.id;
 
+  // Fetch 15 recent fixtures per team (more than 5) so we can compute venue-specific form
   const [homeFormRaw, awayFormRaw, h2hRaw, homeStatsRaw, awayStatsRaw, standingsRaw] = await Promise.all([
-    fetchTeamForm(homeId, 5).catch(() => []),
-    fetchTeamForm(awayId, 5).catch(() => []),
+    fetchTeamForm(homeId, 15).catch(() => []),
+    fetchTeamForm(awayId, 15).catch(() => []),
     fetchH2H(homeId, awayId, 10).catch(() => []),
     fetchTeamStats(homeId, leagueId).catch(() => null),
     fetchTeamStats(awayId, leagueId).catch(() => null),
@@ -329,11 +448,37 @@ async function researchFixture(fixtureId) {
   const homeForm = calculateFormString(homeFormRaw, homeId);
   const awayForm = calculateFormString(awayFormRaw, awayId);
 
-  // H2H summary string
-  const h2hHomeWins = h2hRaw.filter(f => f.teams.home.winner === true || (f.teams.home.id === homeId && f.teams.home.winner)).length;
-  const h2hAwayWins = h2hRaw.filter(f => f.teams.away.winner === true || (f.teams.away.id === awayId && f.teams.away.winner)).length;
-  const h2hDraws    = h2hRaw.length - h2hHomeWins - h2hAwayWins;
-  const h2hSummary  = h2hRaw.length ? `H${h2hHomeWins}-A${h2hAwayWins}-D${h2hDraws}` : null;
+  // Venue-specific form: home team AT HOME, away team AWAY
+  const homeAtHomeFixtures = homeFormRaw.filter(f => f.teams.home.id === homeId);
+  const awayAtAwayFixtures = awayFormRaw.filter(f => f.teams.away.id === awayId);
+  const homeFormVenue = calculateFormString(homeAtHomeFixtures, homeId);
+  const awayFormVenue = calculateFormString(awayAtAwayFixtures, awayId);
+
+  // H2H summary — "recent|older" format for recency-weighted confidence scoring
+  // Counts from each team's perspective as HOME/AWAY in those H2H fixtures
+  function h2hCounts(fixtures) {
+    let hw = 0, aw = 0, dw = 0;
+    for (const f of fixtures) {
+      const hWinner = f.teams.home.winner === true;
+      const aWinner = f.teams.away.winner === true;
+      if (hWinner) hw++;
+      else if (aWinner) aw++;
+      else dw++;
+    }
+    return { hw, aw, dw };
+  }
+  const recentH2H = h2hRaw.slice(0, 5);
+  const olderH2H  = h2hRaw.slice(5, 10);
+  let h2hSummary  = null;
+  if (h2hRaw.length) {
+    const r = h2hCounts(recentH2H);
+    if (olderH2H.length) {
+      const o = h2hCounts(olderH2H);
+      h2hSummary = `H${r.hw}-A${r.aw}-D${r.dw}|H${o.hw}-A${o.aw}-D${o.dw}`;
+    } else {
+      h2hSummary = `H${r.hw}-A${r.aw}-D${r.dw}`;
+    }
+  }
 
   // Recent results detail
   const homeRecent = homeFormRaw.slice(0, 5).map(f => ({
@@ -359,7 +504,30 @@ async function researchFixture(fixtureId) {
     awayStanding = table.find(t => t.team.id === awayId);
   }
 
-  const suggestion = generateTipSuggestion(homeForm, awayForm, h2hRaw, homeStatsRaw, awayStatsRaw);
+  const suggestion = generateTipSuggestion(
+    homeForm, awayForm, h2hRaw, homeStatsRaw, awayStatsRaw,
+    homeFormVenue, awayFormVenue
+  );
+
+  // Compute Poisson probabilities for display in admin UI
+  let poissonProbs = null;
+  if (homeStatsRaw && awayStatsRaw) {
+    const homeAtkH = parseFloat(homeStatsRaw.goals?.for?.average?.home  || homeStatsRaw.goals?.for?.average?.total)  || 0;
+    const homeDefH = parseFloat(homeStatsRaw.goals?.against?.average?.home || homeStatsRaw.goals?.against?.average?.total) || 0;
+    const awayAtkA = parseFloat(awayStatsRaw.goals?.for?.average?.away  || awayStatsRaw.goals?.for?.average?.total)  || 0;
+    const awayDefA = parseFloat(awayStatsRaw.goals?.against?.average?.away || awayStatsRaw.goals?.against?.average?.total) || 0;
+    if (homeAtkH > 0 && awayAtkA > 0) {
+      const lambda_h = Math.max((homeAtkH + awayDefA) / 2, 0.1);
+      const lambda_a = Math.max((awayAtkA + homeDefH) / 2, 0.1);
+      const p = goalProbabilities(lambda_h, lambda_a);
+      poissonProbs = {
+        lambda_home: +lambda_h.toFixed(2), lambda_away: +lambda_a.toFixed(2),
+        over15: pct(p.over15), over25: pct(p.over25), over35: pct(p.over35),
+        under25: pct(p.under25), btts: pct(p.btts),
+        home_win: pct(p.home), draw: pct(p.draw), away_win: pct(p.away),
+      };
+    }
+  }
 
   return {
     fixture: {
@@ -369,8 +537,10 @@ async function researchFixture(fixtureId) {
       away:    { id: awayId, name: fix.teams.away.name, logo: fix.teams.away.logo },
       league:  { id: leagueId, name: fix.league.name, logo: fix.league.logo },
     },
-    home_form:    homeForm,
-    away_form:    awayForm,
+    home_form:       homeForm,
+    away_form:       awayForm,
+    home_form_venue: homeFormVenue || null,
+    away_form_venue: awayFormVenue || null,
     home_recent:  homeRecent,
     away_recent:  awayRecent,
     h2h_summary:  h2hSummary,
@@ -383,19 +553,24 @@ async function researchFixture(fixtureId) {
     home_standing: homeStanding ? { rank: homeStanding.rank, points: homeStanding.points, played: homeStanding.all.played, gd: homeStanding.goalsDiff } : null,
     away_standing: awayStanding ? { rank: awayStanding.rank, points: awayStanding.points, played: awayStanding.all.played, gd: awayStanding.goalsDiff } : null,
     home_stats: homeStatsRaw ? {
-      goals_for_avg:     homeStatsRaw.goals?.for?.average?.total,
-      goals_against_avg: homeStatsRaw.goals?.against?.average?.total,
-      wins:              homeStatsRaw.fixtures?.wins?.total,
-      draws:             homeStatsRaw.fixtures?.draws?.total,
-      losses:            homeStatsRaw.fixtures?.loses?.total,
+      goals_for_avg:       homeStatsRaw.goals?.for?.average?.total,
+      goals_for_avg_home:  homeStatsRaw.goals?.for?.average?.home,
+      goals_against_avg:   homeStatsRaw.goals?.against?.average?.total,
+      goals_against_home:  homeStatsRaw.goals?.against?.average?.home,
+      wins:                homeStatsRaw.fixtures?.wins?.total,
+      draws:               homeStatsRaw.fixtures?.draws?.total,
+      losses:              homeStatsRaw.fixtures?.loses?.total,
     } : null,
     away_stats: awayStatsRaw ? {
-      goals_for_avg:     awayStatsRaw.goals?.for?.average?.total,
-      goals_against_avg: awayStatsRaw.goals?.against?.average?.total,
-      wins:              awayStatsRaw.fixtures?.wins?.total,
-      draws:             awayStatsRaw.fixtures?.draws?.total,
-      losses:            awayStatsRaw.fixtures?.loses?.total,
+      goals_for_avg:       awayStatsRaw.goals?.for?.average?.total,
+      goals_for_avg_away:  awayStatsRaw.goals?.for?.average?.away,
+      goals_against_avg:   awayStatsRaw.goals?.against?.average?.total,
+      goals_against_away:  awayStatsRaw.goals?.against?.average?.away,
+      wins:                awayStatsRaw.fixtures?.wins?.total,
+      draws:               awayStatsRaw.fixtures?.draws?.total,
+      losses:              awayStatsRaw.fixtures?.loses?.total,
     } : null,
+    poisson:    poissonProbs,
     suggestion,
   };
 }
@@ -403,7 +578,7 @@ async function researchFixture(fixtureId) {
 // ── Auto-predict: enrich pending TBD predictions with form/H2H and generate tips
 async function autoPredictFixtures(db, options = {}) {
   const limit     = options.limit || 20;
-  const minConf   = options.minConfidence || 55;
+  const minConf   = options.minConfidence || 65;   // raised from 55 → selectivity filter
   const autoPublish = options.autoPublish !== false;
 
   const [rows] = await db.query(
@@ -429,22 +604,31 @@ async function autoPredictFixtures(db, options = {}) {
 
       const data = await researchFixture(row.fixture_id);
 
-      const suggestion  = data.suggestion;
-      const h2hSummary  = data.h2h_summary;
-      const homeForm    = data.home_form;
-      const awayForm    = data.away_form;
+      const suggestion       = data.suggestion;
+      const h2hSummary       = data.h2h_summary;
+      const homeForm         = data.home_form;
+      const awayForm         = data.away_form;
+      const homeFormVenue    = data.home_form_venue;
+      const awayFormVenue    = data.away_form_venue;
 
-      // Score with enriched data
+      // Selectivity: only proceed if we have real data to score with
+      const hasData = homeForm || awayForm || h2hSummary;
+      if (!hasData) { skipped++; continue; }
+
+      // Score with enriched data including venue-specific form
       const { score: confScore } = confidence.score({
-        tip:         suggestion.tip,
-        market:      suggestion.market,
-        odds:        null,
-        home_form:   homeForm,
-        away_form:   awayForm,
-        h2h_summary: h2hSummary,
-        league_id:   row.league_id,
+        tip:              suggestion.tip,
+        market:           suggestion.market,
+        odds:             null,
+        home_form:        homeForm,
+        away_form:        awayForm,
+        home_form_venue:  homeFormVenue,
+        away_form_venue:  awayFormVenue,
+        h2h_summary:      h2hSummary,
+        league_id:        row.league_id,
       });
 
+      // Only publish if confidence ≥ minConf (selectivity filter)
       const shouldPublish = autoPublish && confScore >= minConf;
 
       await db.query(
@@ -508,4 +692,5 @@ module.exports = {
   calculateFormString, evaluateTip, mapCountryToContinent,
   isPopularLeague, getRequestCount, getRemainingCount, CURRENT_SEASON,
   researchFixture, autoPredictFixtures,
+  goalProbabilities, poissonPMF, generateTipSuggestion, scoreForm,
 };

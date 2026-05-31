@@ -58,36 +58,59 @@ function parseFormScore(formStr) {
 }
 
 // ── H2H parser ────────────────────────────────────────────────────────────────
-// h2h_summary: free-text or structured "H5-A2-D3" format produced by sync
-// Supports: "H5-A2-D3" (home wins 5, away wins 2, draws 3)
-//           or plain text — falls back to neutral
+// h2h_summary supports two formats:
+//   "H5-A2-D3"          — simple counts (legacy)
+//   "RH3-RA1-RD1|OH2-OA1-OD2" — Recent (last 5) | Older, pipe-separated (preferred)
+//
+// Recent matches are weighted 2× vs older to capture current form dynamics.
 function parseH2HScore(h2hStr, tip) {
   if (!h2hStr || typeof h2hStr !== 'string') return 0.5;
 
-  // Structured format
-  const match = h2hStr.match(/H(\d+)-A(\d+)-D(\d+)/i);
-  if (match) {
-    const hw = parseInt(match[1]);
-    const aw = parseInt(match[2]);
-    const dw = parseInt(match[3]);
-    const total = hw + aw + dw;
-    if (total === 0) return 0.5;
+  const tipU = (tip || '').toUpperCase();
 
-    const tipU = (tip || '').toUpperCase();
-    if (tipU.includes('HOME') || tipU.includes('1'))  return hw / total;
-    if (tipU.includes('AWAY') || tipU.includes('2'))  return aw / total;
-    if (tipU.includes('DRAW') || tipU === 'X')        return dw / total;
-    if (tipU.includes('OVER'))  return (hw + aw) / total; // goals likely if decisive matches
-    if (tipU.includes('UNDER')) return dw / total;        // draws tend to be low-scoring
-    return Math.max(hw, aw, dw) / total;                  // favour the dominant outcome
+  // Try the new recent|older format first
+  const pipeIdx = h2hStr.indexOf('|');
+  if (pipeIdx !== -1) {
+    const recentPart = h2hStr.slice(0, pipeIdx);
+    const olderPart  = h2hStr.slice(pipeIdx + 1);
+    const rMatch     = recentPart.match(/H(\d+)-A(\d+)-D(\d+)/i);
+    const oMatch     = olderPart.match(/H(\d+)-A(\d+)-D(\d+)/i);
+    if (rMatch && oMatch) {
+      // Weighted: recent counts 2×, older counts 1×
+      const rh = parseInt(rMatch[1]) * 2, ra = parseInt(rMatch[2]) * 2, rd = parseInt(rMatch[3]) * 2;
+      const oh = parseInt(oMatch[1]),     oa = parseInt(oMatch[2]),     od = parseInt(oMatch[3]);
+      const hw = rh + oh, aw = ra + oa, dw = rd + od;
+      const total = hw + aw + dw;
+      if (total === 0) return 0.5;
+      return _h2hSignal(hw, aw, dw, total, tipU);
+    }
   }
 
-  // Plain text fallback — scan for keywords
+  // Legacy "H5-A2-D3" format
+  const match = h2hStr.match(/H(\d+)-A(\d+)-D(\d+)/i);
+  if (match) {
+    const hw = parseInt(match[1]), aw = parseInt(match[2]), dw = parseInt(match[3]);
+    const total = hw + aw + dw;
+    if (total === 0) return 0.5;
+    return _h2hSignal(hw, aw, dw, total, tipU);
+  }
+
+  // Plain text fallback
   const lower = h2hStr.toLowerCase();
   if (lower.includes('dominant') || lower.includes('strong advantage')) return 0.75;
   if (lower.includes('slight advantage'))                               return 0.62;
   if (lower.includes('even') || lower.includes('balanced'))            return 0.50;
   return 0.50;
+}
+
+function _h2hSignal(hw, aw, dw, total, tipU) {
+  if (tipU.includes('HOME') || tipU === '1')  return hw / total;
+  if (tipU.includes('AWAY') || tipU === '2')  return aw / total;
+  if (tipU.includes('DRAW') || tipU === 'X')  return dw / total;
+  if (tipU.includes('OVER'))  return (hw + aw) / total; // decisive games → more goals
+  if (tipU.includes('UNDER')) return dw / total;        // draws → fewer goals
+  if (tipU.includes('BTTS'))  return (hw + aw) / total; // decisive → both teams active
+  return Math.max(hw, aw, dw) / total;                  // dominant outcome advantage
 }
 
 // ── Odds to implied probability ───────────────────────────────────────────────
@@ -104,42 +127,61 @@ function oddsToImpliedProb(odds) {
  * Accepts a prediction object (as stored in DB) and returns { score, breakdown }.
  * score: integer 0-100
  * breakdown: per-factor contributions for transparency
+ *
+ * Optional venue-specific form fields:
+ *   home_form_venue — home team's form in HOME games only
+ *   away_form_venue — away team's form in AWAY games only
  */
 function score(prediction) {
   const {
     tip, market, odds,
-    home_form, away_form, h2h_summary,
+    home_form, away_form,
+    home_form_venue, away_form_venue,  // venue-specific forms (richer signal)
+    h2h_summary,
     league_id,
   } = prediction;
 
   const breakdown = {};
 
   // ── 1. Form (30 pts) ───────────────────────────────────────────────────────
-  const homeFormScore = parseFormScore(home_form);
-  const awayFormScore = parseFormScore(away_form);
-
+  // For 1X2 tips use venue-specific form when available (more accurate signal).
+  // For Over/Under/BTTS use overall form (venue doesn't matter for goals markets).
   const tipU = (tip || '').toUpperCase();
+  const isHomeWinTip = tipU.includes('HOME') || tipU === '1';
+  const isAwayWinTip = tipU.includes('AWAY') || tipU === '2';
+  const is1X2        = isHomeWinTip || isAwayWinTip || tipU.includes('DRAW') || tipU === 'X';
+
+  // Pick the right form source
+  const hFormSrc = (is1X2 && home_form_venue) ? home_form_venue : home_form;
+  const aFormSrc = (is1X2 && away_form_venue) ? away_form_venue : away_form;
+
+  const homeFormScore = parseFormScore(hFormSrc);
+  const awayFormScore = parseFormScore(aFormSrc);
+
+  // Also compute overall form for a blended signal when venue-specific is available
+  const homeFormOverall = parseFormScore(home_form);
+  const awayFormOverall = parseFormScore(away_form);
+  // Blend: 65% venue-specific + 35% overall when both available, else use what we have
+  const hFS = (is1X2 && home_form_venue) ? homeFormScore * 0.65 + homeFormOverall * 0.35 : homeFormScore;
+  const aFS = (is1X2 && away_form_venue) ? awayFormScore * 0.65 + awayFormOverall * 0.35 : awayFormScore;
+
   let formSignal;
-  if (tipU.includes('HOME') || tipU.includes('1')) {
-    // Home win tip: weight home form more
-    formSignal = homeFormScore * 0.65 + (1 - awayFormScore) * 0.35;
-  } else if (tipU.includes('AWAY') || tipU.includes('2')) {
-    formSignal = awayFormScore * 0.65 + (1 - homeFormScore) * 0.35;
+  if (isHomeWinTip) {
+    formSignal = hFS * 0.65 + (1 - aFS) * 0.35;
+  } else if (isAwayWinTip) {
+    formSignal = aFS * 0.65 + (1 - hFS) * 0.35;
   } else if (tipU.includes('DRAW') || tipU === 'X') {
-    // Draw more likely when both teams are middling
-    const avgForm = (homeFormScore + awayFormScore) / 2;
-    formSignal = 1 - Math.abs(homeFormScore - awayFormScore); // close form = draw likely
+    const avgForm = (hFS + aFS) / 2;
+    formSignal = 1 - Math.abs(hFS - aFS);
     formSignal = (formSignal + (1 - Math.abs(avgForm - 0.5))) / 2;
   } else if (tipU.includes('OVER')) {
-    // Over goals: both teams scoring = high combined form
-    formSignal = (homeFormScore + awayFormScore) / 2;
+    formSignal = (homeFormOverall + awayFormOverall) / 2;
   } else if (tipU.includes('UNDER')) {
-    formSignal = 1 - (homeFormScore + awayFormScore) / 2;
+    formSignal = 1 - (homeFormOverall + awayFormOverall) / 2;
   } else if (tipU.includes('BTTS') || tipU.includes('BOTH')) {
-    // BTTS: neither team should be dominant defensively
-    formSignal = Math.min(homeFormScore, awayFormScore);
+    formSignal = Math.min(homeFormOverall, awayFormOverall);
   } else {
-    formSignal = (homeFormScore + (1 - awayFormScore)) / 2;
+    formSignal = (hFS + (1 - aFS)) / 2;
   }
   breakdown.form = Math.round(clamp(formSignal) * W.form);
 
