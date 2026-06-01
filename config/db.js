@@ -7,6 +7,9 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+// Detect TiDB Cloud host (requires SSL)
+const isTiDB = (process.env.DB_HOST || '').includes('tidbcloud.com');
+
 // Create a connection pool — reuses connections rather than opening/closing per query
 const pool = mysql.createPool({
   host:              process.env.DB_HOST     || 'localhost',
@@ -22,6 +25,8 @@ const pool = mysql.createPool({
   // Automatically handle reconnections
   enableKeepAlive:   true,
   keepAliveInitialDelay: 10000,
+  // SSL required for TiDB Cloud
+  ...(isTiDB && { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true } }),
 });
 
 // Test the connection on startup

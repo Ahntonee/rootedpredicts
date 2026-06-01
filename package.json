@@ -13,7 +13,14 @@
     "pm2:stop": "pm2 stop rootedpredictions",
     "pm2:logs": "pm2 logs rootedpredictions"
   },
-  "keywords": ["football", "predictions", "sports", "betting", "tips", "rootedpredictions"],
+  "keywords": [
+    "football",
+    "predictions",
+    "sports",
+    "betting",
+    "tips",
+    "rootedpredictions"
+  ],
   "author": "Rooted Predictions",
   "license": "ISC",
   "dependencies": {
@@ -35,6 +42,7 @@
     "stripe": "^22.1.0"
   },
   "devDependencies": {
+    "jimp": "^1.6.1",
     "nodemon": "^3.1.14"
   }
 }

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: rootedpredictions
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: node config/migrate.js && node config/migrate_auth.js && node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 20.18.0

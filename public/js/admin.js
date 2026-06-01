@@ -123,6 +123,7 @@
         <a href="/admin/users.html"       class="admin-nav-link"><span class="material-icons-round">people</span>Users</a>
         <a href="/admin/leagues.html"     class="admin-nav-link"><span class="material-icons-round">emoji_events</span>Leagues</a>
         <div class="admin-nav-section">Settings</div>
+        <a href="/admin/pages.html"       class="admin-nav-link"><span class="material-icons-round">pages</span>Site Pages</a>
         <a href="/admin/seo.html"         class="admin-nav-link"><span class="material-icons-round">travel_explore</span>SEO Settings</a>
         <a href="/admin/sync.html"        class="admin-nav-link"><span class="material-icons-round">sync</span>Data Sync</a>
       </nav>

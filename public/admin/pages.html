@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Pages | Rooted Predictions Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .page-tab { display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:0.875rem; font-weight:500; color:var(--muted); transition:all 0.15s; border:none; background:none; width:100%; text-align:left; }
+    .page-tab:hover { background:var(--surface); color:var(--text); }
+    .page-tab.active { background:rgba(233,69,96,0.1); color:var(--red); font-weight:600; }
+    .page-tab .material-icons-round { font-size:1.1rem; }
+    .field-group { margin-bottom:18px; }
+    .field-label { font-size:0.78rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; display:block; }
+    .field-input { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); font-size:0.875rem; font-family:var(--font-body); outline:none; transition:border-color 0.15s; }
+    .field-input:focus { border-color:var(--red); }
+    .field-textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); font-size:0.82rem; font-family:'Courier New',monospace; outline:none; resize:vertical; min-height:260px; transition:border-color 0.15s; line-height:1.5; }
+    .field-textarea:focus { border-color:var(--red); }
+    .section-divider { font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); padding:10px 0 6px; border-top:1px solid var(--border); margin-top:10px; }
+    .stat-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .preview-pane { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px; min-height:200px; font-size:0.875rem; color:var(--text-soft); line-height:1.7; overflow:auto; max-height:400px; }
+    .badge-updated { display:inline-flex; align-items:center; gap:4px; font-size:0.72rem; color:var(--muted); margin-left:8px; }
+  </style>
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar">
+  <span class="admin-topbar-title">Site Pages</span>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span style="font-size:0.82rem;color:var(--muted);" id="admin-user-name"></span>
+    <button class="theme-toggle" id="theme-toggle" style="background:var(--surface);color:var(--text);">
+      <span class="material-icons-round" id="theme-icon">light_mode</span>
+    </button>
+  </div>
+</div>
+
+<main class="admin-main">
+  <div style="display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start;">
+
+    <!-- Left: page list -->
+    <div class="card" style="padding:12px;">
+      <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;padding:4px 8px 10px;">Pages</div>
+      <button class="page-tab active" data-slug="about" onclick="selectPage('about',this)">
+        <span class="material-icons-round">info</span>About Us
+      </button>
+      <button class="page-tab" data-slug="terms" onclick="selectPage('terms',this)">
+        <span class="material-icons-round">gavel</span>Terms of Service
+      </button>
+      <button class="page-tab" data-slug="privacy" onclick="selectPage('privacy',this)">
+        <span class="material-icons-round">lock</span>Privacy Policy
+      </button>
+      <button class="page-tab" data-slug="contact" onclick="selectPage('contact',this)">
+        <span class="material-icons-round">mail</span>Contact Us
+      </button>
+      <div style="padding:10px 8px 4px;border-top:1px solid var(--border);margin-top:8px;">
+        <a href="/about.html" target="_blank" style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:4px;" id="preview-link">
+          <span class="material-icons-round" style="font-size:0.9rem;">open_in_new</span>Preview page
+        </a>
+      </div>
+    </div>
+
+    <!-- Right: editor -->
+    <div>
+      <div id="editor-loading" style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--muted);">
+        <span class="material-icons-round" style="font-size:2rem;animation:spin 1s linear infinite;">autorenew</span>
+      </div>
+
+      <div id="editor-wrap" style="display:none;">
+        <!-- Meta fields (all pages) -->
+        <div class="card" style="padding:24px;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;">
+              Page Info
+              <span class="badge-updated"><span class="material-icons-round" style="font-size:0.85rem;">update</span><span id="last-saved">—</span></span>
+            </h2>
+            <button id="save-btn" class="btn btn-primary btn-sm" onclick="savePage()">
+              <span class="material-icons-round">save</span>Save Changes
+            </button>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Page Title (browser tab &amp; SEO)</label>
+            <input type="text" id="f-page-title" class="field-input" placeholder="Page title">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Meta Description (SEO — keep under 160 chars)</label>
+            <input type="text" id="f-meta-desc" class="field-input" placeholder="Meta description">
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;"><span id="meta-count">0</span>/160</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field-group">
+              <label class="field-label">Hero / Page Title (displayed on page)</label>
+              <input type="text" id="f-hero-title" class="field-input" placeholder="Heading shown on the page">
+            </div>
+            <div class="field-group" id="last-updated-wrap">
+              <label class="field-label">Last Updated Date</label>
+              <input type="date" id="f-last-updated" class="field-input">
+            </div>
+          </div>
+          <div class="field-group" id="hero-subtitle-wrap">
+            <label class="field-label">Hero Subtitle / Subheading</label>
+            <input type="text" id="f-hero-subtitle" class="field-input" placeholder="Subtitle shown below the heading">
+          </div>
+        </div>
+
+        <!-- About stats (only for about page) -->
+        <div class="card" style="padding:24px;margin-bottom:20px;" id="about-stats-card">
+          <div class="section-divider" style="border-top:none;padding-top:0;margin-top:0;">Statistics Banner</div>
+          <div class="stat-row" style="margin-top:12px;">
+            <div class="field-group">
+              <label class="field-label">Accuracy Value</label>
+              <input type="text" id="f-stat-accuracy" class="field-input" placeholder="e.g. 75.1%">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Accuracy Label</label>
+              <input type="text" id="f-stat-accuracy-label" class="field-input" placeholder="e.g. All-Time Accuracy">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Leagues Value</label>
+              <input type="text" id="f-stat-leagues" class="field-input" placeholder="e.g. 1,200+">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Leagues Label</label>
+              <input type="text" id="f-stat-leagues-label" class="field-input" placeholder="e.g. Leagues Covered">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Members Value</label>
+              <input type="text" id="f-stat-members" class="field-input" placeholder="e.g. 50K+">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Members Label</label>
+              <input type="text" id="f-stat-members-label" class="field-input" placeholder="e.g. Active Members">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Countries Value</label>
+              <input type="text" id="f-stat-countries" class="field-input" placeholder="e.g. 20+">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Countries Label</label>
+              <input type="text" id="f-stat-countries-label" class="field-input" placeholder="e.g. Countries Served">
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact details (only for contact page) -->
+        <div class="card" style="padding:24px;margin-bottom:20px;" id="contact-details-card">
+          <div class="section-divider" style="border-top:none;padding-top:0;margin-top:0;">Contact Details</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+            <div class="field-group">
+              <label class="field-label">Support Email</label>
+              <input type="email" id="f-support-email" class="field-input" placeholder="support@...">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Legal Email</label>
+              <input type="email" id="f-legal-email" class="field-input" placeholder="legal@...">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Partnerships Email</label>
+              <input type="email" id="f-partners-email" class="field-input" placeholder="partners@...">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Telegram Handle</label>
+              <input type="text" id="f-telegram-handle" class="field-input" placeholder="@handle">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Telegram URL</label>
+              <input type="url" id="f-telegram-url" class="field-input" placeholder="https://t.me/...">
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Support Hours — Weekdays</label>
+            <input type="text" id="f-hours-weekday" class="field-input" placeholder="e.g. Monday – Friday: 08:00 – 20:00 UTC">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Support Hours — Weekends</label>
+            <input type="text" id="f-hours-weekend" class="field-input" placeholder="e.g. Saturday – Sunday: 09:00 – 18:00 UTC">
+          </div>
+        </div>
+
+        <!-- HTML content editor (about / terms / privacy) -->
+        <div class="card" style="padding:24px;" id="content-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <span style="font-family:var(--font-head);font-size:1rem;font-weight:700;">Page Content</span>
+              <span style="font-size:0.78rem;color:var(--muted);margin-left:8px;">HTML editor</span>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="togglePreview()" id="preview-btn">
+              <span class="material-icons-round">preview</span>Preview
+            </button>
+          </div>
+          <div class="field-group">
+            <textarea id="f-content" class="field-textarea" placeholder="Enter HTML content for this page..."></textarea>
+          </div>
+          <div id="preview-area" style="display:none;">
+            <div style="font-size:0.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Live Preview</div>
+            <div class="preview-pane" id="preview-pane"></div>
+          </div>
+        </div>
+      </div><!-- /editor-wrap -->
+    </div>
+  </div>
+</main>
+
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+const theme = localStorage.getItem('afro_theme') || 'dark';
+document.documentElement.setAttribute('data-theme', theme);
+
+let currentSlug = 'about';
+let allPages    = {};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  Admin.buildSidebar();
+  const user = await Admin.requireAdmin();
+  if (!user) return;
+  document.getElementById('admin-user-name').textContent = user.name;
+  const ti = document.getElementById('theme-icon');
+  ti.textContent = theme === 'dark' ? 'light_mode' : 'dark_mode';
+  document.getElementById('theme-toggle').onclick = () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('afro_theme', next);
+    ti.textContent = next === 'dark' ? 'light_mode' : 'dark_mode';
+  };
+
+  // Meta description character count
+  document.getElementById('f-meta-desc').addEventListener('input', function() {
+    document.getElementById('meta-count').textContent = this.value.length;
+  });
+
+  await loadAllPages();
+  renderPage('about');
+});
+
+async function loadAllPages() {
+  try {
+    const data = await Admin.api('/api/pages/admin/list');
+    if (data.pages) {
+      data.pages.forEach(p => { allPages[p.slug] = p; });
+    }
+  } catch (e) {
+    Admin.toast('Failed to load pages', 'error');
+  }
+  document.getElementById('editor-loading').style.display = 'none';
+  document.getElementById('editor-wrap').style.display = 'block';
+}
+
+function selectPage(slug, btn) {
+  document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentSlug = slug;
+  document.getElementById('preview-link').href = `/${slug}.html`;
+  renderPage(slug);
+}
+
+function renderPage(slug) {
+  const p = allPages[slug];
+  if (!p) return;
+
+  // Meta fields
+  document.getElementById('f-page-title').value    = p.page_title     || '';
+  document.getElementById('f-meta-desc').value     = p.meta_description || '';
+  document.getElementById('meta-count').textContent = (p.meta_description || '').length;
+  document.getElementById('f-hero-title').value    = p.hero_title     || '';
+  document.getElementById('f-hero-subtitle').value = p.hero_subtitle  || '';
+  document.getElementById('f-last-updated').value  = p.last_updated   ? p.last_updated.split('T')[0] : '';
+  document.getElementById('last-saved').textContent = p.updated_at
+    ? new Date(p.updated_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
+    : 'Never';
+
+  // Show/hide section cards
+  const isAbout   = slug === 'about';
+  const isContact = slug === 'contact';
+  document.getElementById('about-stats-card').style.display     = isAbout   ? '' : 'none';
+  document.getElementById('contact-details-card').style.display = isContact ? '' : 'none';
+  document.getElementById('content-card').style.display         = !isContact ? '' : 'none';
+  document.getElementById('last-updated-wrap').style.display    = (slug === 'terms' || slug === 'privacy') ? '' : 'none';
+  document.getElementById('hero-subtitle-wrap').style.display   = (slug === 'about' || slug === 'contact') ? '' : 'none';
+
+  // About stats
+  if (isAbout && p.extra) {
+    document.getElementById('f-stat-accuracy').value        = p.extra.stat_accuracy        || '';
+    document.getElementById('f-stat-accuracy-label').value  = p.extra.stat_accuracy_label  || '';
+    document.getElementById('f-stat-leagues').value         = p.extra.stat_leagues          || '';
+    document.getElementById('f-stat-leagues-label').value   = p.extra.stat_leagues_label    || '';
+    document.getElementById('f-stat-members').value         = p.extra.stat_members          || '';
+    document.getElementById('f-stat-members-label').value   = p.extra.stat_members_label    || '';
+    document.getElementById('f-stat-countries').value       = p.extra.stat_countries        || '';
+    document.getElementById('f-stat-countries-label').value = p.extra.stat_countries_label  || '';
+  }
+
+  // Contact details
+  if (isContact && p.extra) {
+    document.getElementById('f-support-email').value    = p.extra.support_email        || '';
+    document.getElementById('f-legal-email').value      = p.extra.legal_email          || '';
+    document.getElementById('f-partners-email').value   = p.extra.partners_email       || '';
+    document.getElementById('f-telegram-handle').value  = p.extra.telegram_handle      || '';
+    document.getElementById('f-telegram-url').value     = p.extra.telegram_url         || '';
+    document.getElementById('f-hours-weekday').value    = p.extra.support_hours_weekday || '';
+    document.getElementById('f-hours-weekend').value    = p.extra.support_hours_weekend || '';
+  }
+
+  // Content
+  document.getElementById('f-content').value = p.content || '';
+  document.getElementById('preview-area').style.display = 'none';
+  document.getElementById('preview-btn').innerHTML = '<span class="material-icons-round">preview</span>Preview';
+}
+
+function togglePreview() {
+  const area = document.getElementById('preview-area');
+  const btn  = document.getElementById('preview-btn');
+  if (area.style.display === 'none') {
+    document.getElementById('preview-pane').innerHTML = document.getElementById('f-content').value || '<em style="color:var(--muted)">No content yet.</em>';
+    area.style.display = 'block';
+    btn.innerHTML = '<span class="material-icons-round">edit</span>Edit';
+  } else {
+    area.style.display = 'none';
+    btn.innerHTML = '<span class="material-icons-round">preview</span>Preview';
+  }
+}
+
+async function savePage() {
+  const btn   = document.getElementById('save-btn');
+  const slug  = currentSlug;
+  const isContact = slug === 'contact';
+  const isAbout   = slug === 'about';
+
+  const payload = {
+    page_title:       document.getElementById('f-page-title').value.trim(),
+    meta_description: document.getElementById('f-meta-desc').value.trim(),
+    hero_title:       document.getElementById('f-hero-title').value.trim(),
+    hero_subtitle:    document.getElementById('f-hero-subtitle').value.trim() || null,
+    last_updated:     document.getElementById('f-last-updated').value || null,
+    content:          isContact ? null : document.getElementById('f-content').value,
+    extra:            null,
+  };
+
+  if (isAbout) {
+    payload.extra = {
+      stat_accuracy:        document.getElementById('f-stat-accuracy').value.trim(),
+      stat_accuracy_label:  document.getElementById('f-stat-accuracy-label').value.trim(),
+      stat_leagues:         document.getElementById('f-stat-leagues').value.trim(),
+      stat_leagues_label:   document.getElementById('f-stat-leagues-label').value.trim(),
+      stat_members:         document.getElementById('f-stat-members').value.trim(),
+      stat_members_label:   document.getElementById('f-stat-members-label').value.trim(),
+      stat_countries:       document.getElementById('f-stat-countries').value.trim(),
+      stat_countries_label: document.getElementById('f-stat-countries-label').value.trim(),
+    };
+  }
+  if (isContact) {
+    payload.extra = {
+      support_email:         document.getElementById('f-support-email').value.trim(),
+      legal_email:           document.getElementById('f-legal-email').value.trim(),
+      partners_email:        document.getElementById('f-partners-email').value.trim(),
+      telegram_handle:       document.getElementById('f-telegram-handle').value.trim(),
+      telegram_url:          document.getElementById('f-telegram-url').value.trim(),
+      support_hours_weekday: document.getElementById('f-hours-weekday').value.trim(),
+      support_hours_weekend: document.getElementById('f-hours-weekend').value.trim(),
+    };
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round">hourglass_empty</span>Saving...';
+
+  try {
+    const res = await Admin.api(`/api/pages/admin/${slug}`, { method:'PUT', body: JSON.stringify(payload) });
+    if (res.success) {
+      Admin.toast('Page saved successfully!', 'success');
+      allPages[slug] = { ...allPages[slug], ...payload, updated_at: new Date().toISOString() };
+      document.getElementById('last-saved').textContent = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+    } else {
+      Admin.toast(res.message || 'Save failed', 'error');
+    }
+  } catch (e) {
+    Admin.toast('Network error. Try again.', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-icons-round">save</span>Save Changes';
+}
+</script>
+<style>@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }</style>
+</body>
+</html>

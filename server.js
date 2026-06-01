@@ -181,6 +181,7 @@ app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/blog',          require('./routes/blog'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/admin/analytics', require('./routes/analytics'));
+app.use('/api/pages',         require('./routes/pages'));
 app.use('/api/webhooks',      require('./routes/webhooks'));
 
 // ── Block invalid admin paths — only /admin/index.html is valid
@@ -193,6 +194,7 @@ const VALID_ADMIN_PATHS = [
   '/admin/leagues.html',
   '/admin/sync.html',
   '/admin/seo.html',
+  '/admin/pages.html',
 ];
 app.get('/admin', (req, res) => res.status(404).send(adminErrorPage()));
 app.get('/admin/{*path}', (req, res, next) => {
