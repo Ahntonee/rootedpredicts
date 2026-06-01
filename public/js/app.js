@@ -116,7 +116,7 @@
               <span class="material-icons-round" id="theme-icon">light_mode</span>
             </button>
             <a href="/login.html" class="btn-login">Log In</a>
-            <a href="https://t.me/rootedpredictions" target="_blank" rel="noopener noreferrer" class="btn-telegram">
+            <a href="https://t.me/rootedpredict" target="_blank" rel="noopener noreferrer" class="btn-telegram">
               <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
               Telegram
             </a>
@@ -186,7 +186,7 @@
               <li><a href="/blog.html">Blog</a></li>
               <li><a href="/contact.html">Contact Us</a></li>
               <li><a href="/leagues.html">All Leagues</a></li>
-              <li><a href="https://t.me/rootedpredictions" target="_blank" rel="noopener">Telegram Channel</a></li>
+              <li><a href="https://t.me/rootedpredict" target="_blank" rel="noopener">Telegram Channel</a></li>
             </ul>
           </div>
           <div class="footer-col">
