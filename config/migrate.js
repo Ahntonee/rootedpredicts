@@ -9,7 +9,7 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 
-const DB_NAME = process.env.DB_NAME || 'afropredict';
+const DB_NAME = process.env.DB_NAME || 'rootedpredictions';
 
 const DB_CONFIG = {
   host:     process.env.DB_HOST     || 'localhost',
