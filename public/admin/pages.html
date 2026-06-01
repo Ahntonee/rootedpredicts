@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadAllPages() {
   try {
-    const data = await Admin.api('/api/pages/admin/list');
+    const data = await Admin.api('GET', '/api/pages/admin/list');
     if (data.pages) {
       data.pages.forEach(p => { allPages[p.slug] = p; });
     }
@@ -369,7 +369,7 @@ async function savePage() {
   btn.innerHTML = '<span class="material-icons-round">hourglass_empty</span>Saving...';
 
   try {
-    const res = await Admin.api(`/api/pages/admin/${slug}`, { method:'PUT', body: JSON.stringify(payload) });
+    const res = await Admin.api('PUT', `/api/pages/admin/${slug}`, payload);
     if (res.success) {
       Admin.toast('Page saved successfully!', 'success');
       allPages[slug] = { ...allPages[slug], ...payload, updated_at: new Date().toISOString() };
