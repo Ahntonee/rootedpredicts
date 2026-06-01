@@ -1,5 +1,5 @@
 // utils/jwt.js
-// afropredict — JWT token generation and verification
+// rootedpredictions — JWT token generation and verification
 // Tokens are stored in httpOnly cookies for XSS protection
 
 'use strict';
@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 
 const SECRET      = process.env.JWT_SECRET;
 const EXPIRES_IN  = process.env.JWT_EXPIRES_IN || '7d';
-const COOKIE_NAME = 'g33_token';
+const COOKIE_NAME = 'rp_token';
 
 if (!SECRET) {
   console.error('[JWT] FATAL: JWT_SECRET is not set in environment variables.');

@@ -1,12 +1,12 @@
 // ecosystem.config.js
-// AfroPredict — PM2 process manager configuration
+// Rooted Predictions — PM2 process manager configuration
 // Usage: pm2 start ecosystem.config.js --env production
 // Install log rotation: pm2 install pm2-logrotate
 
 module.exports = {
   apps: [
     {
-      name:        'afropredict',
+      name:        'rootedpredictions',
       script:      'server.js',
       instances:   'max',        // all available CPU cores
       exec_mode:   'cluster',    // cluster mode for load balancing

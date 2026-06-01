@@ -1,5 +1,5 @@
 // controllers/subscriptions.js
-// AfroPredict — VIP subscription logic (Stripe + Paystack + manual grant)
+// Rooted Predictions — VIP subscription logic (Stripe + Paystack + manual grant)
 'use strict';
 
 const db     = require('../config/db');
@@ -74,7 +74,7 @@ async function stripeCreateCheckout(req, res) {
       const customer = await stripe.customers.create({
         email: req.user.email,
         name:  req.user.name,
-        metadata: { afropredict_user_id: String(req.user.id) },
+        metadata: { rootedpredictions_user_id: String(req.user.id) },
       });
       customerId = customer.id;
       await db.query(`UPDATE users SET stripe_customer_id=? WHERE id=?`, [customerId, req.user.id]);
@@ -115,7 +115,7 @@ async function paystackInitialize(req, res) {
       return res.status(503).json({ success: false, message: 'Paystack is not configured on this server yet.' });
     }
 
-    const reference = `AP-${req.user.id}-${plan}-${Date.now()}`;
+    const reference = `RP-${req.user.id}-${plan}-${Date.now()}`;
     const amount    = PAYSTACK_AMOUNTS[plan];
 
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -165,7 +165,7 @@ async function paystackVerify(req, res) {
       return res.status(402).json({ success: false, message: 'Payment not confirmed.' });
     }
 
-    // Extract plan from reference: AP-{userId}-{plan}-{ts}
+    // Extract plan from reference: RP-{userId}-{plan}-{ts}
     const parts = reference.split('-');
     const plan  = parts[2];
     if (!PLANS[plan]) return res.status(400).json({ success: false, message: 'Unknown plan in reference.' });

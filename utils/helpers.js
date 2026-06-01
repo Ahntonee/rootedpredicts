@@ -1,5 +1,5 @@
 // utils/helpers.js
-// AfroPredict — Shared utility functions used across the application
+// Rooted Predictions — Shared utility functions used across the application
 
 'use strict';
 

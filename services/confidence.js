@@ -1,5 +1,5 @@
 // services/confidence.js
-// AfroPredict — Confidence scoring algorithm
+// Rooted Predictions — Confidence scoring algorithm
 // Produces a 0-100 score for any prediction based on available signals.
 // Works entirely from data already stored in the DB — no live API calls needed.
 // All weights are tuned so the five factor groups sum to 100 points max.

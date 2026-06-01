@@ -1,5 +1,5 @@
 // routes/predictions.js
-// AfroPredict — Predictions routes
+// Rooted Predictions — Predictions routes
 // GET /api/predictions          — Filtered prediction listing
 // GET /api/predictions/:slug    — Single prediction by slug
 // GET /api/predictions/stats    — Accuracy statistics

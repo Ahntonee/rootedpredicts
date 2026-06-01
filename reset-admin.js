@@ -1,5 +1,5 @@
 // reset-admin.js
-// AfroPredict — Reset admin password
+// Rooted Predictions — Reset admin password
 // Run: node reset-admin.js
 'use strict';
 
@@ -7,8 +7,8 @@ require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const db     = require('./config/db');
 
-const ADMIN_EMAIL    = 'admin@afropredict.com';
-const ADMIN_PASSWORD = 'Admin@G33!';
+const ADMIN_EMAIL    = 'admin@rootedpredictions.com';
+const ADMIN_PASSWORD = 'Admin@RP!';
 
 async function run() {
   try {
@@ -31,7 +31,7 @@ async function run() {
       // Create admin user if missing
       await db.query(
         `INSERT INTO users (name, email, password_hash, role, country, timezone)
-         VALUES ('AfroPredict Admin', ?, ?, 'admin', 'Nigeria', 'Africa/Lagos')`,
+         VALUES ('Rooted Predictions Admin', ?, ?, 'admin', 'Nigeria', 'Africa/Lagos')`,
         [ADMIN_EMAIL, hash]
       );
       console.log('[RESET] ✅ Admin account created successfully');

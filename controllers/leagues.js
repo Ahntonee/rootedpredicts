@@ -1,5 +1,5 @@
 // controllers/leagues.js
-// AfroPredict — League data access helpers
+// Rooted Predictions — League data access helpers
 
 'use strict';
 

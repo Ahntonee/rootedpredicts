@@ -1,5 +1,5 @@
 /**
- * AfroPredict Admin — Shared Utilities
+ * Rooted Predictions Admin — Shared Utilities
  */
 (function () {
   'use strict';
@@ -109,8 +109,8 @@
     if (!el) return;
     el.innerHTML = `
       <a href="/admin/index.html" class="admin-logo">
-        <span class="logo-mark" style="font-size:0.85rem;padding:4px 8px;">AP</span>
-        <span class="admin-logo-text">AfroPredict</span>
+        <span class="logo-mark">RP</span>
+        <span class="admin-logo-text">Rooted Predictions</span>
         <span class="admin-logo-badge">Admin</span>
       </a>
       <nav class="admin-nav">

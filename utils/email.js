@@ -1,5 +1,5 @@
 // utils/email.js
-// AfroPredict — Email sending utility via Nodemailer
+// Rooted Predictions — Email sending utility via Nodemailer
 // Used for: welcome emails, password reset, VIP confirmation
 
 'use strict';
@@ -22,7 +22,7 @@ const transporter = nodemailer.createTransport({
  */
 async function sendEmail({ to, subject, html, text }) {
   const mailOptions = {
-    from:    process.env.EMAIL_FROM || 'AfroPredict <noreply@afropredict.com>',
+    from:    process.env.EMAIL_FROM || 'Rooted Predictions <noreply@rootedpredictions.com>',
     to,
     subject,
     html,
@@ -53,14 +53,14 @@ async function sendWelcomeEmail(user) {
           <table width="600" cellpadding="0" cellspacing="0" style="background:#0F3460;border-radius:12px;overflow:hidden;">
             <tr>
               <td style="background:#E94560;padding:24px 40px;text-align:center;">
-                <h1 style="color:#fff;margin:0;font-size:28px;letter-spacing:1px;">AFROPREDICT</h1>
+                <h1 style="color:#fff;margin:0;font-size:28px;letter-spacing:1px;">ROOTEDPREDICTIONS</h1>
                 <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px;">Precision Tips. Global Reach. Real Results.</p>
               </td>
             </tr>
             <tr>
               <td style="padding:40px;">
                 <h2 style="color:#fff;margin:0 0 16px;font-size:22px;">Welcome, ${user.name}!</h2>
-                <p style="color:#CBD5E1;line-height:1.7;margin:0 0 16px;">Your AfroPredict account is ready. You now have access to free daily football predictions across 1,200+ leagues worldwide.</p>
+                <p style="color:#CBD5E1;line-height:1.7;margin:0 0 16px;">Your Rooted Predictions account is ready. You now have access to free daily football predictions across 1,200+ leagues worldwide.</p>
                 <p style="color:#CBD5E1;line-height:1.7;margin:0 0 24px;">Your free account includes:</p>
                 <ul style="color:#CBD5E1;line-height:2;margin:0 0 32px;padding-left:20px;">
                   <li>Daily free football tips</li>
@@ -82,8 +82,8 @@ async function sendWelcomeEmail(user) {
             <tr>
               <td style="background:#1A1A2E;padding:20px 40px;text-align:center;">
                 <p style="color:#4B5563;font-size:12px;margin:0;">
-                  AfroPredict — ${process.env.SITE_URL}<br>
-                  You are receiving this email because you registered at AfroPredict.<br>
+                  Rooted Predictions — ${process.env.SITE_URL}<br>
+                  You are receiving this email because you registered at Rooted Predictions.<br>
                   Please gamble responsibly. Predictions are for informational purposes only.
                 </p>
               </td>
@@ -95,7 +95,7 @@ async function sendWelcomeEmail(user) {
     </html>
   `;
 
-  return sendEmail({ to: user.email, subject: 'Welcome to AfroPredict — Your account is ready', html });
+  return sendEmail({ to: user.email, subject: 'Welcome to Rooted Predictions — Your account is ready', html });
 }
 
 /**
@@ -113,7 +113,7 @@ async function sendPasswordResetEmail(user, resetToken) {
           <table width="600" cellpadding="0" cellspacing="0" style="background:#0F3460;border-radius:12px;overflow:hidden;">
             <tr>
               <td style="background:#E94560;padding:24px 40px;text-align:center;">
-                <h1 style="color:#fff;margin:0;font-size:28px;">AFROPREDICT</h1>
+                <h1 style="color:#fff;margin:0;font-size:28px;">ROOTEDPREDICTIONS</h1>
               </td>
             </tr>
             <tr>
@@ -134,7 +134,7 @@ async function sendPasswordResetEmail(user, resetToken) {
     </html>
   `;
 
-  return sendEmail({ to: user.email, subject: 'AfroPredict — Password Reset Request', html });
+  return sendEmail({ to: user.email, subject: 'Rooted Predictions — Password Reset Request', html });
 }
 
 /**
@@ -152,7 +152,7 @@ async function sendVipConfirmationEmail(user, plan) {
           <table width="600" cellpadding="0" cellspacing="0" style="background:#0F3460;border-radius:12px;overflow:hidden;">
             <tr>
               <td style="background:#E94560;padding:24px 40px;text-align:center;">
-                <h1 style="color:#fff;margin:0;font-size:28px;">AFROPREDICT VIP</h1>
+                <h1 style="color:#fff;margin:0;font-size:28px;">ROOTEDPREDICTIONS VIP</h1>
                 <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;">You are now a VIP member</p>
               </td>
             </tr>
@@ -184,7 +184,7 @@ async function sendVipConfirmationEmail(user, plan) {
     </html>
   `;
 
-  return sendEmail({ to: user.email, subject: 'AfroPredict VIP — Your subscription is active', html });
+  return sendEmail({ to: user.email, subject: 'Rooted Predictions VIP — Your subscription is active', html });
 }
 
 module.exports = {

@@ -16,4 +16,4 @@ Disallow: /reset-password.html
 Disallow: /api/
 
 # Sitemap location
-Sitemap: https://www.afropredict.com/sitemap.xml
+Sitemap: https://www.rootedpredictions.com/sitemap.xml

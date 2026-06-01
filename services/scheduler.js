@@ -1,5 +1,5 @@
 // services/scheduler.js
-// AfroPredict — Cron job scheduler
+// Rooted Predictions — Cron job scheduler
 'use strict';
 
 const cron       = require('node-cron');

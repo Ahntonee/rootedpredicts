@@ -1,5 +1,5 @@
 // controllers/predictions.js
-// AfroPredict — Prediction data access layer
+// Rooted Predictions — Prediction data access layer
 // Shared query helpers used by routes and the scheduler
 
 'use strict';

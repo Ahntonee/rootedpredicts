@@ -1,5 +1,5 @@
 // middleware/auth.js
-// AfroPredict — Authentication and role-based access control middleware
+// Rooted Predictions — Authentication and role-based access control middleware
 // Applied to protected API routes throughout the application
 
 'use strict';
@@ -112,7 +112,7 @@ function requireRole(...roles) {
       if (req.user.role === 'user' && roles.includes('vip')) {
         return errorResponse(
           res,
-          'VIP subscription required. Upgrade at afropredict.com/pricing',
+          'VIP subscription required. Upgrade at rootedpredictions.com/pricing',
           403
         );
       }
@@ -146,7 +146,7 @@ function requireVip(req, res, next) {
   if (req.user.role !== 'vip' && req.user.role !== 'admin') {
     return errorResponse(
       res,
-      'VIP subscription required. Upgrade at afropredict.com/pricing',
+      'VIP subscription required. Upgrade at rootedpredictions.com/pricing',
       403
     );
   }

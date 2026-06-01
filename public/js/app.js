@@ -1,5 +1,5 @@
 /**
- * AfroPredict — Main Frontend Application
+ * Rooted Predictions — Main Frontend Application
  * Handles: header, footer, dark mode, league filter dropdown (live API data),
  * prediction card rendering, market tabs, date navigation
  */
@@ -55,7 +55,7 @@
         return cachedLeagues;
       }
     } catch (e) {
-      console.warn('[AfroPredict] League API unavailable, using fallback:', e.message);
+      console.warn('[Rooted Predictions] League API unavailable, using fallback:', e.message);
     }
     cachedLeagues = FALLBACK_LEAGUES;
     return cachedLeagues;
@@ -102,7 +102,7 @@
       <div class="container">
         <div class="header-inner">
           <a href="/index.html" class="site-logo">
-            <span class="logo-mark">AP</span>
+            <span class="logo-mark">RP</span>
             <span class="logo-text">AFRO<span>PREDICT</span></span>
           </a>
           <nav class="main-nav" id="main-nav">
@@ -117,7 +117,7 @@
               <span class="material-icons-round" id="theme-icon">light_mode</span>
             </button>
             <a href="/login.html" class="btn-login">Log In</a>
-            <a href="https://t.me/afropredict" target="_blank" rel="noopener noreferrer" class="btn-telegram">
+            <a href="https://t.me/rootedpredictions" target="_blank" rel="noopener noreferrer" class="btn-telegram">
               <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
               Telegram
             </a>
@@ -160,12 +160,12 @@
     el.innerHTML = `
       <div class="container">
         <div class="gambling-notice">
-          <p><strong>Responsible Gambling Notice:</strong> AfroPredict provides football predictions for informational and entertainment purposes only. We do not guarantee any results. Please gamble responsibly. Only bet what you can afford to lose. If gambling is causing you problems, visit <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" style="color:var(--red);">BeGambleAware.org</a> or call <strong style="color:#fff;">0808 8020 133</strong>.</p>
+          <p><strong>Responsible Gambling Notice:</strong> Rooted Predictions provides football predictions for informational and entertainment purposes only. We do not guarantee any results. Please gamble responsibly. Only bet what you can afford to lose. If gambling is causing you problems, visit <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" style="color:var(--red);">BeGambleAware.org</a> or call <strong style="color:#fff;">0808 8020 133</strong>.</p>
         </div>
         <div class="footer-top">
           <div class="footer-brand">
             <a href="/index.html" class="site-logo" style="margin-bottom:0;">
-              <span class="logo-mark">AP</span>
+              <span class="logo-mark">RP</span>
               <span class="logo-text" style="color:#fff;">AFRO<span>PREDICT</span></span>
             </a>
             <p>Precision football predictions powered by data. Free daily tips for the Premier League, La Liga, and Champions League. Bet smarter. Every single day.</p>
@@ -184,11 +184,11 @@
           <div class="footer-col">
             <h4>Company</h4>
             <ul class="footer-links">
-              <li><a href="/about.html">About AfroPredict</a></li>
+              <li><a href="/about.html">About Rooted Predictions</a></li>
               <li><a href="/blog.html">Blog</a></li>
               <li><a href="/contact.html">Contact Us</a></li>
               <li><a href="/leagues.html">All Leagues</a></li>
-              <li><a href="https://t.me/afropredict" target="_blank" rel="noopener">Telegram Channel</a></li>
+              <li><a href="https://t.me/rootedpredictions" target="_blank" rel="noopener">Telegram Channel</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -202,7 +202,7 @@
           </div>
         </div>
         <div class="footer-bottom">
-          <p>&copy; ${new Date().getFullYear()} AfroPredict. All rights reserved. Predictions for informational purposes only. 18+ only.</p>
+          <p>&copy; ${new Date().getFullYear()} Rooted Predictions. All rights reserved. Predictions for informational purposes only. 18+ only.</p>
           <p style="display:flex;align-items:center;gap:6px;">
             <span class="material-icons-round" style="font-size:0.9rem;color:var(--red);">lock</span>
             Secure &amp; Encrypted
@@ -442,10 +442,10 @@
         <div class="affiliate-strip">
           <span class="affiliate-label">Bet on</span>
           <div class="affiliate-links">
-            <a href="https://www.bet365.com?utm_source=afropredict&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Bet365</a>
-            <a href="https://www.betway.com?utm_source=afropredict&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Betway</a>
-            <a href="https://www.sportybet.com?utm_source=afropredict&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">SportyBet</a>
-            <a href="https://www.bet9ja.com?utm_source=afropredict&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Bet9ja</a>
+            <a href="https://www.bet365.com?utm_source=rootedpredictions&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Bet365</a>
+            <a href="https://www.betway.com?utm_source=rootedpredictions&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Betway</a>
+            <a href="https://www.sportybet.com?utm_source=rootedpredictions&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">SportyBet</a>
+            <a href="https://www.bet9ja.com?utm_source=rootedpredictions&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Bet9ja</a>
           </div>
         </div>
       </article>
@@ -483,7 +483,7 @@
         .join('');
 
     } catch (e) {
-      console.warn('[AfroPredict] Predictions API unavailable:', e.message);
+      console.warn('[Rooted Predictions] Predictions API unavailable:', e.message);
       container.innerHTML = `
         <div style="padding:32px;text-align:center;">
           <span class="material-icons-round" style="font-size:2rem;color:var(--muted);display:block;margin-bottom:8px;">wifi_off</span>
@@ -580,7 +580,7 @@
   });
 
   // Expose globals
-  window.AfroPredict = {
+  window.Rooted Predictions = {
     loadPredictions,
     renderPredictionCard,
     buildDateNav,

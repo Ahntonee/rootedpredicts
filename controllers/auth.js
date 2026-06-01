@@ -1,5 +1,5 @@
 // controllers/auth.js
-// AfroPredict — Authentication controller
+// Rooted Predictions — Authentication controller
 // Handles: register, login, logout, me, password reset
 
 'use strict';
@@ -35,7 +35,7 @@ async function register(req, res) {
         const customer = await stripe.customers.create({
           email: email.toLowerCase(),
           name:  sanitiseText(name),
-          metadata: { source: 'afropredict_registration' },
+          metadata: { source: 'rootedpredictions_registration' },
         });
         stripe_customer_id = customer.id;
       }

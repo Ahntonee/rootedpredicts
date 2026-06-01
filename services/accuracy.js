@@ -1,5 +1,5 @@
 // services/accuracy.js
-// AfroPredict — Self-calibrating accuracy tracking system
+// Rooted Predictions — Self-calibrating accuracy tracking system
 //
 // Tracks every resolved prediction (won/lost) in a log table, then
 // recalculates win-rate statistics grouped by market, confidence band,

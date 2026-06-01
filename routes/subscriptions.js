@@ -1,5 +1,5 @@
 // routes/subscriptions.js
-// AfroPredict — VIP subscription endpoints
+// Rooted Predictions — VIP subscription endpoints
 'use strict';
 
 const express = require('express');

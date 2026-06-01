@@ -1,5 +1,5 @@
 // server.js
-// AfroPredict — Main Express application entry point
+// Rooted Predictions — Main Express application entry point
 
 'use strict';
 
@@ -87,7 +87,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 // ── API Routes
 app.get('/api/health', (req, res) => res.json({
-  success: true, message: 'AfroPredict API running',
+  success: true, message: 'Rooted Predictions API running',
   environment: process.env.NODE_ENV, timestamp: new Date().toISOString()
 }));
 
@@ -96,7 +96,7 @@ app.get('/api/status', async (req, res) => {
     const [leagues] = await db.query('SELECT COUNT(*) AS c FROM leagues');
     const [preds]   = await db.query('SELECT COUNT(*) AS c FROM predictions');
     res.json({
-      success: true, message: 'AfroPredict backend operational',
+      success: true, message: 'Rooted Predictions backend operational',
       database: 'connected',
       leagues:     leagues[0].c,
       predictions: preds[0].c,
@@ -109,7 +109,7 @@ app.get('/api/status', async (req, res) => {
 
 // ── Sitemap (dynamic — includes blog posts + prediction slugs from DB)
 app.get('/sitemap.xml', async (req, res) => {
-  const BASE = process.env.SITE_URL || 'https://www.afropredict.com';
+  const BASE = process.env.SITE_URL || 'https://www.rootedpredictions.com';
   const today = new Date().toISOString().split('T')[0];
 
   const staticPages = [
@@ -230,9 +230,9 @@ app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'), err => {
     if (err) res.status(200).send(`
       <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
-      <title>AfroPredict</title>
+      <title>Rooted Predictions</title>
       <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#1A1A2E;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px}h1{color:#E94560;font-size:2rem}a{color:#E94560}</style>
-      </head><body><h1>AfroPredict</h1><p>Precision Tips. Global Reach. Real Results.</p>
+      </head><body><h1>Rooted Predictions</h1><p>Precision Tips. Global Reach. Real Results.</p>
       <p>Backend operational. Frontend loading...</p>
       <p>API: <a href="/api/status">/api/status</a></p></body></html>
     `);
@@ -251,7 +251,7 @@ app.use((err, req, res, next) => {
 // ── Start server
 app.listen(PORT, () => {
   console.log('\n==============================================');
-  console.log(`  AfroPredict — ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(`  Rooted Predictions — ${process.env.NODE_ENV || 'development'} mode`);
   console.log(`  Server running on port ${PORT}`);
   console.log(`  Local:  http://localhost:${PORT}`);
   console.log(`  Health: http://localhost:${PORT}/api/health`);

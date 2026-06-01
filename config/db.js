@@ -1,5 +1,5 @@
 // config/db.js
-// MySQL connection pool for AfroPredict
+// MySQL connection pool for Rooted Predictions
 // Uses mysql2/promise for async/await support throughout the application
 
 'use strict';

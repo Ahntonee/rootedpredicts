@@ -1,5 +1,5 @@
 // routes/comments.js
-// AfroPredict — Comments on prediction pages
+// Rooted Predictions — Comments on prediction pages
 // GET  /api/comments/:predictionId   — Get comments for a prediction
 // POST /api/comments/:predictionId   — Post a comment (authenticated users)
 // DELETE /api/comments/:id           — Delete own comment

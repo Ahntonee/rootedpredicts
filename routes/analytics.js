@@ -1,5 +1,5 @@
 // routes/analytics.js
-// AfroPredict — Prediction Intelligence Engine (admin-only)
+// Rooted Predictions — Prediction Intelligence Engine (admin-only)
 // Aggregates API-Football data into actionable stats for informed prediction creation.
 'use strict';
 

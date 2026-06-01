@@ -1,7 +1,7 @@
 {
-  "name": "afropredict",
+  "name": "rootedpredictions",
   "version": "1.0.0",
-  "description": "AfroPredict — Precision Tips. Global Reach. Real Results.",
+  "description": "Rooted Predictions — Precision Tips. Global Reach. Real Results.",
   "main": "server.js",
   "scripts": {
     "start": "node config/migrate.js && node config/migrate_auth.js && node server.js",
@@ -9,12 +9,12 @@
     "migrate": "node config/migrate.js",
     "prod": "NODE_ENV=production node server.js",
     "pm2:start": "pm2 start ecosystem.config.js --env production",
-    "pm2:reload": "pm2 reload afropredict --update-env",
-    "pm2:stop": "pm2 stop afropredict",
-    "pm2:logs": "pm2 logs afropredict"
+    "pm2:reload": "pm2 reload rootedpredictions --update-env",
+    "pm2:stop": "pm2 stop rootedpredictions",
+    "pm2:logs": "pm2 logs rootedpredictions"
   },
-  "keywords": ["football", "predictions", "sports", "betting", "tips", "afropredict"],
-  "author": "AfroPredict",
+  "keywords": ["football", "predictions", "sports", "betting", "tips", "rootedpredictions"],
+  "author": "Rooted Predictions",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.16.0",

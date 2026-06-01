@@ -1,5 +1,5 @@
 // routes/sync.js
-// AfroPredict — Manual sync routes (admin only)
+// Rooted Predictions — Manual sync routes (admin only)
 // POST /api/sync/leagues         — Sync all leagues from API-Football
 // POST /api/sync/fixtures        — Sync fixtures for a date/league
 // POST /api/sync/results         — Update results for finished matches

@@ -1,5 +1,5 @@
 // fix-dates.js
-// AfroPredict — One-off fix: move all stale pending predictions to today's date
+// Rooted Predictions — One-off fix: move all stale pending predictions to today's date
 // Run once: node fix-dates.js
 'use strict';
 

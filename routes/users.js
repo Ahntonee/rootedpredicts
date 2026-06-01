@@ -1,5 +1,5 @@
 // routes/users.js
-// AfroPredict — User profile and dashboard routes
+// Rooted Predictions — User profile and dashboard routes
 // GET  /api/users/profile          — Get own profile
 // PUT  /api/users/profile          — Update own profile
 // GET  /api/users/bookmarks        — Get own bookmarks

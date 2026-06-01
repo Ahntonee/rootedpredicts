@@ -1,5 +1,5 @@
 // routes/blog.js
-// AfroPredict — Public blog routes
+// Rooted Predictions — Public blog routes
 // GET /api/blog              — List published posts
 // GET /api/blog/:slug        — Single post by slug
 // GET /api/blog/categories   — Unique category list

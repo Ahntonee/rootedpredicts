@@ -1,5 +1,5 @@
 // routes/leagues.js
-// AfroPredict — League routes
+// Rooted Predictions — League routes
 // GET /api/leagues              — All active leagues (grouped by continent)
 // GET /api/leagues/popular      — Popular/pinned leagues only
 // GET /api/leagues/:id/fixtures — Fixtures for a specific league

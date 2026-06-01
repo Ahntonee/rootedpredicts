@@ -1,5 +1,5 @@
 /**
- * AfroPredict — Content Protection
+ * Rooted Predictions — Content Protection
  * Disables right-click, text selection, and developer tool shortcuts globally.
  * Does NOT affect input fields, textareas, or select elements.
  */

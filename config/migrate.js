@@ -1,5 +1,5 @@
 // config/migrate.js
-// AfroPredict — Full database migration
+// Rooted Predictions — Full database migration
 // Run with: npm run migrate
 // Creates all tables with correct schema and indexes for production performance.
 // Safe to re-run — uses CREATE TABLE IF NOT EXISTS throughout.
@@ -205,7 +205,7 @@ const MIGRATIONS = [
       CREATE TABLE IF NOT EXISTS bet_history (
         id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id         INT UNSIGNED NOT NULL,
-        prediction_id   INT UNSIGNED DEFAULT NULL COMMENT 'Optional link to a G33 prediction',
+        prediction_id   INT UNSIGNED DEFAULT NULL COMMENT 'Optional link to a RP prediction',
         stake           DECIMAL(10,2) NOT NULL DEFAULT 0.00,
         odds            DECIMAL(8,2)  NOT NULL DEFAULT 0.00,
         result          ENUM('won','lost','pending','void') NOT NULL DEFAULT 'pending',
@@ -355,39 +355,39 @@ const MIGRATIONS = [
     name: 'Seed default SEO settings',
     fn: async (conn) => {
       const rows = [
-        ['home',        'AfroPredict - Free Football Predictions & Betting Tips Today',
+        ['home',        'Rooted Predictions - Free Football Predictions & Betting Tips Today',
                         'Get accurate free football predictions, VIP tips, and daily betting analysis covering 1,200+ leagues worldwide. Precision tips for Premier League, Champions League, and more.',
                         'football predictions today, free football tips, best prediction site, sure tips today, football betting tips'],
-        ['predictions', 'Todays Football Predictions - All Leagues | AfroPredict',
+        ['predictions', 'Todays Football Predictions - All Leagues | Rooted Predictions',
                         'Browse todays free and VIP football predictions across all 1,200+ leagues. Filter by market, league, or continent. Over 2.5, BTTS, 1X2 tips updated daily.',
                         'football predictions today, free tips, over 2.5 goals, BTTS tips, accumulator tips'],
-        ['pricing',     'VIP Football Tips - Subscribe from $4.89/month | AfroPredict',
+        ['pricing',     'VIP Football Tips - Subscribe from $4.89/month | Rooted Predictions',
                         'Unlock premium VIP football tips with high-confidence picks, early access, and Telegram alerts. Plans from $4.89/month. 3-day free trial available.',
                         'VIP football tips, premium predictions, best tipster subscription, football tips site'],
-        ['leaderboard', 'Prediction Accuracy Leaderboard - Track Record | AfroPredict',
-                        'See AfroPredict verified prediction accuracy stats and tipster performance leaderboard. Transparent results across all markets and leagues.',
+        ['leaderboard', 'Prediction Accuracy Leaderboard - Track Record | Rooted Predictions',
+                        'See Rooted Predictions verified prediction accuracy stats and tipster performance leaderboard. Transparent results across all markets and leagues.',
                         'football prediction accuracy, tipster results, best prediction site record'],
-        ['blog',        'Football Betting Guides & Match Previews | AfroPredict Blog',
-                        'Expert football betting guides, match previews, and league analysis. Learn how to win football bets with data-driven insights from AfroPredict.',
+        ['blog',        'Football Betting Guides & Match Previews | Rooted Predictions Blog',
+                        'Expert football betting guides, match previews, and league analysis. Learn how to win football bets with data-driven insights from Rooted Predictions.',
                         'football betting guide, match preview, how to win football bets, league analysis'],
-        ['about',       'About AfroPredict - Global Football Prediction Platform',
-                        'AfroPredict is a global football prediction platform serving free and VIP tips powered by algorithm-generated predictions and API-Football data covering 1,200+ leagues.',
-                        'about AfroPredict, football prediction platform, best tipster'],
-        ['contact',     'Contact AfroPredict - Get in Touch',
-                        'Contact the AfroPredict team for support, partnership enquiries, or feedback. We are here to help bettors worldwide win more.',
-                        'contact AfroPredict, football tips support'],
-        ['privacy',     'Privacy Policy | AfroPredict',
-                        'Read the AfroPredict privacy policy. We are committed to protecting your personal data in compliance with GDPR and global data protection standards.',
-                        'AfroPredict privacy policy, data protection'],
-        ['terms',       'Terms of Service | AfroPredict',
-                        'Read the AfroPredict terms of service. By using our platform you agree to these terms governing free and VIP prediction services.',
-                        'AfroPredict terms of service, betting tips terms'],
-        ['login',       'Login to AfroPredict - Access Your Dashboard',
-                        'Log in to your AfroPredict account to access bookmarks, bet history, and VIP tips.',
-                        'AfroPredict login'],
-        ['register',    'Create a Free Account | AfroPredict',
-                        'Register for a free AfroPredict account to save predictions, track your bets, and upgrade to VIP for premium tips.',
-                        'AfroPredict register, free football tips account'],
+        ['about',       'About Rooted Predictions - Global Football Prediction Platform',
+                        'Rooted Predictions is a global football prediction platform serving free and VIP tips powered by algorithm-generated predictions and API-Football data covering 1,200+ leagues.',
+                        'about Rooted Predictions, football prediction platform, best tipster'],
+        ['contact',     'Contact Rooted Predictions - Get in Touch',
+                        'Contact the Rooted Predictions team for support, partnership enquiries, or feedback. We are here to help bettors worldwide win more.',
+                        'contact Rooted Predictions, football tips support'],
+        ['privacy',     'Privacy Policy | Rooted Predictions',
+                        'Read the Rooted Predictions privacy policy. We are committed to protecting your personal data in compliance with GDPR and global data protection standards.',
+                        'Rooted Predictions privacy policy, data protection'],
+        ['terms',       'Terms of Service | Rooted Predictions',
+                        'Read the Rooted Predictions terms of service. By using our platform you agree to these terms governing free and VIP prediction services.',
+                        'Rooted Predictions terms of service, betting tips terms'],
+        ['login',       'Login to Rooted Predictions - Access Your Dashboard',
+                        'Log in to your Rooted Predictions account to access bookmarks, bet history, and VIP tips.',
+                        'Rooted Predictions login'],
+        ['register',    'Create a Free Account | Rooted Predictions',
+                        'Register for a free Rooted Predictions account to save predictions, track your bets, and upgrade to VIP for premium tips.',
+                        'Rooted Predictions register, free football tips account'],
       ];
       for (const [page, title, desc, kw] of rows) {
         await conn.execute(
@@ -482,8 +482,8 @@ const MIGRATIONS = [
     sql: `
       INSERT IGNORE INTO users (name, email, password_hash, role, country, timezone)
       VALUES (
-        'AfroPredict Admin',
-        'admin@afropredict.com',
+        'Rooted Predictions Admin',
+        'admin@rootedpredictions.com',
         '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQyCKQlMOLJhBsKDWmPRUpNQ2',
         'admin',
         'United Kingdom',
@@ -526,10 +526,10 @@ async function runMigrations() {
     }
 
     console.log('\n[MIGRATE] ✅ All migrations completed successfully.');
-    console.log('[MIGRATE] Database is ready for AfroPredict.\n');
+    console.log('[MIGRATE] Database is ready for Rooted Predictions.\n');
     console.log('---------------------------------------------------');
     console.log('Default admin credentials:');
-    console.log('  Email:    admin@afropredict.com');
+    console.log('  Email:    admin@rootedpredictions.com');
     console.log('  Password: Admin@Afro!');
     console.log('  ⚠️  CHANGE THE ADMIN PASSWORD IMMEDIATELY after first login!');
     console.log('---------------------------------------------------\n');

@@ -1,5 +1,5 @@
 // services/apiFootball.js
-// AfroPredict — API-Football integration service
+// Rooted Predictions — API-Football integration service
 'use strict';
 
 const axios = require('axios');

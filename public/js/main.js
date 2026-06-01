@@ -1,5 +1,5 @@
 /**
- * AfroPredict — Main JavaScript
+ * Rooted Predictions — Main JavaScript
  * Handles: dark mode, mobile nav, league filter dropdown,
  *          date navigation, market tabs, confidence bars
  */
@@ -7,7 +7,7 @@
 
 /* ── Dark Mode ─────────────────────────────────────────────── */
 (function initTheme() {
-  const saved = localStorage.getItem('g33_theme') || 'dark';
+  const saved = localStorage.getItem('rp_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
 })();
 
@@ -15,7 +15,7 @@ function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme');
   const next = current === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('g33_theme', next);
+  localStorage.setItem('rp_theme', next);
   const icon = document.getElementById('themeIcon');
   if (icon) icon.textContent = next === 'dark' ? 'light_mode' : 'dark_mode';
 }
@@ -95,7 +95,7 @@ function buildLeagueDropdown(container) {
   if (!btn || !dropdown || !searchInput || !list) return;
 
   // Restore saved selection
-  const saved = localStorage.getItem('g33_league_filter') || 'all';
+  const saved = localStorage.getItem('rp_league_filter') || 'all';
 
   function renderList(filter = '') {
     list.innerHTML = '';
@@ -165,7 +165,7 @@ function buildLeagueDropdown(container) {
     if (!opt) return;
     const id = opt.dataset.id;
     const name = opt.dataset.name || 'All Leagues';
-    localStorage.setItem('g33_league_filter', id);
+    localStorage.setItem('rp_league_filter', id);
     dropdown.classList.remove('open');
     btn.setAttribute('aria-expanded', 'false');
     // Dispatch event so page can react
@@ -191,12 +191,12 @@ function initMarketTabs() {
         tabsEl.querySelectorAll('.market-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         const market = tab.dataset.market;
-        localStorage.setItem('g33_market_filter', market);
+        localStorage.setItem('rp_market_filter', market);
         window.dispatchEvent(new CustomEvent('marketFilterChange', { detail: { market } }));
       });
     });
     // Restore saved
-    const saved = localStorage.getItem('g33_market_filter') || 'all';
+    const saved = localStorage.getItem('rp_market_filter') || 'all';
     const active = tabsEl.querySelector(`[data-market="${saved}"]`);
     if (active) {
       tabsEl.querySelectorAll('.market-tab').forEach(t => t.classList.remove('active'));
@@ -212,7 +212,7 @@ function initDateNav() {
 
   const today = new Date();
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const saved = localStorage.getItem('g33_date_filter') || today.toISOString().split('T')[0];
+  const saved = localStorage.getItem('rp_date_filter') || today.toISOString().split('T')[0];
 
   // Build 7-day window: yesterday + today + 5 ahead
   for (let i = -1; i <= 5; i++) {
@@ -229,7 +229,7 @@ function initDateNav() {
     btn.addEventListener('click', () => {
       navEl.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      localStorage.setItem('g33_date_filter', iso);
+      localStorage.setItem('rp_date_filter', iso);
       window.dispatchEvent(new CustomEvent('dateFilterChange', { detail: { date: iso } }));
     });
     navEl.appendChild(btn);

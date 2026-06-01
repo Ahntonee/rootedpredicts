@@ -1,5 +1,5 @@
 // controllers/admin.js
-// AfroPredict — Admin controller
+// Rooted Predictions — Admin controller
 'use strict';
 
 const db         = require('../config/db');

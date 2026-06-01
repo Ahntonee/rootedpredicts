@@ -1,5 +1,5 @@
 // public/js/pricing.js
-// AfroPredict — Pricing page: payment button logic + subscription status check
+// Rooted Predictions — Pricing page: payment button logic + subscription status check
 (function () {
   'use strict';
 
@@ -72,7 +72,7 @@
 
     const json = await apiFetch('POST', '/api/subscriptions/paystack/verify', { reference: ref });
     if (json.success) {
-      showToast('VIP activated! Welcome to AfroPredict VIP.', 'success');
+      showToast('VIP activated! Welcome to Rooted Predictions VIP.', 'success');
       setTimeout(() => window.location.href = '/dashboard.html?vip=success', 2500);
     } else {
       showToast(json.message || 'Payment verification failed.', 'error');

@@ -1,5 +1,5 @@
 /**
- * AfroPredict — Dashboard Shared Utilities
+ * Rooted Predictions — Dashboard Shared Utilities
  * Included on: bookmarks.html, bet-history.html
  */
 (function () {

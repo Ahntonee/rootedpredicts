@@ -1,5 +1,5 @@
 // config/migrate_auth.js
-// AfroPredict — Auth column additions
+// Rooted Predictions — Auth column additions
 // Compatible with MySQL 5.7 and MySQL 8.0
 // Run: node config/migrate_auth.js
 'use strict';
@@ -10,7 +10,7 @@ async function run() {
   const conn = await mysql.createConnection({
     host: process.env.DB_HOST||'localhost', port: parseInt(process.env.DB_PORT)||3306,
     user: process.env.DB_USER||'root', password: process.env.DB_PASSWORD||'',
-    database: process.env.DB_NAME||'afropredict',
+    database: process.env.DB_NAME||'rootedpredictions',
   });
   console.log('[MIGRATE_AUTH] Connected');
 
@@ -19,7 +19,7 @@ async function run() {
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users'
      AND COLUMN_NAME IN ('password_reset_token','password_reset_expires')`,
-    [process.env.DB_NAME||'afropredict']
+    [process.env.DB_NAME||'rootedpredictions']
   );
   const existing = cols.map(c => c.COLUMN_NAME);
 

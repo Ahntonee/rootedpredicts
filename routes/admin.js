@@ -1,5 +1,5 @@
 // routes/admin.js
-// AfroPredict — Admin API routes (admin role only)
+// Rooted Predictions — Admin API routes (admin role only)
 'use strict';
 
 const express    = require('express');

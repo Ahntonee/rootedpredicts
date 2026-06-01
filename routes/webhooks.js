@@ -1,5 +1,5 @@
 // routes/webhooks.js
-// AfroPredict — Payment provider webhook receivers
+// Rooted Predictions — Payment provider webhook receivers
 // IMPORTANT: Stripe webhook requires raw body (handled in server.js middleware)
 'use strict';
 

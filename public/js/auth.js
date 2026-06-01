@@ -1,5 +1,5 @@
 /**
- * AfroPredict — Frontend Auth Helper
+ * Rooted Predictions — Frontend Auth Helper
  * Handles login state, role-based UI rendering, and auth API calls.
  * Included on every authenticated page.
  */

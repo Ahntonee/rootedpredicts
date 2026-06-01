@@ -1,5 +1,5 @@
 // middleware/validate.js
-// AfroPredict — Input validation middleware
+// Rooted Predictions — Input validation middleware
 // Applied to POST/PUT routes to sanitise and validate request bodies
 
 'use strict';

@@ -1,5 +1,5 @@
 // config/migrate_auth.js
-// AfroPredict — Auth column additions
+// Rooted Predictions — Auth column additions
 // Run once: node config/migrate_auth.js
 'use strict';
 require('dotenv').config();
