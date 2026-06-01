@@ -35,7 +35,7 @@ async function register(req, res) {
         const customer = await stripe.customers.create({
           email: email.toLowerCase(),
           name:  sanitiseText(name),
-          metadata: { source: 'rootedpredictions_registration' },
+          metadata: { source: 'rootedpredict_registration' },
         });
         stripe_customer_id = customer.id;
       }

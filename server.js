@@ -109,7 +109,7 @@ app.get('/api/status', async (req, res) => {
 
 // ── Sitemap (dynamic — includes blog posts + prediction slugs from DB)
 app.get('/sitemap.xml', async (req, res) => {
-  const BASE = process.env.SITE_URL || 'https://www.rootedpredictions.com';
+  const BASE = process.env.SITE_URL || 'https://www.rootedpredict.com';
   const today = new Date().toISOString().split('T')[0];
 
   const staticPages = [

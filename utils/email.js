@@ -22,7 +22,7 @@ const transporter = nodemailer.createTransport({
  */
 async function sendEmail({ to, subject, html, text }) {
   const mailOptions = {
-    from:    process.env.EMAIL_FROM || 'Rooted Predictions <noreply@rootedpredictions.com>',
+    from:    process.env.EMAIL_FROM || 'Rooted Predictions <noreply@rootedpredict.com>',
     to,
     subject,
     html,
@@ -53,7 +53,7 @@ async function sendWelcomeEmail(user) {
           <table width="600" cellpadding="0" cellspacing="0" style="background:#0F3460;border-radius:12px;overflow:hidden;">
             <tr>
               <td style="background:#E94560;padding:24px 40px;text-align:center;">
-                <h1 style="color:#fff;margin:0;font-size:28px;letter-spacing:1px;">ROOTEDPREDICTIONS</h1>
+                <h1 style="color:#fff;margin:0;font-size:28px;letter-spacing:1px;">ROOTEDPREDICT</h1>
                 <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px;">Precision Tips. Global Reach. Real Results.</p>
               </td>
             </tr>
@@ -113,7 +113,7 @@ async function sendPasswordResetEmail(user, resetToken) {
           <table width="600" cellpadding="0" cellspacing="0" style="background:#0F3460;border-radius:12px;overflow:hidden;">
             <tr>
               <td style="background:#E94560;padding:24px 40px;text-align:center;">
-                <h1 style="color:#fff;margin:0;font-size:28px;">ROOTEDPREDICTIONS</h1>
+                <h1 style="color:#fff;margin:0;font-size:28px;">ROOTEDPREDICT</h1>
               </td>
             </tr>
             <tr>
@@ -152,7 +152,7 @@ async function sendVipConfirmationEmail(user, plan) {
           <table width="600" cellpadding="0" cellspacing="0" style="background:#0F3460;border-radius:12px;overflow:hidden;">
             <tr>
               <td style="background:#E94560;padding:24px 40px;text-align:center;">
-                <h1 style="color:#fff;margin:0;font-size:28px;">ROOTEDPREDICTIONS VIP</h1>
+                <h1 style="color:#fff;margin:0;font-size:28px;">ROOTEDPREDICT VIP</h1>
                 <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;">You are now a VIP member</p>
               </td>
             </tr>

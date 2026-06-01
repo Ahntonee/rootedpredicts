@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: rootedpredictions
+    name: rootedpredict
     env: node
     region: frankfurt
     plan: free

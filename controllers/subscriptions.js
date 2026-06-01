@@ -74,7 +74,7 @@ async function stripeCreateCheckout(req, res) {
       const customer = await stripe.customers.create({
         email: req.user.email,
         name:  req.user.name,
-        metadata: { rootedpredictions_user_id: String(req.user.id) },
+        metadata: { rootedpredict_user_id: String(req.user.id) },
       });
       customerId = customer.id;
       await db.query(`UPDATE users SET stripe_customer_id=? WHERE id=?`, [customerId, req.user.id]);

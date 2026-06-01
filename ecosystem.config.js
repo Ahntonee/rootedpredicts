@@ -6,7 +6,7 @@
 module.exports = {
   apps: [
     {
-      name:        'rootedpredictions',
+      name:        'rootedpredict',
       script:      'server.js',
       instances:   'max',        // all available CPU cores
       exec_mode:   'cluster',    // cluster mode for load balancing

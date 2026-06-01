@@ -1,5 +1,5 @@
 // utils/jwt.js
-// rootedpredictions — JWT token generation and verification
+// rootedpredict — JWT token generation and verification
 // Tokens are stored in httpOnly cookies for XSS protection
 
 'use strict';

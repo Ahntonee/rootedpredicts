@@ -112,7 +112,7 @@ function requireRole(...roles) {
       if (req.user.role === 'user' && roles.includes('vip')) {
         return errorResponse(
           res,
-          'VIP subscription required. Upgrade at rootedpredictions.com/pricing',
+          'VIP subscription required. Upgrade at rootedpredict.com/pricing',
           403
         );
       }
@@ -146,7 +146,7 @@ function requireVip(req, res, next) {
   if (req.user.role !== 'vip' && req.user.role !== 'admin') {
     return errorResponse(
       res,
-      'VIP subscription required. Upgrade at rootedpredictions.com/pricing',
+      'VIP subscription required. Upgrade at rootedpredict.com/pricing',
       403
     );
   }

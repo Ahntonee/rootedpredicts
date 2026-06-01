@@ -1,5 +1,5 @@
 {
-  "name": "rootedpredictions",
+  "name": "rootedpredict",
   "version": "1.0.0",
   "description": "Rooted Predictions — Precision Tips. Global Reach. Real Results.",
   "main": "server.js",
@@ -9,9 +9,9 @@
     "migrate": "node config/migrate.js",
     "prod": "NODE_ENV=production node server.js",
     "pm2:start": "pm2 start ecosystem.config.js --env production",
-    "pm2:reload": "pm2 reload rootedpredictions --update-env",
-    "pm2:stop": "pm2 stop rootedpredictions",
-    "pm2:logs": "pm2 logs rootedpredictions"
+    "pm2:reload": "pm2 reload rootedpredict --update-env",
+    "pm2:stop": "pm2 stop rootedpredict",
+    "pm2:logs": "pm2 logs rootedpredict"
   },
   "keywords": [
     "football",
@@ -19,7 +19,7 @@
     "sports",
     "betting",
     "tips",
-    "rootedpredictions"
+    "rootedpredict"
   ],
   "author": "Rooted Predictions",
   "license": "ISC",

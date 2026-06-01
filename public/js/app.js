@@ -440,10 +440,10 @@
         <div class="affiliate-strip">
           <span class="affiliate-label">Bet on</span>
           <div class="affiliate-links">
-            <a href="https://www.bet365.com?utm_source=rootedpredictions&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Bet365</a>
-            <a href="https://www.betway.com?utm_source=rootedpredictions&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Betway</a>
-            <a href="https://www.sportybet.com?utm_source=rootedpredictions&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">SportyBet</a>
-            <a href="https://www.bet9ja.com?utm_source=rootedpredictions&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Bet9ja</a>
+            <a href="https://www.bet365.com?utm_source=rootedpredict&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Bet365</a>
+            <a href="https://www.betway.com?utm_source=rootedpredict&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Betway</a>
+            <a href="https://www.sportybet.com?utm_source=rootedpredict&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">SportyBet</a>
+            <a href="https://www.bet9ja.com?utm_source=rootedpredict&utm_medium=prediction&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="affiliate-link">Bet9ja</a>
           </div>
         </div>
       </article>

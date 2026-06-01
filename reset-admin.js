@@ -7,7 +7,7 @@ require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const db     = require('./config/db');
 
-const ADMIN_EMAIL    = 'admin@rootedpredictions.com';
+const ADMIN_EMAIL    = 'admin@rootedpredict.com';
 const ADMIN_PASSWORD = 'Admin@RP!';
 
 async function run() {

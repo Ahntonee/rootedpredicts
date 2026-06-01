@@ -12,7 +12,7 @@ async function run() {
   const conn = await mysql.createConnection({
     host: process.env.DB_HOST||'localhost', port: parseInt(process.env.DB_PORT)||3306,
     user: process.env.DB_USER||'root', password: process.env.DB_PASSWORD||'',
-    database: process.env.DB_NAME||'rootedpredictions',
+    database: process.env.DB_NAME||'rootedpredict',
     ...(isTiDB && { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true } }),
   });
   console.log('[MIGRATE_AUTH] Connected');
@@ -22,7 +22,7 @@ async function run() {
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users'
      AND COLUMN_NAME IN ('password_reset_token','password_reset_expires')`,
-    [process.env.DB_NAME||'rootedpredictions']
+    [process.env.DB_NAME||'rootedpredict']
   );
   const existing = cols.map(c => c.COLUMN_NAME);
 

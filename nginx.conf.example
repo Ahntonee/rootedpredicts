@@ -1,15 +1,15 @@
 # nginx.conf.example
 # Rooted Predictions — Nginx reverse proxy configuration
-# Place at: /etc/nginx/sites-available/rootedpredictions
-# Then: sudo ln -s /etc/nginx/sites-available/rootedpredictions /etc/nginx/sites-enabled/
-# Run: sudo certbot --nginx -d rootedpredictions.com -d www.rootedpredictions.com
+# Place at: /etc/nginx/sites-available/rootedpredict
+# Then: sudo ln -s /etc/nginx/sites-available/rootedpredict /etc/nginx/sites-enabled/
+# Run: sudo certbot --nginx -d rootedpredict.com -d www.rootedpredict.com
 # Certbot auto-fills the ssl_certificate paths below.
 
 # ── Redirect HTTP → HTTPS ────────────────────────────────────
 server {
     listen 80;
     listen [::]:80;
-    server_name rootedpredictions.com www.rootedpredictions.com;
+    server_name rootedpredict.com www.rootedpredict.com;
     return 301 https://$host$request_uri;
 }
 
@@ -17,11 +17,11 @@ server {
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name rootedpredictions.com www.rootedpredictions.com;
+    server_name rootedpredict.com www.rootedpredict.com;
 
     # SSL — filled in by Certbot automatically
-    # ssl_certificate     /etc/letsencrypt/live/rootedpredictions.com/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/rootedpredictions.com/privkey.pem;
+    # ssl_certificate     /etc/letsencrypt/live/rootedpredict.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/rootedpredict.com/privkey.pem;
     # include             /etc/letsencrypt/options-ssl-nginx.conf;
     # ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -45,7 +45,7 @@ server {
 
     # Static assets — long-term cache (versioned by deployment)
     location ~* ^/(css|js|images)/.*\.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf)$ {
-        root /var/www/rootedpredictions/public;
+        root /var/www/rootedpredict/public;
         expires 1y;
         add_header Cache-Control "public, immutable";
         access_log off;
@@ -53,7 +53,7 @@ server {
 
     # favicon and robots served directly from public/
     location = /favicon.ico {
-        root /var/www/rootedpredictions/public;
+        root /var/www/rootedpredict/public;
         expires 1d;
         access_log off;
     }
@@ -113,8 +113,8 @@ server {
     }
 
     # Logs
-    access_log /var/log/nginx/rootedpredictions.access.log;
-    error_log  /var/log/nginx/rootedpredictions.error.log  warn;
+    access_log /var/log/nginx/rootedpredict.access.log;
+    error_log  /var/log/nginx/rootedpredict.error.log  warn;
 
     # Client upload limit (contact form, profile photo)
     client_max_body_size 5M;

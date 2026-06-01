@@ -22,7 +22,7 @@ const transporter = nodemailer.createTransport({
  */
 async function sendEmail({ to, subject, html, text }) {
   const mailOptions = {
-    from:    process.env.EMAIL_FROM || 'Rooted Predictions <noreply@rootedpredictions.com>',
+    from:    process.env.EMAIL_FROM || 'Rooted Predictions <noreply@rootedpredict.com>',
     to,
     subject,
     html,
@@ -95,7 +95,7 @@ async function sendWelcomeEmail(user) {
     </html>
   `;
 
-  return sendEmail({ to: user.email, subject: 'Welcome to rootedpredictions — Your account is ready', html });
+  return sendEmail({ to: user.email, subject: 'Welcome to rootedpredict — Your account is ready', html });
 }
 
 /**
@@ -113,7 +113,7 @@ async function sendPasswordResetEmail(user, resetToken) {
           <table width="600" cellpadding="0" cellspacing="0" style="background:#0F3460;border-radius:12px;overflow:hidden;">
             <tr>
               <td style="background:#E94560;padding:24px 40px;text-align:center;">
-                <h1 style="color:#fff;margin:0;font-size:28px;">rootedpredictions</h1>
+                <h1 style="color:#fff;margin:0;font-size:28px;">rootedpredict</h1>
               </td>
             </tr>
             <tr>
