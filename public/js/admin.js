@@ -109,8 +109,7 @@
     if (!el) return;
     el.innerHTML = `
       <a href="/admin/index.html" class="admin-logo">
-        <span class="logo-mark">RP</span>
-        <span class="admin-logo-text">Rooted Predictions</span>
+        <img src="/images/logo.png" alt="Rooted Predictions" class="admin-logo-img">
         <span class="admin-logo-badge">Admin</span>
       </a>
       <nav class="admin-nav">

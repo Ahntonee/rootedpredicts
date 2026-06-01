@@ -102,8 +102,7 @@
       <div class="container">
         <div class="header-inner">
           <a href="/index.html" class="site-logo">
-            <span class="logo-mark">RP</span>
-            <span class="logo-text">AFRO<span>PREDICT</span></span>
+            <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img">
           </a>
           <nav class="main-nav" id="main-nav">
             <a href="/index.html"           class="nav-link ${active('/index.html')}">Home</a>
@@ -165,8 +164,7 @@
         <div class="footer-top">
           <div class="footer-brand">
             <a href="/index.html" class="site-logo" style="margin-bottom:0;">
-              <span class="logo-mark">RP</span>
-              <span class="logo-text" style="color:#fff;">AFRO<span>PREDICT</span></span>
+              <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img">
             </a>
             <p>Precision football predictions powered by data. Free daily tips for the Premier League, La Liga, and Champions League. Bet smarter. Every single day.</p>
           </div>

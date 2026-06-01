@@ -108,10 +108,17 @@ img { max-width: 100%; display: block; }
 .site-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
   text-decoration: none;
   flex-shrink: 0;
 }
+.site-logo-img {
+  height: 44px;
+  width: auto;
+  display: block;
+  /* Slight brightness boost so logo pops on dark headers */
+  filter: brightness(1.05);
+}
+/* Keep .logo-mark for any remaining admin/standalone references */
 .logo-mark {
   background: var(--green);
   color: #fff;
