@@ -39,6 +39,29 @@ function validateRegister(req, res, next) {
 }
 
 /**
+ * Validate email verification body (step 2 of registration)
+ */
+function validateVerification(req, res, next) {
+  const { email, token } = req.body;
+  const errors = [];
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.push('A valid email address is required.');
+  }
+  if (!token || !/^\d{6}$/.test(token.trim())) {
+    errors.push('Please enter the 6-digit code sent to your email.');
+  }
+
+  if (errors.length) {
+    return errorResponse(res, 'Validation failed', 400, errors);
+  }
+
+  req.body.email = email.toLowerCase().trim();
+  req.body.token = token.trim();
+  next();
+}
+
+/**
  * Validate login body
  */
 function validateLogin(req, res, next) {
@@ -150,6 +173,7 @@ function validateBetHistory(req, res, next) {
 
 module.exports = {
   validateRegister,
+  validateVerification,
   validateLogin,
   validatePrediction,
   validateBlogPost,

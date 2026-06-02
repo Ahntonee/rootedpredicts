@@ -515,6 +515,26 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `,
   },
+
+  // ----------------------------------------------------------
+  // 19. Pending registrations — holds OTP + hashed password
+  //     until email is verified; deleted after account creation
+  // ----------------------------------------------------------
+  {
+    name: 'Create pending_registrations table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS pending_registrations (
+        id            INT AUTO_INCREMENT PRIMARY KEY,
+        email         VARCHAR(255) NOT NULL UNIQUE,
+        name          VARCHAR(100) NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        country       VARCHAR(5),
+        token         VARCHAR(10)  NOT NULL,
+        expires_at    DATETIME     NOT NULL,
+        created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `,
+  },
 ];
 
 // ============================================================

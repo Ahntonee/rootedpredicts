@@ -8,7 +8,7 @@ const bcrypt  = require('bcryptjs');
 const crypto  = require('crypto');
 const db      = require('../config/db');
 const { generateToken, setTokenCookie, clearTokenCookie } = require('../utils/jwt');
-const { sendWelcomeEmail, sendPasswordResetEmail } = require('../utils/email');
+const { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
 const { sanitiseText, errorResponse, successResponse } = require('../utils/helpers');
 
 // ── REGISTER ──────────────────────────────────────────────────
@@ -80,6 +80,150 @@ async function register(req, res) {
   } catch (error) {
     console.error('[AUTH] Register error:', error.message);
     return errorResponse(res, 'Registration failed. Please try again.', 500);
+  }
+}
+
+// ── INITIATE REGISTER — send OTP, no account created yet ─────
+async function initiateRegister(req, res) {
+  const { name, email, password, country } = req.body;
+
+  try {
+    // Reject if email already has a full account
+    const [existing] = await db.query(
+      'SELECT id FROM users WHERE email = ?', [email.toLowerCase()]
+    );
+    if (existing.length) {
+      return errorResponse(res, 'An account with that email already exists.', 409);
+    }
+
+    // Hash password up-front so we can store it pending verification
+    const password_hash = await bcrypt.hash(password, 12);
+
+    // Generate a 6-digit numeric OTP
+    const token     = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Upsert — allows re-sending a fresh code if user retries
+    await db.query(
+      `INSERT INTO pending_registrations
+         (email, name, password_hash, country, token, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         name          = VALUES(name),
+         password_hash = VALUES(password_hash),
+         country       = VALUES(country),
+         token         = VALUES(token),
+         expires_at    = VALUES(expires_at),
+         created_at    = NOW()`,
+      [email.toLowerCase(), sanitiseText(name).slice(0, 100),
+       password_hash, country || null, token, expiresAt]
+    );
+
+    // Send verification email (non-blocking on failure)
+    sendVerificationEmail(
+      { name: sanitiseText(name), email: email.toLowerCase() },
+      token
+    ).catch(e => console.warn('[AUTH] Verification email failed:', e.message));
+
+    return successResponse(res, { email: email.toLowerCase() },
+      'Verification code sent. Check your email.');
+
+  } catch (error) {
+    console.error('[AUTH] Initiate register error:', error.message);
+    return errorResponse(res, 'Registration failed. Please try again.', 500);
+  }
+}
+
+// ── VERIFY REGISTRATION — confirm OTP, create account ─────────
+async function verifyRegistration(req, res) {
+  const { email, token } = req.body;
+
+  try {
+    // Look up pending record that hasn't expired
+    const [rows] = await db.query(
+      `SELECT * FROM pending_registrations
+       WHERE email = ? AND expires_at > NOW()`,
+      [email.toLowerCase()]
+    );
+
+    if (!rows.length) {
+      return errorResponse(res,
+        'Code has expired or was not found. Please register again.', 400);
+    }
+
+    const pending = rows[0];
+
+    // Constant-time token comparison
+    if (pending.token !== token.trim()) {
+      return errorResponse(res,
+        'Incorrect verification code. Please check and try again.', 400);
+    }
+
+    // Guard against duplicate submission
+    const [duplicate] = await db.query(
+      'SELECT id FROM users WHERE email = ?', [email.toLowerCase()]
+    );
+    if (duplicate.length) {
+      await db.query(
+        'DELETE FROM pending_registrations WHERE email = ?', [email.toLowerCase()]
+      );
+      return errorResponse(res, 'An account with that email already exists.', 409);
+    }
+
+    // Create Stripe customer (non-blocking)
+    let stripe_customer_id = null;
+    try {
+      if (process.env.STRIPE_SECRET_KEY &&
+          process.env.STRIPE_SECRET_KEY !== 'sk_test_your_stripe_test_key') {
+        const stripe   = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const customer = await stripe.customers.create({
+          email:    email.toLowerCase(),
+          name:     pending.name,
+          metadata: { source: 'rootedpredict_registration' },
+        });
+        stripe_customer_id = customer.id;
+      }
+    } catch (stripeErr) {
+      console.warn('[AUTH] Stripe customer creation skipped:', stripeErr.message);
+    }
+
+    // Insert verified user
+    const [result] = await db.query(
+      `INSERT INTO users
+         (name, email, password_hash, role, country, timezone, stripe_customer_id)
+       VALUES (?, ?, ?, 'user', ?, 'UTC', ?)`,
+      [pending.name, pending.email, pending.password_hash,
+       pending.country, stripe_customer_id]
+    );
+
+    const userId = result.insertId;
+
+    // Clean up pending record
+    await db.query(
+      'DELETE FROM pending_registrations WHERE email = ?', [email.toLowerCase()]
+    );
+
+    // Issue JWT cookie
+    const jwtToken = generateToken({ id: userId, role: 'user', email: email.toLowerCase() });
+    setTokenCookie(res, jwtToken);
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail({ name: pending.name, email: email.toLowerCase() })
+      .catch(e => console.warn('[AUTH] Welcome email failed:', e.message));
+
+    return successResponse(res, {
+      user: {
+        id:      userId,
+        name:    pending.name,
+        email:   email.toLowerCase(),
+        role:    'user',
+        country: pending.country,
+      }
+    }, 'Account created successfully', 201);
+
+  } catch (error) {
+    console.error('[AUTH] Verify registration error:', error.message);
+    return errorResponse(res, 'Verification failed. Please try again.', 500);
   }
 }
 
@@ -301,4 +445,4 @@ async function changePassword(req, res) {
   }
 }
 
-module.exports = { register, login, logout, me, forgotPassword, resetPassword, changePassword };
+module.exports = { register, initiateRegister, verifyRegistration, login, logout, me, forgotPassword, resetPassword, changePassword };

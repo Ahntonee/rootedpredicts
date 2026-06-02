@@ -138,6 +138,56 @@ async function sendPasswordResetEmail(user, resetToken) {
 }
 
 /**
+ * Email verification OTP sent during registration
+ */
+async function sendVerificationEmail(user, token) {
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin:0;padding:0;background:#1A1A2E;font-family:Inter,Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#1A1A2E;">
+        <tr><td align="center" style="padding:40px 20px;">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#0F3460;border-radius:12px;overflow:hidden;max-width:600px;">
+            <tr>
+              <td style="background:#E94560;padding:24px 40px;text-align:center;">
+                <h1 style="color:#fff;margin:0;font-size:28px;letter-spacing:1px;">ROOTEDPREDICT</h1>
+                <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px;">Verify your email to complete registration</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:40px;">
+                <h2 style="color:#fff;margin:0 0 12px;font-size:20px;">Hi ${user.name},</h2>
+                <p style="color:#CBD5E1;line-height:1.7;margin:0 0 28px;">Enter the 6-digit code below to verify your email and create your Rooted Predictions account. This code expires in <strong style="color:#fff;">15 minutes</strong>.</p>
+                <div style="background:#1A1A2E;border-radius:10px;padding:28px;text-align:center;margin-bottom:28px;">
+                  <div style="font-size:48px;font-weight:900;letter-spacing:16px;color:#fff;font-family:Courier New,monospace;">${token}</div>
+                </div>
+                <p style="color:#6B7280;font-size:13px;line-height:1.6;margin:0;">If you did not attempt to register at Rooted Predictions, you can safely ignore this email. No account will be created without the code.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#1A1A2E;padding:20px 40px;text-align:center;">
+                <p style="color:#4B5563;font-size:12px;margin:0;">
+                  Rooted Predictions — ${process.env.SITE_URL || 'rootedpredict.com'}<br>
+                  Please gamble responsibly. 18+ only.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to:      user.email,
+    subject: `${token} — Your Rooted Predictions verification code`,
+    html,
+  });
+}
+
+/**
  * VIP confirmation email sent after successful payment
  */
 async function sendVipConfirmationEmail(user, plan) {
@@ -190,6 +240,7 @@ async function sendVipConfirmationEmail(user, plan) {
 module.exports = {
   sendEmail,
   sendWelcomeEmail,
+  sendVerificationEmail,
   sendPasswordResetEmail,
   sendVipConfirmationEmail,
 };
