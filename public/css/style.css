@@ -1278,9 +1278,11 @@ img { max-width: 100%; display: block; }
   .hero-grid { grid-template-columns: 1fr; gap: 28px; }
   /* Four stat cards stacked vertically, 10px gap */
   .hero-stats { grid-template-columns: 1fr; gap: 10px; }
-  /* Two buttons side by side, reduced size */
-  .hero-cta { flex-wrap: nowrap; gap: 10px; }
-  .hero-cta .btn { flex: 1; padding: 11px 14px; font-size: 0.8rem; }
+  /* Primary (Create Account) full-width on top; Log In + Telegram share the row below */
+  .hero-cta { flex-wrap: wrap; gap: 10px; }
+  .hero-cta .btn { padding: 11px 14px; font-size: 0.8rem; }
+  .hero-cta .btn-primary   { flex: 1 1 100%; }
+  .hero-cta .btn-secondary { flex: 1 1 calc(50% - 5px); }
   .hero-cta .btn .material-icons-round, .hero-cta .btn svg { font-size: 1rem; width: 16px; height: 16px; }
 
   /* ── Stats bar ── */
@@ -1384,9 +1386,11 @@ img { max-width: 100%; display: block; }
   .hero { padding: 24px 0 20px; }
   .hero h1 { font-size: clamp(1.7rem, 9vw, 2.2rem); }
   .hero-sub { font-size: 0.875rem; }
-  /* Keep the two buttons side by side, just slightly smaller */
-  .hero-cta { flex-direction: row; flex-wrap: nowrap; align-items: stretch; gap: 8px; }
-  .hero-cta .btn { flex: 1; width: auto; justify-content: center; padding: 11px 10px; font-size: 0.78rem; }
+  /* Primary full-width; Log In + Telegram side by side below, slightly smaller */
+  .hero-cta { flex-direction: row; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+  .hero-cta .btn { width: auto; justify-content: center; padding: 11px 10px; font-size: 0.78rem; }
+  .hero-cta .btn-primary   { flex: 1 1 100%; }
+  .hero-cta .btn-secondary { flex: 1 1 calc(50% - 4px); }
 
   /* ── Stats ── */
   .stat-value { font-size: 1.15rem; }
