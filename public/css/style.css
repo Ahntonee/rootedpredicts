@@ -187,6 +187,19 @@ img { max-width: 100%; display: block; }
   transition: all var(--transition);
 }
 .btn-login:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+.btn-join {
+  background: var(--green);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--green);
+  transition: all var(--transition);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.btn-join:hover { background: var(--midnight); border-color: var(--midnight); color: #fff; transform: translateY(-1px); }
 
 /* ── Dark mode toggle ───────────────────────────────────────── */
 .theme-toggle {
@@ -1251,7 +1264,10 @@ img { max-width: 100%; display: block; }
   }
   .nav-link:last-child { border-bottom: none; }
   .nav-toggle { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
-  .header-actions .btn-login { display: none; }
+  /* Keep Login + Join visible on mobile; drop the redundant Telegram button (it's a CTA in the hero) */
+  .header-actions .btn-telegram { display: none; }
+  .header-actions .btn-login { padding: 7px 11px; font-size: 0.8rem; }
+  .header-actions .btn-join  { padding: 7px 12px; font-size: 0.8rem; }
   .header-actions .btn-vip { padding: 7px 12px; font-size: 0.75rem; }
 
   /* ── Hero ── */
