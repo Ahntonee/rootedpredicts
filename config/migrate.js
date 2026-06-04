@@ -478,7 +478,7 @@ const MIGRATIONS = [
 
   // ----------------------------------------------------------
   // 17. SEED: Default admin user
-  //     Password: Admin@Afro! (bcrypt hash — CHANGE IMMEDIATELY)
+  //     Password: Admin@RP!  (bcrypt hash — CHANGE IMMEDIATELY after first login)
   // ----------------------------------------------------------
   {
     name: 'Seed default admin user',
@@ -487,7 +487,7 @@ const MIGRATIONS = [
       VALUES (
         'Rooted Predictions Admin',
         'admin@rootedpredict.com',
-        '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQyCKQlMOLJhBsKDWmPRUpNQ2',
+        '$2b$12$JzAxieWf7/S2eGx9qTsKHOFqVKsgXlSvBdt9LroE6LrgheZwEMGNK',
         'admin',
         'United Kingdom',
         'Europe/London'
