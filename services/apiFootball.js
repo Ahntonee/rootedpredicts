@@ -12,7 +12,7 @@ const CURRENT_SEASON = parseInt(process.env.API_FOOTBALL_SEASON) || 2024;
 const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'x-apisports-key': API_KEY, 'Content-Type': 'application/json' },
-  timeout: 20000,
+  timeout: 30000,
 });
 
 let dailyRequestCount = 0;
@@ -166,7 +166,7 @@ async function syncFixtures(date, leagueId = null) {
         `INSERT INTO predictions
            (fixture_id,league_id,home_team,away_team,home_team_logo,away_team_logo,
             match_date,tip,market,visibility,result,slug,published_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW())`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NULL)`,
         [fixture.id, dbLeagueId, teams.home.name, teams.away.name,
          teams.home.logo||null, teams.away.logo||null, mysqlDate,
          'TBD', '1X2', 'free', 'pending', slug]
@@ -247,17 +247,20 @@ function evaluateTip(tip, market, goals, teams) {
 
 // ── H2H, form, standings, stats
 async function fetchH2H(team1Id, team2Id, last = 10) {
-  // 'last' is a paid-plan parameter — fetch by season instead and slice client-side
+  // Paid plan: use the `last` parameter directly — only finished H2H meetings,
+  // across all competitions, far lighter than pulling a whole season.
   const { data } = await request('/fixtures/headtohead', {
     h2h:    `${team1Id}-${team2Id}`,
-    season: CURRENT_SEASON,
+    last,
   });
-  return data.slice(0, last);
+  // API returns oldest→newest; reverse so index 0 is the most recent meeting.
+  return data.slice().reverse().slice(0, last);
 }
 async function fetchTeamForm(teamId, last = 5) {
-  // 'last' is a paid-plan parameter — fetch by season and slice client-side
-  const { data } = await request('/fixtures', { team: teamId, season: CURRENT_SEASON });
-  // Sort descending by date so slice(0, last) gives the most recent
+  // Paid plan: `last` returns the team's most recent FINISHED fixtures across
+  // all competitions — accurate recent form without a full-season download.
+  const { data } = await request('/fixtures', { team: teamId, last });
+  // Sort descending by date so slice(0, last) gives the most recent first.
   data.sort((a, b) => new Date(b.fixture.date) - new Date(a.fixture.date));
   return data.slice(0, last);
 }

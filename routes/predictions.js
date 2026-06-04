@@ -151,10 +151,11 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   sql += ' LIMIT ? OFFSET ?';
   args.push(limit, offset);
 
-  const [[{ total }], [predictions]] = await Promise.all([
+  const [[countRows], [predictions]] = await Promise.all([
     db.query(countSql.split('LIMIT')[0], args.slice(0, -2)),
     db.query(sql, args),
   ]);
+  const total = (countRows[0] && countRows[0].total) || 0;
 
   // Mask VIP tip content for non-VIP users
   const isVip = req.user && ['vip', 'admin'].includes(req.user.role);
