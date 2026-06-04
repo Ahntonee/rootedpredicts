@@ -60,9 +60,14 @@
 </div>
 <script src="/js/content-protection.js"></script>
 <script>
-  // If already logged in, redirect to dashboard
+  // Send each role to its own home: admins → admin dashboard, everyone else → user dashboard
+  function roleHome(role) {
+    return role === 'admin' ? '/admin/index.html' : '/dashboard.html';
+  }
+
+  // If already logged in, redirect based on role
   fetch('/api/auth/me', { credentials: 'include' }).then(r => r.json()).then(j => {
-    if (j.success) window.location.href = '/dashboard.html';
+    if (j.success) window.location.href = roleHome(j.data.role);
   }).catch(() => {});
 
   document.getElementById('login-form').addEventListener('submit', async function(e) {
@@ -87,9 +92,11 @@
       const json = await res.json();
 
       if (json.success) {
-        // Redirect to intended page or dashboard
-        const params  = new URLSearchParams(window.location.search);
-        const redirect = params.get('redirect') || '/dashboard.html';
+        // Honour an explicit ?redirect= (e.g. an admin page that bounced here),
+        // otherwise send the user to their role's home.
+        const params   = new URLSearchParams(window.location.search);
+        const role     = (json.data && json.data.user) ? json.data.user.role : 'user';
+        const redirect = params.get('redirect') || roleHome(role);
         window.location.href = redirect;
       } else {
         errMsg.textContent = json.message || 'Invalid email or password.';
