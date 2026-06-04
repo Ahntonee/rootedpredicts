@@ -584,16 +584,32 @@ async function autoPredictFixtures(db, options = {}) {
   const minConf   = options.minConfidence || 65;   // raised from 55 → selectivity filter
   const autoPublish = options.autoPublish !== false;
 
+  // Scope:
+  //   options.date        → only fixtures on this date (past OR future) — for backtests/track records
+  //   options.includePast → drop the future-only guard entirely
+  //   default             → upcoming fixtures only (production behaviour)
+  const args = [];
+  let dateClause;
+  if (options.date) {
+    dateClause = 'AND DATE(p.match_date) = ?';
+    args.push(options.date);
+  } else if (options.includePast) {
+    dateClause = '';
+  } else {
+    dateClause = 'AND p.match_date >= NOW()';
+  }
+  args.push(limit);
+
   const [rows] = await db.query(
     `SELECT p.id, p.fixture_id, p.home_team, p.away_team, p.league_id,
             l.api_league_id
      FROM predictions p
      LEFT JOIN leagues l ON l.id = p.league_id
      WHERE p.tip = 'TBD' AND p.result = 'pending'
-       AND p.match_date >= NOW()
+       ${dateClause}
      ORDER BY p.match_date ASC
      LIMIT ?`,
-    [limit]
+    args
   );
 
   const confidence = require('./confidence');

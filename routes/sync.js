@@ -76,6 +76,8 @@ router.post('/auto-predict', asyncHandler(async (req, res) => {
     limit:         parseInt(req.body.limit)          || 20,
     minConfidence: parseInt(req.body.min_confidence) || 55,
     autoPublish:   req.body.auto_publish !== false,
+    date:          req.body.date || null,            // scope to a specific match date (e.g. past results)
+    includePast:   req.body.include_past === true,   // allow already-played fixtures
   };
   const result = await apiSvc.autoPredictFixtures(db, options);
   return successResponse(res, result,
