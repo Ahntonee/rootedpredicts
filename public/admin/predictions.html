@@ -214,30 +214,6 @@ async function deletePred(id) {
   });
 }
 
-document.getElementById('save-pred-btn').addEventListener('click', async () => {
-  const body = {
-    league_id:        parseInt(document.getElementById('m-league').value),
-    home_team:        document.getElementById('m-home').value.trim(),
-    away_team:        document.getElementById('m-away').value.trim(),
-    match_date:       document.getElementById('m-date').value,
-    tip:              document.getElementById('m-tip').value.trim(),
-    market:           document.getElementById('m-market').value,
-    odds:             parseFloat(document.getElementById('m-odds').value)||null,
-    confidence_score: parseInt(document.getElementById('m-conf').value)||null,
-    visibility:       document.getElementById('m-vis').value,
-    result:           document.getElementById('m-result').value,
-    analysis:         document.getElementById('m-analysis').value.trim(),
-    home_form:        document.getElementById('m-hform').value.trim(),
-    away_form:        document.getElementById('m-aform').value.trim(),
-    published:        document.getElementById('m-published').checked,
-  };
-  const url    = editingId ? '/api/admin/predictions/'+editingId : '/api/admin/predictions';
-  const method = editingId ? 'PUT' : 'POST';
-  const json   = await Admin.api(method, url, body);
-  if (json.success) { Admin.toast(editingId?'Updated':'Created'); Admin.hideModal('pred-modal'); loadPredictions(predPage); }
-  else Admin.toast(json.message||'Save failed','error');
-});
-
 let researchSuggestion = null;
 
 async function researchPred(fixtureId, matchName) {
