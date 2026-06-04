@@ -41,4 +41,8 @@ router.delete('/blog/:id',   asyncHandler(admin.deleteBlogPost));
 router.get('/seo',             asyncHandler(admin.getSeoSettings));
 router.put('/seo/:page',       asyncHandler(admin.updateSeoSettings));
 
+// Homepage stat overrides
+router.get('/site-stats',      asyncHandler(admin.getSiteStats));
+router.put('/site-stats',      asyncHandler(admin.updateSiteStats));
+
 module.exports = router;

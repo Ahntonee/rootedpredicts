@@ -517,6 +517,42 @@ const MIGRATIONS = [
   },
 
   // ----------------------------------------------------------
+  // 19. Homepage stat overrides
+  //     Each public metric is LIVE by default; an admin may set an
+  //     override_value to display a custom string instead.
+  // ----------------------------------------------------------
+  {
+    name: 'Create site_stat_overrides table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS site_stat_overrides (
+        metric_key     VARCHAR(40)  NOT NULL PRIMARY KEY,
+        label          VARCHAR(80)  NOT NULL,
+        override_value VARCHAR(60)  DEFAULT NULL,
+        sort_order     INT          NOT NULL DEFAULT 0,
+        updated_at     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `,
+  },
+  {
+    name: 'Seed homepage stat metrics',
+    fn: async (conn) => {
+      const rows = [
+        ['accuracy',        'Prediction Accuracy',   1],
+        ['leagues_covered', 'Leagues Covered',       2],
+        ['members',         'Active Members',        3],
+        ['predictions',     'Published Predictions', 4],
+      ];
+      for (const [key, label, order] of rows) {
+        await conn.query(
+          `INSERT IGNORE INTO site_stat_overrides (metric_key, label, sort_order) VALUES (?, ?, ?)`,
+          [key, label, order]
+        );
+      }
+      console.log('[MIGRATE] ✓ Seeded homepage stat metrics');
+    },
+  },
+
+  // ----------------------------------------------------------
   // 19. Pending registrations — holds OTP + hashed password
   //     until email is verified; deleted after account creation
   // ----------------------------------------------------------

@@ -43,7 +43,22 @@ router.get('/stats', asyncHandler(async (req, res) => {
   );
   const [[{ members }]] = await db.query(`SELECT COUNT(*) as members FROM users`);
 
-  return successResponse(res, { ...rows[0], leagues_covered, members });
+  // Admin overrides: each metric is LIVE unless an override string is set
+  const overrides = {};
+  try {
+    const [ov] = await db.query('SELECT metric_key, override_value FROM site_stat_overrides');
+    ov.forEach(r => { if (r.override_value) overrides[r.metric_key] = r.override_value; });
+  } catch (e) { /* table may not exist on older deployments */ }
+
+  const live = rows[0];
+  const display = {
+    accuracy:        overrides.accuracy        || (live.accuracy != null ? live.accuracy + '%' : 'New'),
+    leagues_covered: overrides.leagues_covered || String(leagues_covered),
+    members:         overrides.members         || String(members),
+    predictions:     overrides.predictions     || String(live.total || 0),
+  };
+
+  return successResponse(res, { ...live, leagues_covered, members, display, overrides });
 }));
 
 // ── GET /api/predictions — Main filtered listing

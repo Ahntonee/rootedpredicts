@@ -283,10 +283,58 @@ async function updateSeoSettings(req, res) {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 
+// ── Homepage stat overrides (live value by default, admin can override)
+async function getSiteStats(req, res) {
+  try {
+    const [[acc]] = await db.query(
+      `SELECT ROUND(SUM(result='won')/NULLIF(SUM(result IN('won','lost')),0)*100,1) a
+       FROM predictions WHERE published_at IS NOT NULL`
+    );
+    const [[lg]] = await db.query(
+      `SELECT COUNT(DISTINCT league_id) c FROM predictions WHERE published_at IS NOT NULL`
+    );
+    const [[mb]] = await db.query('SELECT COUNT(*) c FROM users');
+    const [[pr]] = await db.query("SELECT COUNT(*) c FROM predictions WHERE published_at IS NOT NULL");
+
+    const liveMap = {
+      accuracy:        acc.a != null ? acc.a + '%' : 'New',
+      leagues_covered: String(lg.c),
+      members:         String(mb.c),
+      predictions:     String(pr.c),
+    };
+
+    const [rows] = await db.query(
+      'SELECT metric_key,label,override_value FROM site_stat_overrides ORDER BY sort_order ASC'
+    );
+    const data = rows.map(r => ({
+      key:      r.metric_key,
+      label:    r.label,
+      live:     liveMap[r.metric_key] != null ? liveMap[r.metric_key] : '—',
+      override: r.override_value || '',
+    }));
+    res.json({ success: true, data });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
+async function updateSiteStats(req, res) {
+  try {
+    const updates = req.body || {};   // { metric_key: 'override string or empty', ... }
+    for (const [key, val] of Object.entries(updates)) {
+      const clean = (val == null || String(val).trim() === '') ? null : String(val).trim().slice(0, 60);
+      await db.query(
+        'UPDATE site_stat_overrides SET override_value=?, updated_at=NOW() WHERE metric_key=?',
+        [clean, key]
+      );
+    }
+    res.json({ success: true, message: 'Homepage stats saved' });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
 module.exports = {
   getStats, getPredictions, createPrediction, updatePrediction, deletePrediction,
   scorePrediction, scoreAllPredictions, previewScore,
   getUsers, updateUser, getLeagues, updateLeague,
   getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost,
   getSeoSettings, updateSeoSettings,
+  getSiteStats, updateSiteStats,
 };

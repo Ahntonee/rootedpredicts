@@ -535,24 +535,24 @@
   // ── Populate all live stat displays (hero + stats bar) from real data only
   async function updateStatsBar() {
     const s = await fetchStats();
-    // Accuracy reads "New" until there are graded results — never a fake number
-    const accuracy = (s.accuracy !== null && s.accuracy !== undefined) ? s.accuracy + '%' : 'New';
-    const num = v => (v !== null && v !== undefined) ? v : 0;
+    const d = s.display || {};
+    // Override-aware display strings; fall back to live values, never a fake number
+    const accuracy = d.accuracy || ((s.accuracy !== null && s.accuracy !== undefined) ? s.accuracy + '%' : 'New');
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.textContent = val; };
 
-    const els = {
-      // Hero stat boxes (homepage)
-      'hero-accuracy': accuracy,
-      'hero-leagues':  num(s.leagues_covered),
-      'hero-members':  num(s.members),
-      // Live stats bar (where present)
-      'stat-tips':     num(s.total),
-      'stat-accuracy': accuracy,
-      'stat-won':      num(s.won),
-    };
-    Object.entries(els).forEach(([id, val]) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = val;
-    });
+    // Hero stat boxes (homepage)
+    set('hero-accuracy', accuracy);
+    set('hero-leagues',  d.leagues_covered != null ? d.leagues_covered : (s.leagues_covered != null ? s.leagues_covered : 0));
+    set('hero-members',  d.members != null ? d.members : (s.members != null ? s.members : 0));
+    // Live stats bar (where present)
+    set('stat-tips',     d.predictions != null ? d.predictions : (s.total != null ? s.total : 0));
+    set('stat-accuracy', accuracy);
+    set('stat-won',      s.won != null ? s.won : 0);
+
+    // If an admin set a custom "Published Predictions" value, reflect it on the predictions page
+    if (s.overrides && s.overrides.predictions) {
+      set('pred-count', s.overrides.predictions + ' predictions');
+    }
   }
 
   // ── Ensure auth.js is loaded on every page that uses app.js ──
