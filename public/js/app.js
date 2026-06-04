@@ -66,11 +66,11 @@
   async function fetchStats() {
     if (statsCache) return statsCache;
     try {
-      const res  = await fetch('/api/predictions/stats?period=month');
+      const res  = await fetch('/api/predictions/stats');  // all-time, live
       const json = await res.json();
       if (json.success) { statsCache = json.data; return statsCache; }
     } catch(e) {}
-    return { total: 24, won: 18, lost: 3, pending: 3, accuracy: 78.4 };
+    return {};  // no fake fallback — render real or empty state
   }
 
   // ── Inject site header
@@ -82,21 +82,10 @@
     const active = href => path === href || path.startsWith(href.replace('.html','')) ? 'active' : '';
 
     el.innerHTML = `
-      <div class="ticker-wrap">
-        <div class="ticker-label"><span class="material-icons-round">sports_soccer</span>LIVE</div>
+      <div class="ticker-wrap" id="ticker-wrap" style="display:none;">
+        <div class="ticker-label"><span class="material-icons-round">sports_soccer</span>TODAY</div>
         <div style="overflow:hidden;flex:1;">
-          <div class="ticker-track">
-            <span class="ticker-item"><span class="live-dot"></span>Arsenal vs Chelsea <span class="score">2 - 1</span> 74'</span>
-            <span class="ticker-item"><span class="live-dot"></span>Real Madrid vs Barcelona <span class="score">0 - 0</span> 45'</span>
-            <span class="ticker-item">Man City vs Liverpool <span class="score">FT 3 - 1</span></span>
-            <span class="ticker-item">PSG vs Monaco <span class="score">FT 2 - 0</span></span>
-            <span class="ticker-item"><span class="live-dot"></span>Bayern vs Dortmund <span class="score">1 - 2</span> 61'</span>
-            <span class="ticker-item">Juventus vs Inter Milan <span class="score">FT 1 - 1</span></span>
-            <span class="ticker-item"><span class="live-dot"></span>Arsenal vs Chelsea <span class="score">2 - 1</span> 74'</span>
-            <span class="ticker-item"><span class="live-dot"></span>Real Madrid vs Barcelona <span class="score">0 - 0</span> 45'</span>
-            <span class="ticker-item">Man City vs Liverpool <span class="score">FT 3 - 1</span></span>
-            <span class="ticker-item">PSG vs Monaco <span class="score">FT 2 - 0</span></span>
-          </div>
+          <div class="ticker-track" id="ticker-track"></div>
         </div>
       </div>
       <div class="container">
@@ -396,7 +385,7 @@
 
     return `
       <article class="pred-card"
-               data-market="${pred.market||''}"
+               data-market="${marketSlug(pred.market)}"
                data-league="${pred.league_id||''}"
                data-continent="${pred.continent||''}"
                data-id="${pred.id}">
@@ -468,6 +457,7 @@
       const json  = await res.json();
 
       if (!json.success || !json.data || !json.data.predictions.length) {
+        if (containerId === 'pred-list') updatePredictionCounts([], 0);
         container.innerHTML = `
           <div style="padding:48px;text-align:center;">
             <span class="material-icons-round" style="font-size:3rem;color:var(--border);display:block;margin-bottom:12px;">sports_soccer</span>
@@ -481,6 +471,10 @@
         .map(p => renderPredictionCard(p))
         .join('');
 
+      if (containerId === 'pred-list') {
+        updatePredictionCounts(json.data.predictions, json.data.pagination.total);
+      }
+
     } catch (e) {
       console.warn('[Rooted Predictions] Predictions API unavailable:', e.message);
       container.innerHTML = `
@@ -491,13 +485,69 @@
     }
   }
 
-  // ── Update live stats bar
+  // ── Normalise a DB market value to the tab slug used in the UI
+  function marketSlug(m) {
+    m = (m || '').toLowerCase();
+    if (m === '1x2') return '1x2';
+    if (m.includes('over') || m.includes('under')) return 'over-2-5';
+    if (m === 'btts') return 'btts';
+    return m;
+  }
+
+  // ── Update the predictions-page count + market tab counts from real data
+  function updatePredictionCounts(preds, total) {
+    const countEl = document.getElementById('pred-count');
+    if (countEl) countEl.textContent = total + (total === 1 ? ' prediction' : ' predictions');
+    const tabs = document.getElementById('market-tabs-pred');
+    if (!tabs) return;
+    const counts = { '1x2': 0, 'over-2-5': 0 };
+    preds.forEach(p => { const s = marketSlug(p.market); if (counts[s] !== undefined) counts[s]++; });
+    tabs.querySelectorAll('.market-tab').forEach(tab => {
+      const m = tab.dataset.market, span = tab.querySelector('.tab-count');
+      if (span) span.textContent = (m === 'all') ? preds.length : (counts[m] || 0);
+    });
+  }
+
+  // ── Populate the header ticker with real today's matches (hidden if none)
+  async function populateTicker() {
+    const track = document.getElementById('ticker-track');
+    const wrap  = document.getElementById('ticker-wrap');
+    if (!track || !wrap) return;
+    try {
+      const res  = await fetch('/api/predictions?limit=20');
+      const json = await res.json();
+      const preds = (json.success && json.data && json.data.predictions) || [];
+      if (!preds.length) { wrap.style.display = 'none'; return; }
+      const item = p => {
+        const d = new Date(p.match_date);
+        const time = isNaN(d) ? '' : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        return `<span class="ticker-item">${p.home_team} vs ${p.away_team} <span class="score">${time}</span></span>`;
+      };
+      // Duplicate the set so the marquee scroll loops seamlessly
+      const html = preds.map(item).join('');
+      track.innerHTML = html + html;
+      wrap.style.display = '';
+    } catch (e) {
+      wrap.style.display = 'none';
+    }
+  }
+
+  // ── Populate all live stat displays (hero + stats bar) from real data only
   async function updateStatsBar() {
-    const stats = await fetchStats();
+    const s = await fetchStats();
+    // Accuracy reads "New" until there are graded results — never a fake number
+    const accuracy = (s.accuracy !== null && s.accuracy !== undefined) ? s.accuracy + '%' : 'New';
+    const num = v => (v !== null && v !== undefined) ? v : 0;
+
     const els = {
-      'stat-tips':     stats.total || 24,
-      'stat-accuracy': (stats.accuracy || 78.4) + '%',
-      'stat-won':      stats.won || 312,
+      // Hero stat boxes (homepage)
+      'hero-accuracy': accuracy,
+      'hero-leagues':  num(s.leagues_covered),
+      'hero-members':  num(s.members),
+      // Live stats bar (where present)
+      'stat-tips':     num(s.total),
+      'stat-accuracy': accuracy,
+      'stat-won':      num(s.won),
     };
     Object.entries(els).forEach(([id, val]) => {
       const el = document.getElementById(id);
@@ -544,7 +594,7 @@
     if (document.getElementById('date-nav-pred')) {
       buildDateNav('date-nav-pred', date => {
         if (document.getElementById('pred-list')) {
-          loadPredictions('pred-list', { date });
+          loadPredictions('pred-list', { date, limit: 50 });
         }
       });
     }
@@ -554,11 +604,12 @@
       loadPredictions('predictions-grid', { limit: 10 });
     }
     if (document.getElementById('pred-list')) {
-      loadPredictions('pred-list', { limit: 20 });
+      loadPredictions('pred-list', { limit: 50 });
     }
 
-    // Update stats bar
+    // Update stats bar + live "today" ticker from real data
     updateStatsBar();
+    populateTicker();
 
     // Market tab filtering
     document.querySelectorAll('.market-tabs .market-tab').forEach(tab => {
@@ -579,7 +630,7 @@
   });
 
   // Expose globals
-  window.Rooted Predictions = {
+  window.RootedPredictions = {
     loadPredictions,
     renderPredictionCard,
     buildDateNav,

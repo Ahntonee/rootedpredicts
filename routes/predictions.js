@@ -33,10 +33,17 @@ router.get('/stats', asyncHandler(async (req, res) => {
        SUM(result = 'pending') as pending,
        ROUND(SUM(result='won') / NULLIF(SUM(result IN ('won','lost')),0) * 100, 1) as accuracy
      FROM predictions
-     WHERE result != 'void' ${dateFilter}`
+     WHERE published_at IS NOT NULL AND result != 'void' ${dateFilter}`
   );
 
-  return successResponse(res, rows[0]);
+  // Site-wide live metrics (not period-dependent)
+  const [[{ leagues_covered }]] = await db.query(
+    `SELECT COUNT(DISTINCT league_id) as leagues_covered
+     FROM predictions WHERE published_at IS NOT NULL`
+  );
+  const [[{ members }]] = await db.query(`SELECT COUNT(*) as members FROM users`);
+
+  return successResponse(res, { ...rows[0], leagues_covered, members });
 }));
 
 // ── GET /api/predictions — Main filtered listing
