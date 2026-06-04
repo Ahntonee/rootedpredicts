@@ -119,14 +119,24 @@ async function initiateRegister(req, res) {
        password_hash, country || null, token, expiresAt]
     );
 
-    // Send verification email (non-blocking on failure)
-    sendVerificationEmail(
+    // Send verification email — await so we can report real delivery failures
+    // instead of telling the user "code sent" when SMTP actually failed.
+    const emailResult = await sendVerificationEmail(
       { name: sanitiseText(name), email: email.toLowerCase() },
       token
-    ).catch(e => console.warn('[AUTH] Verification email failed:', e.message));
+    );
 
+    if (!emailResult || !emailResult.success) {
+      console.error('[AUTH] Verification email FAILED for', email.toLowerCase(),
+        '—', emailResult && emailResult.error);
+      return errorResponse(res,
+        'We could not send the verification email right now. Please try again in a moment, and check your spam folder.',
+        502);
+    }
+
+    console.log('[AUTH] Verification code sent to', email.toLowerCase());
     return successResponse(res, { email: email.toLowerCase() },
-      'Verification code sent. Check your email.');
+      'Verification code sent. Check your email (and your spam folder).');
 
   } catch (error) {
     console.error('[AUTH] Initiate register error:', error.message);
