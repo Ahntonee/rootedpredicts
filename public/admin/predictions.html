@@ -338,6 +338,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     Admin.toast('Suggestion applied — review and save');
   });
   document.getElementById('apply-filters').addEventListener('click', () => loadPredictions(1));
+  // Auto-apply when any filter changes (e.g. picking a date shows that date immediately)
+  ['f-result', 'f-visibility', 'f-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', () => { predPage = 1; loadPredictions(1); });
+  });
   document.getElementById('p-prev').addEventListener('click', () => loadPredictions(--predPage));
   document.getElementById('p-next').addEventListener('click', () => loadPredictions(++predPage));
 
