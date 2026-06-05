@@ -424,6 +424,17 @@ async function researchPred(fixtureId, matchName) {
       </div>
     </div>
 
+    <!-- Bookmaker odds (real, from API) -->
+    ${d.odds ? `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:20px;">
+      <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Bookmaker Odds</div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;">
+        ${Object.entries(d.odds).map(([mkt, o]) => `
+          <div><span style="font-size:0.72rem;color:var(--muted);">${mkt}:</span> ${Object.entries(o).filter(([,v])=>v!=null).map(([k,v])=>`<span style="font-size:0.8rem;"><strong style="text-transform:capitalize;">${k}</strong> ${v}</span>`).join(' &middot; ')}</div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+
     <!-- Form + Standings side by side -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
       <div style="background:var(--surface);border-radius:8px;padding:14px;border:1px solid var(--border);">
@@ -487,7 +498,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('m-vis').value    = 'free';
     document.getElementById('m-result').value = 'pending';
     document.getElementById('m-published').checked = false;
-    renderOddsFields(researchSuggestion.market);
+    renderOddsFields(researchSuggestion.market, d.odds ? d.odds[researchSuggestion.market] : null);
     // Match the league dropdown to the researched fixture (by API league id)
     const leagueSel = document.getElementById('m-league');
     if (leagueSel && d.fixture.league) {

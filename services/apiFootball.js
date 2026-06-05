@@ -276,6 +276,46 @@ async function fetchTeamStats(teamId, leagueId, season = CURRENT_SEASON) {
   const { data } = await request('/teams/statistics', { team: teamId, league: leagueId, season });
   return data;
 }
+
+// ── Real bookmaker odds for a fixture (API-Football /odds) ────────────────────
+// Returns { '1X2':{home,draw,away}, 'BTTS':{yes,no}, 'Over/Under':{over,under} }
+// or null when no bookmaker has published odds (common for minor/youth leagues).
+async function fetchFixtureOdds(fixtureId) {
+  const { data } = await request('/odds', { fixture: fixtureId });
+  if (!data.length || !data[0].bookmakers || !data[0].bookmakers.length) return null;
+  const books = data[0].bookmakers;
+  // Prefer a well-known book for consistency, else the first available
+  const bm = books.find(b => /bet365|bwin|william hill|1xbet|pinnacle/i.test(b.name)) || books[0];
+  const bets = bm.bets || [];
+  const getBet = name => bets.find(b => (b.name || '').toLowerCase() === name.toLowerCase());
+  const pick = (bet, label) => {
+    if (!bet) return null;
+    const o = bet.values.find(v => (v.value || '').toLowerCase() === label.toLowerCase());
+    return o ? parseFloat(o.odd) : null;
+  };
+  const out = {};
+  const mw = getBet('Match Winner');
+  if (mw) out['1X2'] = { home: pick(mw,'home'), draw: pick(mw,'draw'), away: pick(mw,'away') };
+  const btts = getBet('Both Teams Score');
+  if (btts) out['BTTS'] = { yes: pick(btts,'yes'), no: pick(btts,'no') };
+  const ou = getBet('Goals Over/Under');
+  if (ou) out['Over/Under'] = { over: pick(ou,'over 2.5'), under: pick(ou,'under 2.5') };
+  return Object.keys(out).length ? out : null;
+}
+
+// Pick the single primary odd that matches a tip, from a market's odds object
+function oddsForTip(tip, market, marketOdds) {
+  if (!marketOdds) return null;
+  const t = (tip || '').toLowerCase();
+  if (market === '1X2' || market === 'Draw No Bet') {
+    if (t.includes('home') || t === '1') return marketOdds.home;
+    if (t.includes('away') || t === '2') return marketOdds.away;
+    if (t.includes('draw') || t === 'x') return marketOdds.draw;
+  }
+  if (market === 'BTTS')       return t.includes('no') ? marketOdds.no : marketOdds.yes;
+  if (market === 'Over/Under') return t.includes('under') ? marketOdds.under : marketOdds.over;
+  return null;
+}
 function calculateFormString(fixtures, teamId) {
   return fixtures.slice(0, 5).map(f => {
     const isHome = f.teams.home.id === teamId;
@@ -443,13 +483,14 @@ async function researchFixture(fixtureId) {
   const leagueId = fix.league.id;
 
   // Fetch 15 recent fixtures per team (more than 5) so we can compute venue-specific form
-  const [homeFormRaw, awayFormRaw, h2hRaw, homeStatsRaw, awayStatsRaw, standingsRaw] = await Promise.all([
+  const [homeFormRaw, awayFormRaw, h2hRaw, homeStatsRaw, awayStatsRaw, standingsRaw, oddsRaw] = await Promise.all([
     fetchTeamForm(homeId, 15).catch(() => []),
     fetchTeamForm(awayId, 15).catch(() => []),
     fetchH2H(homeId, awayId, 10).catch(() => []),
     fetchTeamStats(homeId, leagueId).catch(() => null),
     fetchTeamStats(awayId, leagueId).catch(() => null),
     fetchStandings(leagueId).catch(() => []),
+    fetchFixtureOdds(fixtureId).catch(() => null),
   ]);
 
   const homeForm = calculateFormString(homeFormRaw, homeId);
@@ -578,6 +619,7 @@ async function researchFixture(fixtureId) {
       losses:              awayStatsRaw.fixtures?.loses?.total,
     } : null,
     poisson:    poissonProbs,
+    odds:       oddsRaw,
     suggestion,
   };
 }
@@ -654,10 +696,17 @@ async function autoPredictFixtures(db, options = {}) {
       // Only publish if confidence ≥ minConf (selectivity filter)
       const shouldPublish = autoPublish && confScore >= minConf;
 
+      // Real bookmaker odds for the tip's market (null when unavailable)
+      const marketOdds = data.odds ? data.odds[suggestion.market] : null;
+      const oddsJson   = marketOdds ? JSON.stringify(marketOdds) : null;
+      const primaryOdd = oddsForTip(suggestion.tip, suggestion.market, marketOdds);
+
       await db.query(
         `UPDATE predictions SET
            tip              = ?,
            market           = ?,
+           odds             = COALESCE(?, odds),
+           odds_data        = COALESCE(?, odds_data),
            home_form        = ?,
            away_form        = ?,
            h2h_summary      = ?,
@@ -669,6 +718,8 @@ async function autoPredictFixtures(db, options = {}) {
         [
           suggestion.tip,
           suggestion.market,
+          primaryOdd,
+          oddsJson,
           homeForm || null,
           awayForm || null,
           h2hSummary || null,
@@ -715,5 +766,6 @@ module.exports = {
   calculateFormString, evaluateTip, mapCountryToContinent,
   isPopularLeague, getRequestCount, getRemainingCount, CURRENT_SEASON,
   researchFixture, autoPredictFixtures,
+  fetchFixtureOdds, oddsForTip,
   goalProbabilities, poissonPMF, generateTipSuggestion, scoreForm,
 };
