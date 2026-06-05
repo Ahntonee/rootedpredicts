@@ -283,6 +283,36 @@ async function updateSeoSettings(req, res) {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 
+// ── Prediction form helpers ─────────────────────────────────
+// Leagues that actually have fixtures (for the New Prediction dropdown)
+async function getFormLeagues(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT l.id, l.api_league_id, l.name, l.country
+       FROM leagues l
+       JOIN predictions p ON p.league_id = l.id
+       GROUP BY l.id, l.api_league_id, l.name, l.country
+       ORDER BY l.name ASC`
+    );
+    res.json({ success: true, data: rows });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
+// Fixtures for a league (optionally a date) — drives team lists + away auto-fill
+async function getLeagueFixtures(req, res) {
+  try {
+    const leagueId = parseInt(req.query.league_id);
+    if (!leagueId) return res.status(400).json({ success: false, message: 'league_id required' });
+    let sql  = `SELECT fixture_id, home_team, away_team, match_date
+                FROM predictions WHERE league_id = ?`;
+    const args = [leagueId];
+    if (req.query.date) { sql += ' AND DATE(match_date) = ?'; args.push(req.query.date); }
+    sql += ' ORDER BY match_date ASC';
+    const [rows] = await db.query(sql, args);
+    res.json({ success: true, data: rows });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
 // ── Homepage stat overrides (live value by default, admin can override)
 async function getSiteStats(req, res) {
   try {
@@ -337,4 +367,5 @@ module.exports = {
   getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost,
   getSeoSettings, updateSeoSettings,
   getSiteStats, updateSiteStats,
+  getFormLeagues, getLeagueFixtures,
 };

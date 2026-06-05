@@ -94,10 +94,14 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   `;
   const args = [];
 
-  // Date filter — default today
+  // Date filter
   if (date) {
+    // specific day
     sql += ' AND DATE(p.match_date) = ?';
     args.push(date);
+  } else if (req.query.upcoming) {
+    // today onwards — keeps the homepage populated even when today is empty
+    sql += ' AND DATE(p.match_date) >= CURDATE()';
   } else {
     sql += ' AND DATE(p.match_date) = CURDATE()';
   }

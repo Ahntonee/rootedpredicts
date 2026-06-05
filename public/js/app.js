@@ -599,9 +599,10 @@
       });
     }
 
-    // Load live predictions if grid exists
+    // Load live predictions if grid exists — homepage shows up to 20 from today
+    // onwards so it's never empty (even when today's fixtures are done)
     if (document.getElementById('predictions-grid')) {
-      loadPredictions('predictions-grid', { limit: 10 });
+      loadPredictions('predictions-grid', { limit: 20, upcoming: 1 });
     }
     if (document.getElementById('pred-list')) {
       loadPredictions('pred-list', { limit: 50 });

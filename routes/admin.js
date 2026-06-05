@@ -45,4 +45,8 @@ router.put('/seo/:page',       asyncHandler(admin.updateSeoSettings));
 router.get('/site-stats',      asyncHandler(admin.getSiteStats));
 router.put('/site-stats',      asyncHandler(admin.updateSiteStats));
 
+// Prediction form helpers (league dropdown + fixture lookup)
+router.get('/form/leagues',    asyncHandler(admin.getFormLeagues));
+router.get('/form/fixtures',   asyncHandler(admin.getLeagueFixtures));
+
 module.exports = router;

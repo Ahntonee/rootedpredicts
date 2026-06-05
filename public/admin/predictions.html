@@ -56,10 +56,10 @@
     <div class="admin-modal-body">
       <input type="hidden" id="edit-id">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="form-group" style="margin:0;"><label class="form-label">League ID</label><input type="number" class="form-control" id="m-league" placeholder="e.g. 1 (Premier League DB id)"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">League</label><select class="form-control" id="m-league"><option value="">Select a league…</option></select></div>
         <div class="form-group" style="margin:0;"><label class="form-label">Match Date</label><input type="datetime-local" class="form-control" id="m-date"></div>
-        <div class="form-group" style="margin:0;"><label class="form-label">Home Team</label><input type="text" class="form-control" id="m-home" placeholder="e.g. Arsenal"></div>
-        <div class="form-group" style="margin:0;"><label class="form-label">Away Team</label><input type="text" class="form-control" id="m-away" placeholder="e.g. Chelsea"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Home Team</label><input type="text" class="form-control" id="m-home" list="dl-home" placeholder="Pick league first, then choose team" autocomplete="off"><datalist id="dl-home"></datalist></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Away Team <span style="font-weight:400;color:var(--muted);font-size:0.72rem;">(auto-fills from fixture)</span></label><input type="text" class="form-control" id="m-away" list="dl-away" placeholder="Auto-filled when you pick home team" autocomplete="off"><datalist id="dl-away"></datalist></div>
         <div class="form-group" style="margin:0;"><label class="form-label">Tip</label><input type="text" class="form-control" id="m-tip" placeholder="e.g. Home Win, Over 2.5"></div>
         <div class="form-group" style="margin:0;"><label class="form-label">Market</label>
           <select class="form-control" id="m-market"><option>1X2</option><option>Over/Under</option><option>BTTS</option><option>Correct Score</option><option>Draw No Bet</option><option>Accumulator</option></select>
@@ -183,12 +183,69 @@ async function loadPredictions(page) {
 let editingId = null;
 function openNewModal() { editingId=null; document.getElementById('modal-title').textContent='New Prediction'; document.getElementById('edit-id').value=''; ['m-league','m-home','m-away','m-tip','m-odds','m-conf','m-analysis','m-hform','m-aform'].forEach(id=>document.getElementById(id).value=''); document.getElementById('m-vis').value='free'; document.getElementById('m-result').value='pending'; document.getElementById('m-published').checked=false; Admin.showModal('pred-modal'); }
 
+// ── New Prediction form: league dropdown + fixture-driven team fields ──────
+let formFixtures = [];
+
+async function loadFormLeagues() {
+  const sel = document.getElementById('m-league');
+  try {
+    const json = await Admin.api('GET', '/api/admin/form/leagues');
+    if (!json.success) return;
+    sel.innerHTML = '<option value="">Select a league…</option>' +
+      json.data.map(l => `<option value="${l.id}" data-api-id="${l.api_league_id||''}">${l.name}${l.country?' · '+l.country:''}</option>`).join('');
+  } catch (e) {}
+}
+
+function ensureLeagueOption(id, label) {
+  const sel = document.getElementById('m-league');
+  if (id && ![...sel.options].some(o => o.value == id)) {
+    const o = document.createElement('option');
+    o.value = id; o.textContent = label || ('League #' + id);
+    sel.appendChild(o);
+  }
+}
+
+async function loadLeagueFixtures() {
+  const leagueId = document.getElementById('m-league').value;
+  const dlHome = document.getElementById('dl-home');
+  const dlAway = document.getElementById('dl-away');
+  formFixtures = [];
+  dlHome.innerHTML = ''; dlAway.innerHTML = '';
+  if (!leagueId) return;
+  const dateVal   = document.getElementById('m-date').value;
+  const dateParam = dateVal ? dateVal.slice(0, 10) : '';
+  try {
+    let url = '/api/admin/form/fixtures?league_id=' + encodeURIComponent(leagueId);
+    if (dateParam) url += '&date=' + dateParam;
+    const json = await Admin.api('GET', url);
+    if (!json.success) return;
+    formFixtures = json.data;
+    const esc = t => String(t).replace(/"/g, '&quot;');
+    dlHome.innerHTML = [...new Set(formFixtures.map(f => f.home_team))].map(t => `<option value="${esc(t)}">`).join('');
+    dlAway.innerHTML = [...new Set(formFixtures.map(f => f.away_team))].map(t => `<option value="${esc(t)}">`).join('');
+  } catch (e) {}
+}
+
+function autofillAwayFromHome() {
+  const home = document.getElementById('m-home').value.trim();
+  if (!home || !formFixtures.length) return;
+  const dateVal   = document.getElementById('m-date').value;
+  const dateParam = dateVal ? dateVal.slice(0, 10) : '';
+  const fx = formFixtures.find(f => f.home_team === home && (!dateParam || String(f.match_date).slice(0, 10) === dateParam))
+          || formFixtures.find(f => f.home_team === home);
+  if (fx) {
+    document.getElementById('m-away').value = fx.away_team;
+    if (fx.match_date) document.getElementById('m-date').value = String(fx.match_date).replace(' ', 'T').slice(0, 16);
+  }
+}
+
 async function editPred(id) {
   const json = await Admin.api('GET', '/api/admin/predictions?page=1&limit=200');
   const p = json.data.predictions.find(x=>x.id===id);
   if (!p) return;
   editingId=id;
   document.getElementById('modal-title').textContent='Edit Prediction';
+  ensureLeagueOption(p.league_id, (p.league_name||'League')+' #'+p.league_id);
   document.getElementById('m-league').value  = p.league_id||'';
   document.getElementById('m-home').value    = p.home_team;
   document.getElementById('m-away').value    = p.away_team;
@@ -203,6 +260,7 @@ async function editPred(id) {
   document.getElementById('m-hform').value   = p.home_form||'';
   document.getElementById('m-aform').value   = p.away_form||'';
   document.getElementById('m-published').checked = !!p.published_at;
+  loadLeagueFixtures();   // populate team datalists for this league
   Admin.showModal('pred-modal');
 }
 
@@ -215,9 +273,11 @@ async function deletePred(id) {
 }
 
 let researchSuggestion = null;
+let researchData = null;
 
 async function researchPred(fixtureId, matchName) {
   researchSuggestion = null;
+  researchData = null;
   document.getElementById('research-title').textContent = 'Research: ' + matchName;
   document.getElementById('research-loading').style.display = 'block';
   document.getElementById('research-content').style.display = 'none';
@@ -236,6 +296,7 @@ async function researchPred(fixtureId, matchName) {
 
   const d = json.data;
   researchSuggestion = d.suggestion;
+  researchData = d;
 
   function formBadges(formStr) {
     if (!formStr) return '<span style="color:var(--muted);">No data</span>';
@@ -330,10 +391,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('new-pred-btn').addEventListener('click', openNewModal);
 
   document.getElementById('apply-suggestion-btn').addEventListener('click', () => {
-    if (!researchSuggestion) return;
+    if (!researchSuggestion || !researchData) return;
+    const d = researchData;
     Admin.hideModal('research-modal');
+    // Build a fresh "edit form" pre-filled from the researched fixture
+    editingId = null;
+    document.getElementById('modal-title').textContent = 'New Prediction';
+    document.getElementById('m-home').value   = d.fixture.home.name || '';
+    document.getElementById('m-away').value   = d.fixture.away.name || '';
+    document.getElementById('m-date').value   = d.fixture.date ? d.fixture.date.replace(' ', 'T').slice(0, 16) : '';
     document.getElementById('m-tip').value    = researchSuggestion.tip;
     document.getElementById('m-market').value = researchSuggestion.market;
+    document.getElementById('m-hform').value  = d.home_form || '';
+    document.getElementById('m-aform').value  = d.away_form || '';
+    document.getElementById('m-conf').value   = '';   // admin clicks Auto-Score
+    document.getElementById('m-vis').value    = 'free';
+    document.getElementById('m-result').value = 'pending';
+    document.getElementById('m-published').checked = false;
+    // Match the league dropdown to the researched fixture (by API league id)
+    const leagueSel = document.getElementById('m-league');
+    if (leagueSel && d.fixture.league) {
+      const opt = [...leagueSel.options].find(o => o.dataset && o.dataset.apiId == d.fixture.league.id);
+      if (opt) leagueSel.value = opt.value;
+    }
     Admin.showModal('pred-modal');
     Admin.toast('Suggestion applied — review and save');
   });
@@ -345,6 +425,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('p-prev').addEventListener('click', () => loadPredictions(--predPage));
   document.getElementById('p-next').addEventListener('click', () => loadPredictions(++predPage));
+
+  // New Prediction form: league dropdown + fixture-driven team fields
+  loadFormLeagues();
+  document.getElementById('m-league').addEventListener('change', loadLeagueFixtures);
+  document.getElementById('m-date').addEventListener('change', loadLeagueFixtures);
+  document.getElementById('m-home').addEventListener('change', autofillAwayFromHome);
 
   // Auto-Score single prediction (only works when editing an existing one)
   document.getElementById('auto-score-btn').addEventListener('click', async () => {
