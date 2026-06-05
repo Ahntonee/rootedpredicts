@@ -180,9 +180,13 @@ async function syncFixtures(date, leagueId = null) {
 }
 
 // ── Sync results (update pending predictions after matches finish)
+// NOTE: no season filter — youth/women/friendly leagues are catalogued
+// under different seasons, and filtering by season silently drops their
+// finished results so those predictions never get graded. Grading is by
+// fixture_id, so pulling every FT match for the date is correct.
 async function syncResults(date) {
   const { data: fixtures } = await request('/fixtures', {
-    date, season: CURRENT_SEASON, status: 'FT', timezone: 'UTC'
+    date, status: 'FT', timezone: 'UTC'
   });
   let updated = 0;
   for (const item of fixtures) {
