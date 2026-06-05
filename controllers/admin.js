@@ -65,11 +65,12 @@ async function getPredictions(req, res) {
 async function createPrediction(req, res) {
   try {
     const { league_id,home_team,away_team,home_team_logo,away_team_logo,
-            match_date,tip,market,odds,confidence_score,visibility,analysis,
+            match_date,tip,market,odds,odds_data,confidence_score,visibility,analysis,
             home_form,away_form,h2h_summary,published } = req.body;
     if (!league_id||!home_team||!away_team||!match_date||!tip||!market) {
       return res.status(400).json({ success:false, message:'Missing required fields' });
     }
+    const oddsJson = odds_data && Object.keys(odds_data).length ? JSON.stringify(odds_data) : null;
     const [lRows] = await db.query('SELECT name FROM leagues WHERE id=?',[league_id]);
     const leagueName = lRows.length ? lRows[0].name : 'League';
     let slug = slugify(`${leagueName} ${home_team} vs ${away_team} ${match_date.split('T')[0]}`,{ lower:true, strict:true });
@@ -77,11 +78,11 @@ async function createPrediction(req, res) {
     if (existing.length) slug = slug+'-'+Date.now();
     const [ins] = await db.query(
       `INSERT INTO predictions (league_id,home_team,away_team,home_team_logo,away_team_logo,
-        match_date,tip,market,odds,confidence_score,visibility,analysis,home_form,away_form,
-        h2h_summary,slug,result,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?)`,
+        match_date,tip,market,odds,odds_data,confidence_score,visibility,analysis,home_form,away_form,
+        h2h_summary,slug,result,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?)`,
       [league_id,sanitiseText(home_team),sanitiseText(away_team),home_team_logo||null,
        away_team_logo||null,match_date,sanitiseText(tip),sanitiseText(market),
-       odds||null,confidence_score||null,visibility||'free',analysis||null,
+       odds||null,oddsJson,confidence_score||null,visibility||'free',analysis||null,
        home_form||null,away_form||null,h2h_summary||null,slug,
        published ? new Date() : null]
     );
@@ -101,12 +102,18 @@ async function createPrediction(req, res) {
 async function updatePrediction(req, res) {
   try {
     const { id } = req.params;
-    const { tip,market,odds,confidence_score,visibility,result,analysis,
+    const { league_id,home_team,away_team,match_date,tip,market,odds,odds_data,
+            confidence_score,visibility,result,analysis,
             home_form,away_form,h2h_summary,published } = req.body;
     const updates=[]; const args=[];
+    if (league_id)        { updates.push('league_id=?');        args.push(league_id); }
+    if (home_team)        { updates.push('home_team=?');        args.push(sanitiseText(home_team)); }
+    if (away_team)        { updates.push('away_team=?');        args.push(sanitiseText(away_team)); }
+    if (match_date)       { updates.push('match_date=?');       args.push(match_date); }
     if (tip)              { updates.push('tip=?');              args.push(sanitiseText(tip)); }
     if (market)           { updates.push('market=?');           args.push(sanitiseText(market)); }
     if (odds!==undefined) { updates.push('odds=?');             args.push(odds); }
+    if (odds_data!==undefined) { updates.push('odds_data=?');   args.push(odds_data && Object.keys(odds_data).length ? JSON.stringify(odds_data) : null); }
     if (confidence_score) { updates.push('confidence_score=?'); args.push(confidence_score); }
     if (visibility)       { updates.push('visibility=?');       args.push(visibility); }
     if (result)           { updates.push('result=?');           args.push(result); }

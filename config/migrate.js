@@ -553,6 +553,26 @@ const MIGRATIONS = [
   },
 
   // ----------------------------------------------------------
+  // 19b. Add odds_data (per-market odds) to predictions
+  // ----------------------------------------------------------
+  {
+    name: 'Add odds_data column to predictions',
+    fn: async (conn) => {
+      const [cols] = await conn.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'predictions' AND COLUMN_NAME = 'odds_data'`,
+        [DB_NAME]
+      );
+      if (!cols.length) {
+        await conn.query('ALTER TABLE predictions ADD COLUMN odds_data JSON DEFAULT NULL');
+        console.log('[MIGRATE] ✓ Added predictions.odds_data');
+      } else {
+        console.log('[MIGRATE] ↷ predictions.odds_data already exists');
+      }
+    },
+  },
+
+  // ----------------------------------------------------------
   // 19. Pending registrations — holds OTP + hashed password
   //     until email is verified; deleted after account creation
   // ----------------------------------------------------------

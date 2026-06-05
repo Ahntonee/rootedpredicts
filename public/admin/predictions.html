@@ -58,13 +58,13 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group" style="margin:0;"><label class="form-label">League</label><select class="form-control" id="m-league"><option value="">Select a league…</option></select></div>
         <div class="form-group" style="margin:0;"><label class="form-label">Match Date</label><input type="datetime-local" class="form-control" id="m-date"></div>
-        <div class="form-group" style="margin:0;"><label class="form-label">Home Team</label><input type="text" class="form-control" id="m-home" list="dl-home" placeholder="Pick league first, then choose team" autocomplete="off"><datalist id="dl-home"></datalist></div>
-        <div class="form-group" style="margin:0;"><label class="form-label">Away Team <span style="font-weight:400;color:var(--muted);font-size:0.72rem;">(auto-fills from fixture)</span></label><input type="text" class="form-control" id="m-away" list="dl-away" placeholder="Auto-filled when you pick home team" autocomplete="off"><datalist id="dl-away"></datalist></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Home Team</label><select class="form-control" id="m-home"><option value="">Select a league first…</option></select></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Away Team <span style="font-weight:400;color:var(--muted);font-size:0.72rem;">(auto-fills from fixture)</span></label><select class="form-control" id="m-away"><option value="">Auto-fills from fixture</option></select></div>
         <div class="form-group" style="margin:0;"><label class="form-label">Tip</label><input type="text" class="form-control" id="m-tip" placeholder="e.g. Home Win, Over 2.5"></div>
         <div class="form-group" style="margin:0;"><label class="form-label">Market</label>
           <select class="form-control" id="m-market"><option>1X2</option><option>Over/Under</option><option>BTTS</option><option>Correct Score</option><option>Draw No Bet</option><option>Accumulator</option></select>
         </div>
-        <div class="form-group" style="margin:0;"><label class="form-label">Odds</label><input type="number" step="0.01" class="form-control" id="m-odds" placeholder="1.85"></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Odds <span style="font-weight:400;color:var(--muted);font-size:0.72rem;">(per market)</span></label><div id="odds-fields" style="display:flex;gap:6px;"></div><input type="hidden" id="m-odds"></div>
         <div class="form-group" style="margin:0;">
           <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
             Confidence (0-100)
@@ -181,7 +181,66 @@ async function loadPredictions(page) {
 }
 
 let editingId = null;
-function openNewModal() { editingId=null; document.getElementById('modal-title').textContent='New Prediction'; document.getElementById('edit-id').value=''; ['m-league','m-home','m-away','m-tip','m-odds','m-conf','m-analysis','m-hform','m-aform'].forEach(id=>document.getElementById(id).value=''); document.getElementById('m-vis').value='free'; document.getElementById('m-result').value='pending'; document.getElementById('m-published').checked=false; Admin.showModal('pred-modal'); }
+function openNewModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'New Prediction';
+  document.getElementById('edit-id').value = '';
+  ['m-tip','m-conf','m-analysis','m-hform','m-aform','m-date','m-odds'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('m-league').value = '';
+  document.getElementById('m-market').value = '1X2';
+  document.getElementById('m-vis').value = 'free';
+  document.getElementById('m-result').value = 'pending';
+  document.getElementById('m-published').checked = false;
+  renderOddsFields('1X2');
+  loadLeagueFixtures();   // resets team dropdowns to "select a league first"
+  Admin.showModal('pred-modal');
+}
+
+// ── Market-specific odds fields ────────────────────────────────────────────
+const ODDS_FIELDS = {
+  '1X2':          [['home','Home'], ['draw','Draw'], ['away','Away']],
+  'BTTS':         [['yes','Yes'],   ['no','No']],
+  'Over/Under':   [['over','Over'], ['under','Under']],
+  'Draw No Bet':  [['home','Home'], ['away','Away']],
+  'Correct Score':[['odds','Odds']],
+  'Accumulator':  [['odds','Odds']],
+};
+function oddsFieldsFor(market) { return ODDS_FIELDS[market] || [['odds','Odds']]; }
+
+function renderOddsFields(market, data) {
+  if (typeof data === 'string') { try { data = JSON.parse(data); } catch (_) { data = {}; } }
+  data = data || {};
+  document.getElementById('odds-fields').innerHTML = oddsFieldsFor(market).map(([key, label]) => `
+    <div style="flex:1;min-width:0;text-align:center;">
+      <input type="number" step="0.01" min="1" class="form-control odds-input" data-key="${key}"
+             placeholder="${label}" value="${data[key] != null ? data[key] : ''}"
+             style="padding:7px;font-size:0.85rem;text-align:center;">
+      <div style="font-size:0.64rem;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:0.04em;">${label}</div>
+    </div>`).join('');
+}
+
+// Which odds field corresponds to the chosen tip (so we store the right primary odds)
+function tipToOddsKey(tip, market) {
+  const t = (tip || '').toLowerCase();
+  if (market === '1X2' || market === 'Draw No Bet') {
+    if (t.includes('home') || t === '1') return 'home';
+    if (t.includes('away') || t === '2') return 'away';
+    if (t.includes('draw') || t === 'x') return 'draw';
+  }
+  if (market === 'BTTS')       return t.includes('no') ? 'no' : 'yes';
+  if (market === 'Over/Under') return t.includes('under') ? 'under' : 'over';
+  return 'odds';
+}
+
+function collectOdds(market, tip) {
+  const data = {};
+  document.querySelectorAll('#odds-fields .odds-input').forEach(i => {
+    const v = parseFloat(i.value); if (!isNaN(v)) data[i.dataset.key] = v;
+  });
+  const key     = tipToOddsKey(tip, market);
+  const primary = data[key] != null ? data[key] : (Object.values(data)[0] != null ? Object.values(data)[0] : null);
+  return { odds_data: data, odds: primary };
+}
 
 // ── New Prediction form: league dropdown + fixture-driven team fields ──────
 let formFixtures = [];
@@ -205,27 +264,44 @@ function ensureLeagueOption(id, label) {
   }
 }
 
-async function loadLeagueFixtures() {
-  const leagueId = document.getElementById('m-league').value;
-  const dlHome = document.getElementById('dl-home');
-  const dlAway = document.getElementById('dl-away');
-  formFixtures = [];
-  dlHome.innerHTML = ''; dlAway.innerHTML = '';
-  if (!leagueId) return;
-  const dateVal   = document.getElementById('m-date').value;
-  const dateParam = dateVal ? dateVal.slice(0, 10) : '';
-  try {
-    let url = '/api/admin/form/fixtures?league_id=' + encodeURIComponent(leagueId);
-    if (dateParam) url += '&date=' + dateParam;
-    const json = await Admin.api('GET', url);
-    if (!json.success) return;
-    formFixtures = json.data;
-    const esc = t => String(t).replace(/"/g, '&quot;');
-    dlHome.innerHTML = [...new Set(formFixtures.map(f => f.home_team))].map(t => `<option value="${esc(t)}">`).join('');
-    dlAway.innerHTML = [...new Set(formFixtures.map(f => f.away_team))].map(t => `<option value="${esc(t)}">`).join('');
-  } catch (e) {}
+// Set a <select>'s value, adding the option first if it isn't present
+function setSelectValue(sel, value) {
+  if (value == null || value === '') { sel.value = ''; return; }
+  if (![...sel.options].some(o => o.value === String(value))) {
+    const o = document.createElement('option');
+    o.value = value; o.textContent = value;
+    sel.appendChild(o);
+  }
+  sel.value = value;
 }
 
+// Load the league's fixtures and (re)populate the home/away team dropdowns
+async function loadLeagueFixtures(keepHome, keepAway) {
+  const leagueId = document.getElementById('m-league').value;
+  const homeSel  = document.getElementById('m-home');
+  const awaySel  = document.getElementById('m-away');
+  const prevHome = keepHome != null ? keepHome : homeSel.value;
+  const prevAway = keepAway != null ? keepAway : awaySel.value;
+  formFixtures = [];
+  homeSel.innerHTML = '<option value="">Select home team…</option>';
+  awaySel.innerHTML = '<option value="">Select away team…</option>';
+  if (!leagueId) { homeSel.options[0].textContent = 'Select a league first…'; return; }
+  try {
+    const json = await Admin.api('GET', '/api/admin/form/fixtures?league_id=' + encodeURIComponent(leagueId));
+    if (json.success) {
+      formFixtures = json.data;
+      const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const homes = [...new Set(formFixtures.map(f => f.home_team))].sort();
+      const aways = [...new Set(formFixtures.map(f => f.away_team))].sort();
+      homeSel.innerHTML = '<option value="">Select home team…</option>' + homes.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+      awaySel.innerHTML = '<option value="">Select away team…</option>' + aways.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+    }
+  } catch (e) {}
+  if (prevHome) setSelectValue(homeSel, prevHome);
+  if (prevAway) setSelectValue(awaySel, prevAway);
+}
+
+// When a home team is chosen, auto-select its opponent + kickoff from the fixture
 function autofillAwayFromHome() {
   const home = document.getElementById('m-home').value.trim();
   if (!home || !formFixtures.length) return;
@@ -234,7 +310,7 @@ function autofillAwayFromHome() {
   const fx = formFixtures.find(f => f.home_team === home && (!dateParam || String(f.match_date).slice(0, 10) === dateParam))
           || formFixtures.find(f => f.home_team === home);
   if (fx) {
-    document.getElementById('m-away').value = fx.away_team;
+    setSelectValue(document.getElementById('m-away'), fx.away_team);
     if (fx.match_date) document.getElementById('m-date').value = String(fx.match_date).replace(' ', 'T').slice(0, 16);
   }
 }
@@ -247,8 +323,6 @@ async function editPred(id) {
   document.getElementById('modal-title').textContent='Edit Prediction';
   ensureLeagueOption(p.league_id, (p.league_name||'League')+' #'+p.league_id);
   document.getElementById('m-league').value  = p.league_id||'';
-  document.getElementById('m-home').value    = p.home_team;
-  document.getElementById('m-away').value    = p.away_team;
   document.getElementById('m-date').value    = p.match_date?p.match_date.replace(' ','T').slice(0,16):'';
   document.getElementById('m-tip').value     = p.tip||'';
   document.getElementById('m-market').value  = p.market||'1X2';
@@ -260,8 +334,15 @@ async function editPred(id) {
   document.getElementById('m-hform').value   = p.home_form||'';
   document.getElementById('m-aform').value   = p.away_form||'';
   document.getElementById('m-published').checked = !!p.published_at;
-  loadLeagueFixtures();   // populate team datalists for this league
+  // Prefill odds: prefer stored odds_data, else seed the tip's field with the legacy single odds
+  let oddsData = p.odds_data;
+  if ((!oddsData || (typeof oddsData === 'object' && !Object.keys(oddsData).length)) && p.odds != null) {
+    oddsData = { [tipToOddsKey(p.tip, p.market || '1X2')]: p.odds };
+  }
+  renderOddsFields(p.market || '1X2', oddsData);
   Admin.showModal('pred-modal');
+  // Populate team dropdowns for this league, then select the saved teams
+  await loadLeagueFixtures(p.home_team, p.away_team);
 }
 
 async function deletePred(id) {
@@ -390,15 +471,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadPredictions(1);
   document.getElementById('new-pred-btn').addEventListener('click', openNewModal);
 
-  document.getElementById('apply-suggestion-btn').addEventListener('click', () => {
+  document.getElementById('apply-suggestion-btn').addEventListener('click', async () => {
     if (!researchSuggestion || !researchData) return;
     const d = researchData;
     Admin.hideModal('research-modal');
     // Build a fresh "edit form" pre-filled from the researched fixture
     editingId = null;
     document.getElementById('modal-title').textContent = 'New Prediction';
-    document.getElementById('m-home').value   = d.fixture.home.name || '';
-    document.getElementById('m-away').value   = d.fixture.away.name || '';
     document.getElementById('m-date').value   = d.fixture.date ? d.fixture.date.replace(' ', 'T').slice(0, 16) : '';
     document.getElementById('m-tip').value    = researchSuggestion.tip;
     document.getElementById('m-market').value = researchSuggestion.market;
@@ -408,6 +487,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('m-vis').value    = 'free';
     document.getElementById('m-result').value = 'pending';
     document.getElementById('m-published').checked = false;
+    renderOddsFields(researchSuggestion.market);
     // Match the league dropdown to the researched fixture (by API league id)
     const leagueSel = document.getElementById('m-league');
     if (leagueSel && d.fixture.league) {
@@ -416,6 +496,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     Admin.showModal('pred-modal');
     Admin.toast('Suggestion applied — review and save');
+    // Load the league's teams then select home/away from the fixture
+    await loadLeagueFixtures(d.fixture.home.name || '', d.fixture.away.name || '');
   });
   document.getElementById('apply-filters').addEventListener('click', () => loadPredictions(1));
   // Auto-apply when any filter changes (e.g. picking a date shows that date immediately)
@@ -426,20 +508,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('p-prev').addEventListener('click', () => loadPredictions(--predPage));
   document.getElementById('p-next').addEventListener('click', () => loadPredictions(++predPage));
 
-  // New Prediction form: league dropdown + fixture-driven team fields
+  // New Prediction form: league dropdown + fixture-driven team fields + odds
   loadFormLeagues();
-  document.getElementById('m-league').addEventListener('change', loadLeagueFixtures);
-  document.getElementById('m-date').addEventListener('change', loadLeagueFixtures);
+  renderOddsFields('1X2');
+  document.getElementById('m-league').addEventListener('change', () => loadLeagueFixtures());
+  document.getElementById('m-date').addEventListener('change', autofillAwayFromHome);
   document.getElementById('m-home').addEventListener('change', autofillAwayFromHome);
+  document.getElementById('m-market').addEventListener('change', e => renderOddsFields(e.target.value));
 
   // Auto-Score single prediction (only works when editing an existing one)
   document.getElementById('auto-score-btn').addEventListener('click', async () => {
     if (!editingId) {
       // For new predictions, score from the form fields directly
+      const _m = document.getElementById('m-market').value;
+      const _t = document.getElementById('m-tip').value.trim();
       const pseudo = {
-        tip:          document.getElementById('m-tip').value.trim(),
-        market:       document.getElementById('m-market').value,
-        odds:         parseFloat(document.getElementById('m-odds').value) || null,
+        tip:          _t,
+        market:       _m,
+        odds:         collectOdds(_m, _t).odds,
         home_form:    document.getElementById('m-hform').value.trim(),
         away_form:    document.getElementById('m-aform').value.trim(),
         h2h_summary:  '',
@@ -487,14 +573,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   document.getElementById('save-pred-btn').addEventListener('click', async () => {
+    const market = document.getElementById('m-market').value;
+    const tip    = document.getElementById('m-tip').value.trim();
+    const { odds_data, odds } = collectOdds(market, tip);
     const body = {
       league_id:        parseInt(document.getElementById('m-league').value),
       home_team:        document.getElementById('m-home').value.trim(),
       away_team:        document.getElementById('m-away').value.trim(),
       match_date:       document.getElementById('m-date').value,
-      tip:              document.getElementById('m-tip').value.trim(),
-      market:           document.getElementById('m-market').value,
-      odds:             parseFloat(document.getElementById('m-odds').value)||null,
+      tip:              tip,
+      market:           market,
+      odds:             odds,
+      odds_data:        odds_data,
       confidence_score: parseInt(document.getElementById('m-conf').value)||null,
       visibility:       document.getElementById('m-vis').value,
       result:           document.getElementById('m-result').value,
