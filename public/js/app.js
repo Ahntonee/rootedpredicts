@@ -83,7 +83,7 @@
 
     el.innerHTML = `
       <div class="ticker-wrap" id="ticker-wrap" style="display:none;">
-        <div class="ticker-label"><span class="material-icons-round">sports_soccer</span>TODAY</div>
+        <div class="ticker-label" id="ticker-label"><span class="material-icons-round">sports_soccer</span>TODAY</div>
         <div style="overflow:hidden;flex:1;">
           <div class="ticker-track" id="ticker-track"></div>
         </div>
@@ -537,25 +537,46 @@
     });
   }
 
-  // ── Populate the header ticker with real today's matches (hidden if none)
+  // ── Header ticker: real today's matches with live scores / FT scores / kickoff
   async function populateTicker() {
     const track = document.getElementById('ticker-track');
     const wrap  = document.getElementById('ticker-wrap');
+    const label = document.getElementById('ticker-label');
     if (!track || !wrap) return;
+    const FIN_ST  = ['FT','AET','PEN'];
+    const LIVE_ST = ['1H','2H','HT','ET','BT','P','SUSP','INT','LIVE'];
     try {
-      const res  = await fetch('/api/predictions?limit=20');
+      // today's published matches (any status), limit high enough to cover the day
+      const res  = await fetch('/api/predictions?limit=40');
       const json = await res.json();
       const preds = (json.success && json.data && json.data.predictions) || [];
-      if (!preds.length) { wrap.style.display = 'none'; return; }
+      if (!preds.length) { wrap.style.display = 'none'; clearTimeout(window.__tickerPoll); return; }
+
+      let anyLive = false;
       const item = p => {
-        const d = new Date(p.match_date);
-        const time = isNaN(d) ? '' : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-        return `<span class="ticker-item">${p.home_team} vs ${p.away_team} <span class="score">${time}</span></span>`;
+        const hasScore = p.home_score != null && p.away_score != null;
+        let mid;
+        if (LIVE_ST.includes(p.status_short) && hasScore) {
+          anyLive = true;
+          mid = `<span class="live-dot"></span><span class="score" style="color:var(--red);">${p.home_score}-${p.away_score}</span>${p.elapsed ? " " + p.elapsed + "'" : ''}`;
+        } else if (FIN_ST.includes(p.status_short) && hasScore) {
+          mid = `<span class="score">${p.home_score}-${p.away_score}</span> FT`;
+        } else {
+          const d = new Date(p.match_date);
+          mid = `<span class="score">${isNaN(d) ? '' : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>`;
+        }
+        return `<span class="ticker-item">${p.home_team} vs ${p.away_team} ${mid}</span>`;
       };
-      // Duplicate the set so the marquee scroll loops seamlessly
       const html = preds.map(item).join('');
-      track.innerHTML = html + html;
+      track.innerHTML = html + html;   // duplicate for seamless marquee
       wrap.style.display = '';
+      if (label) label.innerHTML = anyLive
+        ? '<span class="live-dot"></span>LIVE'
+        : '<span class="material-icons-round">sports_soccer</span>TODAY';
+
+      // Refresh every 60s while any match is in-play
+      clearTimeout(window.__tickerPoll);
+      if (anyLive) window.__tickerPoll = setTimeout(populateTicker, 60000);
     } catch (e) {
       wrap.style.display = 'none';
     }
