@@ -1194,6 +1194,7 @@ img { max-width: 100%; display: block; }
 .ticker-item { font-size: 0.78rem; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 8px; }
 .ticker-item .score { color: #fff; font-weight: 700; }
 .ticker-item .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: pulse 1s infinite; }
+.live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--red); animation: pulse 1s infinite; }
 @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 

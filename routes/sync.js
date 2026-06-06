@@ -57,6 +57,20 @@ router.post('/results', asyncHandler(async (req, res) => {
   return successResponse(res, result, `Results sync complete for ${date}`);
 }));
 
+// ── POST /api/sync/scores — scores + status + grading for a whole date
+// Body: { date?: 'YYYY-MM-DD' }  (defaults to today)
+router.post('/scores', asyncHandler(async (req, res) => {
+  const date = req.body.date || new Date().toISOString().split('T')[0];
+  const result = await apiSvc.syncScores(date);
+  return successResponse(res, result, `Score sync complete for ${date}`);
+}));
+
+// ── POST /api/sync/live — update all in-play matches (1 API call)
+router.post('/live', asyncHandler(async (req, res) => {
+  const result = await apiSvc.syncLive();
+  return successResponse(res, result, `Live sync: ${result.updated} updated`);
+}));
+
 // ── POST /api/sync/teams/:leagueId
 router.post('/teams/:leagueId', asyncHandler(async (req, res) => {
   const leagueId = parseInt(req.params.leagueId);

@@ -54,6 +54,25 @@ async function runResultsSync() {
   } catch(e) { console.error('[SCHEDULER] Results sync error:', e.message); }
 }
 
+// ── Live in-play score sync (cheap: 1 API call, updates all live matches) ─────
+async function runLiveSync() {
+  if (!process.env.API_FOOTBALL_KEY) return;
+  try {
+    const r = await apiSvc.syncLive();
+    if (r.updated > 0) console.log(`[SCHEDULER] Live sync: ${r.updated} predictions updated`);
+  } catch (e) { console.error('[SCHEDULER] Live sync error:', e.message); }
+}
+
+// ── Today's scores + status + grading (catches finished matches through the day)
+async function runTodayScores() {
+  if (!process.env.API_FOOTBALL_KEY) return;
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const r = await apiSvc.syncScores(today);
+    if (r.updated > 0) console.log(`[SCHEDULER] Today scores: ${r.updated} updated, ${r.graded} graded`);
+  } catch (e) { console.error('[SCHEDULER] Today scores error:', e.message); }
+}
+
 async function runSubscriptionExpiryCheck() {
   try {
     const [expired] = await db.query(
@@ -110,9 +129,14 @@ function startScheduler() {
   console.log('[SCHEDULER] Subscription expiry check: every hour');
   cron.schedule('15 6 * * *',  runConfidenceScoring,      { timezone: 'UTC' });
   console.log('[SCHEDULER] Confidence scoring: 06:15 UTC daily');
+  cron.schedule('*/3 * * * *', runLiveSync,               { timezone: 'UTC' });
+  console.log('[SCHEDULER] Live score sync: every 3 minutes');
+  cron.schedule('*/20 * * * *', runTodayScores,           { timezone: 'UTC' });
+  console.log('[SCHEDULER] Today score/result sync: every 20 minutes');
 }
 
 module.exports = {
   startScheduler, runDailySync, runResultsSync,
+  runLiveSync, runTodayScores,
   runSubscriptionExpiryCheck, runAccuracyTracking,
 };

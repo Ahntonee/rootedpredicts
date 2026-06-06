@@ -26,100 +26,21 @@
 <header class="site-header" id="site-header"></header>
 <main>
   <div class="container" style="padding-top:28px;">
-    <nav style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:20px;"><a href="/" style="color:var(--muted);">Home</a><span class="material-icons-round" style="font-size:0.8rem;">chevron_right</span><a href="/predictions.html" style="color:var(--muted);">Predictions</a><span class="material-icons-round" style="font-size:0.8rem;">chevron_right</span><span>Arsenal vs Chelsea</span></nav>
-    <!-- AdSense slot: below-header-detail -->
-    <div class="ad-slot-header" aria-label="Advertisement">Advertisement</div>
+    <nav style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:20px;">
+      <a href="/" style="color:var(--muted);">Home</a><span class="material-icons-round" style="font-size:0.8rem;">chevron_right</span>
+      <a href="/predictions.html" style="color:var(--muted);">Predictions</a><span class="material-icons-round" style="font-size:0.8rem;">chevron_right</span>
+      <span id="bc-match">Prediction</span>
+    </nav>
     <div class="page-layout">
-      <div>
-        <!-- Match hero -->
-        <div class="card" style="background:linear-gradient(135deg,var(--navy),var(--midnight));padding:32px;margin-bottom:20px;border-color:rgba(255,255,255,0.08);">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:8px;"><img src="https://media.api-sports.io/football/leagues/39.png" width="22" height="22" style="object-fit:contain;" alt="PL" onerror="this.style.display='none'"><span style="font-size:0.82rem;color:rgba(255,255,255,0.6);">Premier League &middot; England &middot; Matchday 36</span></div>
-            <span class="badge badge-free"><span class="material-icons-round">lock_open</span>FREE TIP</span>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-around;gap:24px;margin:24px 0;">
-            <div style="text-align:center;flex:1;">
-              <div class="team-logo-placeholder" style="margin:0 auto 12px;width:64px;height:64px;"><span class="material-icons-round" style="font-size:2rem;">sports_soccer</span></div>
-              <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:#fff;">Arsenal</div>
-              <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-top:4px;">Home</div>
-            </div>
-            <div style="text-align:center;">
-              <div style="font-family:var(--font-head);font-size:2rem;font-weight:900;color:rgba(255,255,255,0.4);">VS</div>
-              <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-top:4px;">Today</div>
-              <div style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;color:var(--red);">15:00 GMT</div>
-              <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);">Emirates Stadium</div>
-            </div>
-            <div style="text-align:center;flex:1;">
-              <div class="team-logo-placeholder" style="margin:0 auto 12px;width:64px;height:64px;"><span class="material-icons-round" style="font-size:2rem;">sports_soccer</span></div>
-              <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:#fff;">Chelsea</div>
-              <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-top:4px;">Away</div>
-            </div>
-          </div>
-          <div style="background:rgba(233,69,96,0.15);border:1px solid rgba(233,69,96,0.3);border-radius:10px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
-            <div><div style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Our Prediction</div><div style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:#fff;">Arsenal to Win</div><div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-top:2px;">1X2 Market &middot; Odds: 1.85</div></div>
-            <div style="text-align:center;"><div style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Confidence</div><div style="font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:var(--red);">82%</div><span class="badge badge-strong"><span class="material-icons-round">local_fire_department</span>Strong Pick</span></div>
-          </div>
-        </div>
-        <!-- Confidence breakdown -->
-        <div class="card" style="padding:24px;margin-bottom:20px;">
-          <h2 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">analytics</span>Algorithm Confidence Breakdown</h2>
-          <div style="display:flex;flex-direction:column;gap:12px;">
-            <div><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:0.85rem;color:var(--text-soft);">Team Form (Last 5) — Weight 35%</span><span style="font-size:0.85rem;font-weight:700;color:var(--green);">88%</span></div><div class="confidence-track" style="height:8px;"><div class="confidence-fill high" style="width:88%;"></div></div></div>
-            <div><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:0.85rem;color:var(--text-soft);">Head-to-Head Record (Last 10) — Weight 25%</span><span style="font-size:0.85rem;font-weight:700;color:var(--green);">75%</span></div><div class="confidence-track" style="height:8px;"><div class="confidence-fill high" style="width:75%;"></div></div></div>
-            <div><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:0.85rem;color:var(--text-soft);">Home/Away Goal Averages — Weight 20%</span><span style="font-size:0.85rem;font-weight:700;color:var(--yellow);">72%</span></div><div class="confidence-track" style="height:8px;"><div class="confidence-fill medium" style="width:72%;"></div></div></div>
-            <div><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:0.85rem;color:var(--text-soft);">League Table Position Gap — Weight 20%</span><span style="font-size:0.85rem;font-weight:700;color:var(--green);">80%</span></div><div class="confidence-track" style="height:8px;"><div class="confidence-fill high" style="width:80%;"></div></div></div>
-          </div>
-        </div>
-        <!-- Team form -->
-        <div class="card" style="padding:24px;margin-bottom:20px;">
-          <h2 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">show_chart</span>Recent Form</h2>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-            <div><div style="font-weight:600;margin-bottom:10px;">Arsenal <span style="font-size:0.78rem;font-weight:400;color:var(--muted);">(Home)</span></div><div style="display:flex;gap:6px;margin-bottom:12px;"><span style="width:32px;height:32px;border-radius:6px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">W</span><span style="width:32px;height:32px;border-radius:6px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">W</span><span style="width:32px;height:32px;border-radius:6px;background:var(--yellow);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">D</span><span style="width:32px;height:32px;border-radius:6px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">W</span><span style="width:32px;height:32px;border-radius:6px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">W</span></div><p style="font-size:0.82rem;color:var(--text-soft);">4W 1D 0L — Excellent home record. Avg 2.4 goals scored per game, 0.8 conceded.</p></div>
-            <div><div style="font-weight:600;margin-bottom:10px;">Chelsea <span style="font-size:0.78rem;font-weight:400;color:var(--muted);">(Away)</span></div><div style="display:flex;gap:6px;margin-bottom:12px;"><span style="width:32px;height:32px;border-radius:6px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">L</span><span style="width:32px;height:32px;border-radius:6px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">W</span><span style="width:32px;height:32px;border-radius:6px;background:var(--yellow);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">D</span><span style="width:32px;height:32px;border-radius:6px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">L</span><span style="width:32px;height:32px;border-radius:6px;background:var(--yellow);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">D</span></div><p style="font-size:0.82rem;color:var(--text-soft);">1W 2D 2L — Inconsistent away form. Avg 1.2 goals scored, 1.8 conceded away.</p></div>
-          </div>
-        </div>
-        <!-- H2H -->
-        <div class="card" style="padding:24px;margin-bottom:20px;">
-          <h2 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">compare_arrows</span>Head-to-Head (Last 10 Meetings)</h2>
-          <div style="display:flex;gap:16px;margin-bottom:16px;">
-            <div style="flex:1;text-align:center;padding:12px;background:rgba(22,163,74,0.1);border-radius:8px;"><div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--green);">6</div><div style="font-size:0.75rem;color:var(--muted);">Arsenal Wins</div></div>
-            <div style="flex:1;text-align:center;padding:12px;background:var(--surface);border-radius:8px;"><div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--muted);">2</div><div style="font-size:0.75rem;color:var(--muted);">Draws</div></div>
-            <div style="flex:1;text-align:center;padding:12px;background:rgba(233,69,96,0.08);border-radius:8px;"><div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--red);">2</div><div style="font-size:0.75rem;color:var(--muted);">Chelsea Wins</div></div>
-          </div>
-          <p style="font-size:0.875rem;color:var(--text-soft);line-height:1.7;">Arsenal have dominated recent meetings, winning 6 of the last 10 encounters. The Gunners have kept clean sheets in 4 of their last 5 home matches against Chelsea.</p>
-        </div>
-        <!-- Expert analysis -->
-        <div class="card" style="padding:24px;margin-bottom:20px;">
-          <h2 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">person</span>Expert Analysis</h2>
-          <p style="font-size:0.9rem;color:var(--text-soft);line-height:1.8;margin-bottom:12px;">Arsenal arrive at this fixture in outstanding form, having won four of their last five at the Emirates. Their defensive solidity at home — conceding just 0.8 goals per game — combined with Chelsea's poor away record make this one of the stronger calls this weekend.</p>
-          <p style="font-size:0.9rem;color:var(--text-soft);line-height:1.8;">Chelsea have struggled for consistency on the road, losing three of their last five away matches. With Arsenal pushing for the title and home advantage firmly on their side, our algorithm rates an Arsenal win at 82% confidence.</p>
-          <div style="background:rgba(233,69,96,0.06);border-left:3px solid var(--red);padding:12px 16px;border-radius:0 8px 8px 0;margin-top:16px;"><p style="font-size:0.875rem;font-weight:600;color:var(--text);">Our Pick: Arsenal to Win @ 1.85 — Strong confidence tip.</p></div>
-        </div>
-        <!-- Affiliate -->
-        <div class="card" style="padding:20px;margin-bottom:20px;">
-          <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:12px;">Bet This Tip With Our Partners</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            <a href="https://www.bet365.com?utm_source=rootedpredict&utm_medium=detail&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="btn btn-outline btn-sm"><span class="material-icons-round">open_in_new</span>Bet365</a>
-            <a href="https://www.williamhill.com?utm_source=rootedpredict&utm_medium=detail&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="btn btn-outline btn-sm"><span class="material-icons-round">open_in_new</span>William Hill</a>
-            <a href="https://www.betway.com?utm_source=rootedpredict&utm_medium=detail&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="btn btn-outline btn-sm"><span class="material-icons-round">open_in_new</span>Betway</a>
-            <a href="https://www.unibet.com?utm_source=rootedpredict&utm_medium=detail&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="btn btn-outline btn-sm"><span class="material-icons-round">open_in_new</span>Unibet</a>
-            <a href="https://www.sportybet.com?utm_source=rootedpredict&utm_medium=detail&utm_campaign=tip" target="_blank" rel="noopener noreferrer sponsored" class="btn btn-outline btn-sm"><span class="material-icons-round">open_in_new</span>SportyBet</a>
-          </div>
-        </div>
-        <!-- Comments -->
-        <div class="card" style="padding:24px;">
-          <h2 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">chat_bubble</span>Discussion <span style="font-size:0.85rem;font-weight:400;color:var(--muted);">(3 comments)</span></h2>
-          <div style="background:var(--surface);border-radius:8px;padding:16px;margin-bottom:12px;border:1px solid var(--border);"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:32px;height:32px;border-radius:50%;background:var(--midnight);display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:1rem;color:rgba(255,255,255,0.6);">person</span></div><span style="font-weight:600;font-size:0.85rem;">BettingPro_UK</span><span style="font-size:0.75rem;color:var(--muted);margin-left:auto;">2 hours ago</span></div><p style="font-size:0.85rem;color:var(--text-soft);">Arsenal look solid at home this season. Agree with this tip. Going in on it.</p></div>
-          <div style="background:var(--surface);border-radius:8px;padding:16px;margin-bottom:16px;border:1px solid var(--border);"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:32px;height:32px;border-radius:50%;background:var(--midnight);display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:1rem;color:rgba(255,255,255,0.6);">person</span></div><span style="font-weight:600;font-size:0.85rem;">TipsterNigeria</span><span style="font-size:0.75rem;color:var(--muted);margin-left:auto;">5 hours ago</span></div><p style="font-size:0.85rem;color:var(--text-soft);">Chelsea away form has been terrible. This is a banker for me.</p></div>
-          <div style="border-top:1px solid var(--border);padding-top:16px;">
-            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;"><a href="/login.html" style="color:var(--red);font-weight:600;">Log in</a> or <a href="/register.html" style="color:var(--red);font-weight:600;">register</a> to join the discussion.</p>
-            <a href="/register.html" class="btn btn-primary btn-sm"><span class="material-icons-round">person_add</span>Create Free Account</a>
-          </div>
+      <div id="detail-main">
+        <div style="padding:60px;text-align:center;color:var(--muted);">
+          <span class="material-icons-round" style="font-size:2.5rem;display:block;margin-bottom:8px;animation:spin 1s linear infinite;">sports_soccer</span>
+          Loading prediction…
         </div>
       </div>
       <aside class="sidebar">
-        <div class="sidebar-card" style="background:linear-gradient(135deg,var(--navy),var(--midnight));border-color:rgba(233,69,96,0.3);"><div style="padding:20px;text-align:center;"><span class="material-icons-round" style="font-size:2rem;color:var(--red);">workspace_premium</span><h3 style="font-family:var(--font-head);font-size:1.3rem;font-weight:800;color:#fff;margin:8px 0 6px;">Unlock VIP Tips</h3><p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;">Premium picks, early access &amp; Telegram alerts.</p><a href="/pricing.html" class="btn btn-primary" style="width:100%;justify-content:center;">From $4.89/month</a></div></div>
-        <div class="sidebar-card"><div class="sidebar-card-header"><span class="material-icons-round">sports_soccer</span>More Predictions</div><div class="sidebar-card-body" style="padding:8px 0;"><a href="/predictions.html" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'"><span style="font-size:0.85rem;">All Today's Tips</span><span class="material-icons-round" style="margin-left:auto;font-size:0.9rem;color:var(--muted);">arrow_forward</span></a><a href="/predictions.html?market=over-2-5" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'"><span style="font-size:0.85rem;">Over 2.5 Goals Tips</span><span class="material-icons-round" style="margin-left:auto;font-size:0.9rem;color:var(--muted);">arrow_forward</span></a><a href="/predictions.html?market=btts" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'"><span style="font-size:0.85rem;">BTTS Tips</span><span class="material-icons-round" style="margin-left:auto;font-size:0.9rem;color:var(--muted);">arrow_forward</span></a></div></div>
+        <div class="sidebar-card" style="background:linear-gradient(135deg,var(--navy),var(--midnight));border-color:rgba(26,138,68,0.3);"><div style="padding:20px;text-align:center;"><span class="material-icons-round" style="font-size:2rem;color:var(--green);">workspace_premium</span><h3 style="font-family:var(--font-head);font-size:1.3rem;font-weight:800;color:#fff;margin:8px 0 6px;">Unlock VIP Tips</h3><p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;">Premium picks, early access &amp; Telegram alerts.</p><a href="/pricing.html" class="btn btn-primary" style="width:100%;justify-content:center;">From $4.89/month</a></div></div>
+        <div class="sidebar-card"><div class="sidebar-card-header"><span class="material-icons-round">sports_soccer</span>More Predictions</div><div class="sidebar-card-body" style="padding:8px 0;"><a href="/predictions.html" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);"><span style="font-size:0.85rem;">All Today's Tips</span><span class="material-icons-round" style="margin-left:auto;font-size:0.9rem;color:var(--muted);">arrow_forward</span></a><a href="/predictions.html?market=over-2-5" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);"><span style="font-size:0.85rem;">Over 2.5 Goals Tips</span><span class="material-icons-round" style="margin-left:auto;font-size:0.9rem;color:var(--muted);">arrow_forward</span></a><a href="/leaderboard.html" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);"><span style="font-size:0.85rem;">Accuracy Leaderboard</span><span class="material-icons-round" style="margin-left:auto;font-size:0.9rem;color:var(--muted);">arrow_forward</span></a></div></div>
       </aside>
     </div>
   </div>
@@ -128,44 +49,110 @@
 <script src="/js/app.js"></script>
 <script src="/js/content-protection.js"></script>
 <script>
-// Dynamic SEO meta + JSON-LD update — called by the prediction loader once data is available
 function updatePredictionSEO(p) {
   const BASE  = 'https://www.rootedpredict.com';
   const slug  = p.slug || '';
   const title = `${p.home_team} vs ${p.away_team} — ${p.league_name || 'Football'} Prediction | Rooted Predictions`;
   const desc  = `${p.home_team} vs ${p.away_team} ${p.league_name ? p.league_name + ' ' : ''}prediction${p.confidence_score ? ' — ' + p.confidence_score + '% confidence' : ''}. ${p.tip ? 'Tip: ' + p.tip + '.' : ''} Free football tip from Rooted Predictions.`;
   const url   = `${BASE}/prediction/${slug}`;
-
-  // Title + standard meta
   document.title = title;
   const setMeta = (id, val) => { const el = document.getElementById(id); if (el) el.setAttribute(el.tagName === 'LINK' ? 'href' : 'content', val); };
-  setMeta('page-desc',      desc);
-  setMeta('page-keywords',  `${p.home_team} vs ${p.away_team} prediction, ${p.league_name || 'football'} tip, Rooted Predictions`);
-  setMeta('page-canonical', url);
-  setMeta('og-title',       title);
-  setMeta('og-desc',        desc);
-  setMeta('og-url',         url);
-  setMeta('tw-title',       title);
-  setMeta('tw-desc',        desc);
-
-  // JSON-LD SportsEvent schema
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type':    'SportsEvent',
-    name:       `${p.home_team} vs ${p.away_team}`,
-    startDate:  p.match_date ? new Date(p.match_date).toISOString() : undefined,
-    sport:      'Football',
-    url,
-    homeTeam: { '@type': 'SportsTeam', name: p.home_team },
-    awayTeam: { '@type': 'SportsTeam', name: p.away_team },
-    ...(p.league_name ? { superEvent: { '@type': 'SportsEvent', name: p.league_name } } : {}),
-  };
-  const el = document.getElementById('prediction-schema');
-  if (el) el.textContent = JSON.stringify(schema);
+  setMeta('page-desc', desc); setMeta('page-keywords', `${p.home_team} vs ${p.away_team} prediction, ${p.league_name || 'football'} tip`);
+  setMeta('page-canonical', url); setMeta('og-title', title); setMeta('og-desc', desc); setMeta('og-url', url);
+  setMeta('tw-title', title); setMeta('tw-desc', desc);
+  const schema = { '@context':'https://schema.org','@type':'SportsEvent', name:`${p.home_team} vs ${p.away_team}`,
+    startDate: p.match_date ? new Date(p.match_date).toISOString() : undefined, sport:'Football', url,
+    homeTeam:{'@type':'SportsTeam',name:p.home_team}, awayTeam:{'@type':'SportsTeam',name:p.away_team},
+    ...(p.league_name ? { superEvent:{'@type':'SportsEvent',name:p.league_name} } : {}) };
+  const el = document.getElementById('prediction-schema'); if (el) el.textContent = JSON.stringify(schema);
 }
 
-// Expose globally so prediction loader scripts can call it
-window.updatePredictionSEO = updatePredictionSEO;
+(async () => {
+  const FIN = ['FT','AET','PEN'], LIVE = ['1H','2H','HT','ET','BT','P','SUSP','INT','LIVE'];
+  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const main = document.getElementById('detail-main');
+
+  function getSlug() {
+    const m = location.pathname.match(/\/prediction\/([^/?#]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    const q = new URLSearchParams(location.search);
+    return q.get('slug') || q.get('s') || '';
+  }
+  const slug = getSlug();
+  if (!slug) { main.innerHTML = notFound('No prediction specified.'); return; }
+
+  function notFound(msg){ return `<div class="card" style="padding:48px;text-align:center;"><span class="material-icons-round" style="font-size:3rem;color:var(--border);display:block;margin-bottom:12px;">search_off</span><p style="color:var(--muted);margin-bottom:16px;">${msg}</p><a href="/predictions.html" class="btn btn-outline btn-sm">View All Predictions</a></div>`; }
+  function formBadges(str){
+    if(!str) return '<span style="color:var(--muted);font-size:0.82rem;">No recent data</span>';
+    const c={W:'var(--green)',D:'var(--yellow)',L:'var(--red)'};
+    return str.toUpperCase().replace(/[^WDL]/g,'').split('').map(ch=>`<span style="width:30px;height:30px;border-radius:6px;background:${c[ch]||'var(--muted)'};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:0.82rem;margin-right:5px;">${ch}</span>`).join('');
+  }
+
+  let p;
+  try {
+    const res = await fetch('/api/predictions/' + encodeURIComponent(slug), { credentials:'include' });
+    const json = await res.json();
+    if (!json.success || !json.data) { main.innerHTML = notFound('This prediction could not be found.'); return; }
+    p = json.data;
+  } catch(e) { main.innerHTML = notFound('Could not load this prediction.'); return; }
+
+  document.getElementById('bc-match').textContent = `${p.home_team} vs ${p.away_team}`;
+  updatePredictionSEO(p);
+
+  const status = p.status_short, hasScore = p.home_score != null && p.away_score != null;
+  const isFin = FIN.includes(status) && hasScore, isLive = LIVE.includes(status) && hasScore;
+  const kickoff = p.match_date ? new Date(p.match_date).toLocaleString('en-GB',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'UTC'})+' UTC' : '';
+  let centre;
+  if (isLive) centre = `<div style="font-family:var(--font-head);font-size:2rem;font-weight:900;color:#fff;">${p.home_score} - ${p.away_score}</div><div style="font-size:0.82rem;color:var(--red);font-weight:700;margin-top:4px;"><span class="live-dot"></span> LIVE${p.elapsed?" "+p.elapsed+"'":''}</div>`;
+  else if (isFin) centre = `<div style="font-family:var(--font-head);font-size:2rem;font-weight:900;color:#fff;">${p.home_score} - ${p.away_score}</div><div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-top:4px;">Full Time</div>`;
+  else centre = `<div style="font-family:var(--font-head);font-size:2rem;font-weight:900;color:rgba(255,255,255,0.4);">VS</div><div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-top:4px;">${kickoff}</div>`;
+
+  const resultBadge = (p.result && p.result!=='pending')
+    ? `<span class="badge badge-${p.result}"><span class="material-icons-round">${p.result==='won'?'check_circle':'cancel'}</span>${p.result.toUpperCase()}</span>` : '';
+  const statusBadge = isLive ? `<span class="badge" style="background:rgba(231,76,60,0.12);color:var(--red);"><span class="live-dot"></span>LIVE</span>` : `<span class="badge badge-free"><span class="material-icons-round">lock_open</span>${p.visibility==='vip'?'VIP':'FREE'} TIP</span>`;
+
+  const tipBox = p.locked
+    ? `<div style="text-align:right;"><div style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;">VIP Pick</div><a href="/pricing.html" class="btn btn-primary btn-sm" style="margin-top:6px;">Unlock VIP</a></div>`
+    : `<div style="text-align:right;"><div style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">Confidence</div><div style="font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:var(--green);">${p.confidence_score!=null?p.confidence_score+'%':'—'}</div>${p.confidence_score>=85?'<span class="badge badge-strong"><span class="material-icons-round">local_fire_department</span>Strong Pick</span>':''}</div>`;
+
+  main.innerHTML = `
+    <div class="card" style="background:linear-gradient(135deg,var(--navy),var(--midnight));padding:32px;margin-bottom:20px;border-color:rgba(255,255,255,0.08);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">${p.league_logo?`<img src="${p.league_logo}" width="22" height="22" style="object-fit:contain;" alt="" onerror="this.style.display='none'">`:''}<span style="font-size:0.82rem;color:rgba(255,255,255,0.6);">${esc(p.league_name||'League')}${p.league_country?' · '+esc(p.league_country):''}</span></div>
+        ${statusBadge}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-around;gap:24px;margin:24px 0;">
+        <div style="text-align:center;flex:1;">${p.home_team_logo?`<img src="${p.home_team_logo}" style="width:56px;height:56px;object-fit:contain;margin:0 auto 12px;display:block;" onerror="this.style.display='none'">`:'<div class="team-logo-placeholder" style="margin:0 auto 12px;width:56px;height:56px;"><span class="material-icons-round" style="font-size:1.8rem;">sports_soccer</span></div>'}<div style="font-family:var(--font-head);font-size:1.3rem;font-weight:800;color:#fff;">${esc(p.home_team)}</div><div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-top:4px;">Home</div></div>
+        <div style="text-align:center;">${centre}</div>
+        <div style="text-align:center;flex:1;">${p.away_team_logo?`<img src="${p.away_team_logo}" style="width:56px;height:56px;object-fit:contain;margin:0 auto 12px;display:block;" onerror="this.style.display='none'">`:'<div class="team-logo-placeholder" style="margin:0 auto 12px;width:56px;height:56px;"><span class="material-icons-round" style="font-size:1.8rem;">sports_soccer</span></div>'}<div style="font-family:var(--font-head);font-size:1.3rem;font-weight:800;color:#fff;">${esc(p.away_team)}</div><div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-top:4px;">Away</div></div>
+      </div>
+      <div style="background:rgba(26,138,68,0.12);border:1px solid rgba(26,138,68,0.3);border-radius:10px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+        <div><div style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Our Prediction</div><div style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:#fff;">${p.locked?'VIP Pick':esc(p.tip||'TBD')}</div><div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-top:2px;">${esc(p.market||'')}${p.odds?' · Odds: '+p.odds:''} ${resultBadge}</div></div>
+        ${tipBox}
+      </div>
+    </div>
+
+    <div class="card" style="padding:24px;margin-bottom:20px;">
+      <h2 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--green);">show_chart</span>Recent Form (Last 5)</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div><div style="font-weight:600;margin-bottom:10px;">${esc(p.home_team)} <span style="font-size:0.78rem;font-weight:400;color:var(--muted);">(Home)</span></div><div>${formBadges(p.home_form)}</div></div>
+        <div><div style="font-weight:600;margin-bottom:10px;">${esc(p.away_team)} <span style="font-size:0.78rem;font-weight:400;color:var(--muted);">(Away)</span></div><div>${formBadges(p.away_form)}</div></div>
+      </div>
+      ${p.h2h_summary?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);font-size:0.85rem;color:var(--text-soft);"><strong>Head-to-Head:</strong> ${esc(p.h2h_summary)} <span style="color:var(--muted);font-size:0.78rem;">(home wins · away wins · draws)</span></div>`:''}
+    </div>
+
+    ${(!p.locked && p.analysis)?`
+    <div class="card" style="padding:24px;margin-bottom:20px;">
+      <h2 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--green);">analytics</span>Algorithm Analysis</h2>
+      <p style="font-size:0.9rem;color:var(--text-soft);line-height:1.8;">${esc(p.analysis)}</p>
+    </div>`:''}
+
+    <div class="card" style="padding:24px;">
+      <h2 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--green);">chat_bubble</span>Discussion <span style="font-size:0.85rem;font-weight:400;color:var(--muted);">(${p.comment_count||0})</span></h2>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;"><a href="/login.html" style="color:var(--green);font-weight:600;">Log in</a> or <a href="/register.html" style="color:var(--green);font-weight:600;">register</a> to join the discussion.</p>
+      <a href="/register.html" class="btn btn-primary btn-sm"><span class="material-icons-round">person_add</span>Create Free Account</a>
+    </div>`;
+})();
 </script>
 </body>
 </html>

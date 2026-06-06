@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prediction Accuracy Leaderboard — Track Record | Rooted Predictions</title>
-  <meta name="description" content="See Rooted Predictions's verified prediction accuracy stats and tipster leaderboard. Transparent results across all markets and leagues. Over 78% accuracy this month.">
-  <meta name="keywords" content="football prediction accuracy, tipster results, best prediction site record, verified tips, Rooted Predictions">
+  <meta name="description" content="See Rooted Predictions' verified prediction accuracy — settled results across every market and league. Fully transparent, updated as matches finish.">
+  <meta name="keywords" content="football prediction accuracy, tipster results, verified tips, Rooted Predictions track record">
   <link rel="canonical" href="https://www.rootedpredict.com/leaderboard.html">
   <meta property="og:title" content="Prediction Accuracy Leaderboard | Rooted Predictions">
-  <meta property="og:description" content="Verified prediction accuracy stats. Over 78% this month across all markets.">
+  <meta property="og:description" content="Verified prediction accuracy stats across all markets and leagues — updated as results settle.">
   <meta property="og:url" content="https://www.rootedpredict.com/leaderboard.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Rooted Predictions">
@@ -29,156 +29,53 @@
       <span style="color:rgba(255,255,255,0.7);">Leaderboard</span>
     </nav>
     <h1 style="font-family:var(--font-head);font-size:2.2rem;font-weight:900;color:#fff;margin-bottom:6px;">Prediction Leaderboard</h1>
-    <p style="font-size:0.9rem;color:rgba(255,255,255,0.55);">Verified accuracy stats — updated daily after results are settled</p>
+    <p style="font-size:0.9rem;color:rgba(255,255,255,0.55);">Verified accuracy — updated automatically as matches finish</p>
   </div>
 </div>
 <main>
   <div class="container" style="padding-top:28px;">
 
-
-    <!-- Overall stats -->
+    <!-- Overall stats (live, settled results) -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;">
       <div class="card" style="padding:20px;text-align:center;">
-        <div style="font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:var(--green);">78.4%</div>
-        <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">This Month</div>
-      </div>
-      <div class="card" style="padding:20px;text-align:center;">
-        <div style="font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:var(--text);">312</div>
-        <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">Won This Month</div>
-      </div>
-      <div class="card" style="padding:20px;text-align:center;">
-        <div style="font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:var(--text);">3,842</div>
-        <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">Total Tips (2026)</div>
-      </div>
-      <div class="card" style="padding:20px;text-align:center;">
-        <div style="font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:var(--red);">75.1%</div>
+        <div id="lb-accuracy" style="font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:var(--green);">—</div>
         <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">All-Time Accuracy</div>
       </div>
-    </div>
-
-    <!-- Period filter -->
-    <div class="market-tabs" style="margin-bottom:20px;">
-      <button class="market-tab active">This Month</button>
-      <button class="market-tab">Last 3 Months</button>
-      <button class="market-tab">This Year</button>
-      <button class="market-tab">All Time</button>
+      <div class="card" style="padding:20px;text-align:center;">
+        <div id="lb-won" style="font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:var(--green);">—</div>
+        <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">Tips Won</div>
+      </div>
+      <div class="card" style="padding:20px;text-align:center;">
+        <div id="lb-lost" style="font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:var(--red);">—</div>
+        <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">Tips Lost</div>
+      </div>
+      <div class="card" style="padding:20px;text-align:center;">
+        <div id="lb-total" style="font-family:var(--font-head);font-size:2.4rem;font-weight:900;color:var(--text);">—</div>
+        <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">Settled Tips</div>
+      </div>
     </div>
 
     <!-- By market table -->
     <div class="card" style="margin-bottom:28px;overflow:hidden;">
       <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-        <span class="material-icons-round" style="color:var(--red);">bar_chart</span>
+        <span class="material-icons-round" style="color:var(--green);">bar_chart</span>
         <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;">Accuracy by Market</h2>
       </div>
       <table class="leaderboard-table" style="width:100%;">
-        <thead>
-          <tr>
-            <th>Market</th>
-            <th>Tips</th>
-            <th>Won</th>
-            <th>Lost</th>
-            <th>Accuracy</th>
-            <th>Trend</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>1X2 (Match Result)</strong></td>
-            <td>148</td>
-            <td style="color:var(--green);font-weight:700;">121</td>
-            <td style="color:var(--red);">27</td>
-            <td><span style="font-weight:700;color:var(--green);">81.8%</span></td>
-            <td><span class="material-icons-round" style="color:var(--green);font-size:1rem;">trending_up</span></td>
-          </tr>
-          <tr>
-            <td><strong>Over 2.5 Goals</strong></td>
-            <td>97</td>
-            <td style="color:var(--green);font-weight:700;">74</td>
-            <td style="color:var(--red);">23</td>
-            <td><span style="font-weight:700;color:var(--green);">76.3%</span></td>
-            <td><span class="material-icons-round" style="color:var(--green);font-size:1rem;">trending_up</span></td>
-          </tr>
-          <tr>
-            <td><strong>BTTS / GG</strong></td>
-            <td>82</td>
-            <td style="color:var(--green);font-weight:700;">60</td>
-            <td style="color:var(--red);">22</td>
-            <td><span style="font-weight:700;color:var(--yellow);">73.2%</span></td>
-            <td><span class="material-icons-round" style="color:var(--muted);font-size:1rem;">trending_flat</span></td>
-          </tr>
-          <tr>
-            <td><strong>Correct Score</strong></td>
-            <td>34</td>
-            <td style="color:var(--green);font-weight:700;">19</td>
-            <td style="color:var(--red);">15</td>
-            <td><span style="font-weight:700;color:var(--yellow);">55.9%</span></td>
-            <td><span class="material-icons-round" style="color:var(--red);font-size:1rem;">trending_down</span></td>
-          </tr>
-          <tr>
-            <td><strong>Draw No Bet</strong></td>
-            <td>41</td>
-            <td style="color:var(--green);font-weight:700;">31</td>
-            <td style="color:var(--red);">10</td>
-            <td><span style="font-weight:700;color:var(--green);">75.6%</span></td>
-            <td><span class="material-icons-round" style="color:var(--green);font-size:1rem;">trending_up</span></td>
-          </tr>
-        </tbody>
+        <thead><tr><th>Market</th><th>Tips</th><th>Won</th><th>Lost</th><th>Accuracy</th></tr></thead>
+        <tbody id="lb-market-body"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr></tbody>
       </table>
     </div>
 
     <!-- By league table -->
     <div class="card" style="margin-bottom:28px;overflow:hidden;">
       <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-        <span class="material-icons-round" style="color:var(--red);">emoji_events</span>
+        <span class="material-icons-round" style="color:var(--green);">emoji_events</span>
         <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;">Accuracy by League</h2>
       </div>
       <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>League</th>
-            <th>Tips</th>
-            <th>Won</th>
-            <th>Accuracy</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="rank-badge rank-1">1</span></td>
-            <td style="display:flex;align-items:center;gap:8px;padding:14px 16px;"><img src="https://media.api-sports.io/football/leagues/78.png" width="20" height="20" style="object-fit:contain;" alt="" onerror="this.style.display='none'"><strong>Bundesliga</strong></td>
-            <td>42</td>
-            <td style="color:var(--green);font-weight:700;">36</td>
-            <td><span style="font-weight:700;color:var(--green);">85.7%</span></td>
-          </tr>
-          <tr>
-            <td><span class="rank-badge rank-2">2</span></td>
-            <td style="display:flex;align-items:center;gap:8px;padding:14px 16px;"><img src="https://media.api-sports.io/football/leagues/39.png" width="20" height="20" style="object-fit:contain;" alt="" onerror="this.style.display='none'"><strong>Premier League</strong></td>
-            <td>58</td>
-            <td style="color:var(--green);font-weight:700;">48</td>
-            <td><span style="font-weight:700;color:var(--green);">82.8%</span></td>
-          </tr>
-          <tr>
-            <td><span class="rank-badge rank-3">3</span></td>
-            <td style="display:flex;align-items:center;gap:8px;padding:14px 16px;"><img src="https://media.api-sports.io/football/leagues/140.png" width="20" height="20" style="object-fit:contain;" alt="" onerror="this.style.display='none'"><strong>La Liga</strong></td>
-            <td>46</td>
-            <td style="color:var(--green);font-weight:700;">37</td>
-            <td><span style="font-weight:700;color:var(--green);">80.4%</span></td>
-          </tr>
-          <tr>
-            <td><span class="rank-badge rank-other">4</span></td>
-            <td style="display:flex;align-items:center;gap:8px;padding:14px 16px;"><img src="https://media.api-sports.io/football/leagues/2.png" width="20" height="20" style="object-fit:contain;" alt="" onerror="this.style.display='none'"><strong>Champions League</strong></td>
-            <td>28</td>
-            <td style="color:var(--green);font-weight:700;">22</td>
-            <td><span style="font-weight:700;color:var(--green);">78.6%</span></td>
-          </tr>
-          <tr>
-            <td><span class="rank-badge rank-other">5</span></td>
-            <td style="display:flex;align-items:center;gap:8px;padding:14px 16px;"><img src="https://media.api-sports.io/football/leagues/135.png" width="20" height="20" style="object-fit:contain;" alt="" onerror="this.style.display='none'"><strong>Serie A</strong></td>
-            <td>44</td>
-            <td style="color:var(--green);font-weight:700;">34</td>
-            <td><span style="font-weight:700;color:var(--yellow);">77.3%</span></td>
-          </tr>
-        </tbody>
+        <thead><tr><th>#</th><th>League</th><th>Tips</th><th>Won</th><th>Accuracy</th></tr></thead>
+        <tbody id="lb-league-body"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr></tbody>
       </table>
     </div>
 
@@ -186,31 +83,87 @@
     <div class="card" style="margin-bottom:28px;overflow:hidden;">
       <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span class="material-icons-round" style="color:var(--red);">history</span>
+          <span class="material-icons-round" style="color:var(--green);">history</span>
           <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;">Recent Results</h2>
         </div>
-        <a href="/predictions.html" style="font-size:0.82rem;color:var(--red);font-weight:600;">View All</a>
+        <a href="/predictions.html" style="font-size:0.82rem;color:var(--green);font-weight:600;">View All</a>
       </div>
       <table class="leaderboard-table">
-        <thead>
-          <tr><th>Match</th><th>Tip</th><th>Odds</th><th>Result</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Arsenal vs Chelsea</td><td>Arsenal Win</td><td>1.85</td><td><span class="badge badge-won"><span class="material-icons-round">check_circle</span>WON</span></td></tr>
-          <tr><td>Bayern vs Dortmund</td><td>Over 2.5 Goals</td><td>1.72</td><td><span class="badge badge-won"><span class="material-icons-round">check_circle</span>WON</span></td></tr>
-          <tr><td>PSG vs Monaco</td><td>Home Win</td><td>1.55</td><td><span class="badge badge-won"><span class="material-icons-round">check_circle</span>WON</span></td></tr>
-          <tr><td>Juventus vs Napoli</td><td>BTTS Yes</td><td>1.80</td><td><span class="badge badge-lost"><span class="material-icons-round">cancel</span>LOST</span></td></tr>
-          <tr><td>Man City vs Liverpool</td><td>Over 2.5 Goals</td><td>1.68</td><td><span class="badge badge-won"><span class="material-icons-round">check_circle</span>WON</span></td></tr>
-          <tr><td>Real Madrid vs Atletico</td><td>Draw No Bet — Real Madrid</td><td>1.60</td><td><span class="badge badge-won"><span class="material-icons-round">check_circle</span>WON</span></td></tr>
-        </tbody>
+        <thead><tr><th>Match</th><th>Score</th><th>Tip</th><th>Result</th></tr></thead>
+        <tbody id="lb-recent-body"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr></tbody>
       </table>
     </div>
 
-    <!-- AdSense slot above footer -->
   </div>
 </main>
 <footer class="site-footer" id="site-footer"></footer>
 <script src="/js/app.js"></script>
 <script src="/js/content-protection.js"></script>
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  const accColor = a => a >= 70 ? 'var(--green)' : a >= 50 ? 'var(--yellow)' : 'var(--red)';
+  const empty = (tb, cols, msg) => { $(tb).innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:var(--muted);padding:24px;">${msg}</td></tr>`; };
+
+  try {
+    const res = await fetch('/api/predictions/leaderboard');
+    const json = await res.json();
+    if (!json.success) throw new Error('failed');
+    const d = json.data;
+    const o = d.overall || {};
+
+    // Overall tiles
+    $('lb-accuracy').textContent = (o.accuracy != null ? o.accuracy + '%' : 'New');
+    $('lb-won').textContent   = o.won   || 0;
+    $('lb-lost').textContent  = o.lost  || 0;
+    $('lb-total').textContent = o.total || 0;
+
+    // By market
+    if (d.by_market && d.by_market.length) {
+      $('lb-market-body').innerHTML = d.by_market.map(m => `
+        <tr>
+          <td><strong>${m.market}</strong></td>
+          <td>${m.total}</td>
+          <td style="color:var(--green);font-weight:700;">${m.won}</td>
+          <td style="color:var(--red);">${m.total - m.won}</td>
+          <td><span style="font-weight:700;color:${accColor(m.accuracy)};">${m.accuracy != null ? m.accuracy + '%' : '—'}</span></td>
+        </tr>`).join('');
+    } else empty('lb-market-body', 5, 'No settled results yet — check back after today\'s matches finish.');
+
+    // By league
+    if (d.by_league && d.by_league.length) {
+      $('lb-league-body').innerHTML = d.by_league.map((l, i) => `
+        <tr>
+          <td><span class="rank-badge rank-${i+1<=3?i+1:''}">${i+1}</span></td>
+          <td style="padding:14px 16px;"><strong>${l.league}</strong>${l.country ? ` <span style="color:var(--muted);font-weight:400;font-size:0.8rem;">· ${l.country}</span>` : ''}</td>
+          <td>${l.total}</td>
+          <td style="color:var(--green);font-weight:700;">${l.won}</td>
+          <td><span style="font-weight:700;color:${accColor(l.accuracy)};">${l.accuracy != null ? l.accuracy + '%' : '—'}</span></td>
+        </tr>`).join('');
+    } else empty('lb-league-body', 5, 'No settled results yet.');
+
+    // Recent results
+    if (d.recent && d.recent.length) {
+      $('lb-recent-body').innerHTML = d.recent.map(r => {
+        const score = (r.home_score != null && r.away_score != null) ? `${r.home_score} - ${r.away_score}` : '—';
+        const badge = r.result === 'won'
+          ? '<span class="badge badge-won"><span class="material-icons-round">check_circle</span>WON</span>'
+          : '<span class="badge badge-lost"><span class="material-icons-round">cancel</span>LOST</span>';
+        return `<tr>
+          <td>${r.home_team} vs ${r.away_team}</td>
+          <td style="font-weight:700;">${score}</td>
+          <td>${r.tip}</td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join('');
+    } else empty('lb-recent-body', 4, 'No settled results yet.');
+
+  } catch (e) {
+    empty('lb-market-body', 5, 'Could not load leaderboard.');
+    empty('lb-league-body', 5, 'Could not load leaderboard.');
+    empty('lb-recent-body', 4, 'Could not load leaderboard.');
+  }
+})();
+</script>
 </body>
 </html>

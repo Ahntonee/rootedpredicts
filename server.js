@@ -228,6 +228,11 @@ function adminErrorPage() {
 </body></html>`;
 }
 
+// ── Pretty prediction detail URL → serve the detail page
+app.get('/prediction/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'prediction-detail.html'));
+});
+
 // ── SPA fallback for public pages
 app.get('/{*path}', (req, res) => {
   if (req.path.startsWith('/api/')) {

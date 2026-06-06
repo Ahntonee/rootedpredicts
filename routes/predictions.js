@@ -61,6 +61,37 @@ router.get('/stats', asyncHandler(async (req, res) => {
   return successResponse(res, { ...live, leagues_covered, members, display, overrides });
 }));
 
+// ── GET /api/predictions/leaderboard — real verified results breakdown
+router.get('/leaderboard', asyncHandler(async (req, res) => {
+  const decided = "published_at IS NOT NULL AND result IN ('won','lost')";
+
+  const [[overall]] = await db.query(
+    `SELECT COUNT(*) total, SUM(result='won') won, SUM(result='lost') lost,
+            ROUND(SUM(result='won')/NULLIF(COUNT(*),0)*100,1) accuracy
+     FROM predictions WHERE ${decided}`
+  );
+  const [byMarket] = await db.query(
+    `SELECT market, COUNT(*) total, SUM(result='won') won,
+            ROUND(SUM(result='won')/NULLIF(COUNT(*),0)*100,1) accuracy
+     FROM predictions WHERE ${decided}
+     GROUP BY market HAVING total >= 1 ORDER BY total DESC`
+  );
+  const [byLeague] = await db.query(
+    `SELECT l.name league, l.country, COUNT(*) total, SUM(p.result='won') won,
+            ROUND(SUM(p.result='won')/NULLIF(COUNT(*),0)*100,1) accuracy
+     FROM predictions p JOIN leagues l ON l.id = p.league_id
+     WHERE p.published_at IS NOT NULL AND p.result IN ('won','lost')
+     GROUP BY l.id, l.name, l.country HAVING total >= 1 ORDER BY total DESC, accuracy DESC LIMIT 12`
+  );
+  const [recent] = await db.query(
+    `SELECT home_team, away_team, tip, odds, result, home_score, away_score, match_date
+     FROM predictions WHERE ${decided}
+     ORDER BY match_date DESC LIMIT 12`
+  );
+
+  return successResponse(res, { overall, by_market: byMarket, by_league: byLeague, recent });
+}));
+
 // ── GET /api/predictions — Main filtered listing
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const {
@@ -85,6 +116,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
       p.home_team_logo, p.away_team_logo, p.match_date,
       p.tip, p.market, p.odds, p.confidence_score,
       p.visibility, p.result, p.slug, p.published_at,
+      p.home_score, p.away_score, p.status_short, p.elapsed,
       p.home_form, p.away_form, p.h2h_summary,
       l.name as league_name, l.country as league_country,
       l.continent, l.logo_url as league_logo, l.flag_url as league_flag

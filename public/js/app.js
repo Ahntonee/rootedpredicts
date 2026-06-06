@@ -383,12 +383,35 @@
       ? new Date(pred.match_date).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', timeZone: 'UTC' })
       : '';
 
+    // Live / finished / upcoming status from synced data
+    const FIN_ST  = ['FT','AET','PEN'];
+    const LIVE_ST = ['1H','2H','HT','ET','BT','P','SUSP','INT','LIVE'];
+    const st        = pred.status_short;
+    const hasScore  = pred.home_score != null && pred.away_score != null;
+    const isFinished = FIN_ST.includes(st) && hasScore;
+    const isLive     = LIVE_ST.includes(st) && hasScore;
+
+    // Centre of the card: live score / FT score / kickoff time
+    let centerDisplay;
+    if (isLive) {
+      centerDisplay = `<div class="vs-divider"><span style="font-family:var(--font-head);font-size:1.45rem;font-weight:800;color:var(--text);">${pred.home_score} - ${pred.away_score}</span><span class="vs-time" style="color:var(--red);font-weight:700;display:flex;align-items:center;gap:4px;justify-content:center;"><span class="live-dot"></span>LIVE${pred.elapsed?" "+pred.elapsed+"'":''}</span></div>`;
+    } else if (isFinished) {
+      centerDisplay = `<div class="vs-divider"><span style="font-family:var(--font-head);font-size:1.45rem;font-weight:800;color:var(--text);">${pred.home_score} - ${pred.away_score}</span><span class="vs-time">FT</span></div>`;
+    } else {
+      centerDisplay = `<div class="vs-divider">VS<span class="vs-time">${matchTime} UTC</span></div>`;
+    }
+
+    const liveBadge = isLive
+      ? `<span class="badge" style="background:rgba(231,76,60,0.12);color:var(--red);"><span class="live-dot"></span>LIVE</span>`
+      : '';
+
     return `
       <article class="pred-card"
                data-market="${marketSlug(pred.market)}"
                data-league="${pred.league_id||''}"
                data-continent="${pred.continent||''}"
-               data-id="${pred.id}">
+               data-id="${pred.id}"
+               ${pred.slug ? `style="cursor:pointer;" onclick="if(!event.target.closest('a'))location.href='/prediction/${pred.slug}'"` : ''}>
         <div class="pred-card-header">
           <div class="pred-league">
             ${pred.league_logo
@@ -397,9 +420,9 @@
             <span class="league-name">${pred.league_name||'League'} &middot; ${pred.league_country||''}</span>
           </div>
           <div class="pred-meta">
-            <span class="badge badge-free">
+            ${liveBadge || `<span class="badge badge-free">
               <span class="material-icons-round">lock_open</span>FREE
-            </span>
+            </span>`}
             ${resultBadge}
           </div>
         </div>
@@ -409,7 +432,7 @@
               ${logoOrPlaceholder(pred.home_team_logo, pred.home_team)}
               <span class="team-name">${pred.home_team}</span>
             </div>
-            <div class="vs-divider">VS<span class="vs-time">${matchTime} UTC</span></div>
+            ${centerDisplay}
             <div class="pred-team">
               ${logoOrPlaceholder(pred.away_team_logo, pred.away_team)}
               <span class="team-name">${pred.away_team}</span>
@@ -474,6 +497,12 @@
       if (containerId === 'pred-list') {
         updatePredictionCounts(json.data.predictions, json.data.pagination.total);
       }
+
+      // While any match is in-play, auto-refresh this list to keep scores live
+      const LIVE_ST = ['1H','2H','HT','ET','BT','P','SUSP','INT','LIVE'];
+      const anyLive = json.data.predictions.some(p => LIVE_ST.includes(p.status_short) && p.home_score != null);
+      clearTimeout(window.__livePoll);
+      if (anyLive) window.__livePoll = setTimeout(() => loadPredictions(containerId, params), 60000);
 
     } catch (e) {
       console.warn('[Rooted Predictions] Predictions API unavailable:', e.message);
@@ -548,6 +577,12 @@
     set('stat-tips',     d.predictions != null ? d.predictions : (s.total != null ? s.total : 0));
     set('stat-accuracy', accuracy);
     set('stat-won',      s.won != null ? s.won : 0);
+
+    // Homepage sidebar "Track Record" widget (real settled results)
+    set('hs-won', s.won != null ? s.won : 0);
+    set('hs-lost', s.lost != null ? s.lost : 0);
+    set('hs-pending', s.pending != null ? s.pending : 0);
+    set('hs-rate', accuracy);
 
     // If an admin set a custom "Published Predictions" value, reflect it on the predictions page
     if (s.overrides && s.overrides.predictions) {

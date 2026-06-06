@@ -573,6 +573,34 @@ const MIGRATIONS = [
   },
 
   // ----------------------------------------------------------
+  // 19c. Live/finished score + status on predictions
+  // ----------------------------------------------------------
+  {
+    name: 'Add score/status columns to predictions',
+    fn: async (conn) => {
+      const wanted = [
+        ['home_score',   'INT DEFAULT NULL'],
+        ['away_score',   'INT DEFAULT NULL'],
+        ['status_short', 'VARCHAR(10) DEFAULT NULL'],
+        ['elapsed',      'INT DEFAULT NULL'],
+      ];
+      const [cols] = await conn.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'predictions'`, [DB_NAME]
+      );
+      const have = cols.map(c => c.COLUMN_NAME);
+      for (const [name, def] of wanted) {
+        if (!have.includes(name)) {
+          await conn.query(`ALTER TABLE predictions ADD COLUMN ${name} ${def}`);
+          console.log(`[MIGRATE] ✓ Added predictions.${name}`);
+        } else {
+          console.log(`[MIGRATE] ↷ predictions.${name} already exists`);
+        }
+      }
+    },
+  },
+
+  // ----------------------------------------------------------
   // 19. Pending registrations — holds OTP + hashed password
   //     until email is verified; deleted after account creation
   // ----------------------------------------------------------
