@@ -228,15 +228,15 @@ async function getBlogPosts(req, res) {
 
 async function createBlogPost(req, res) {
   try {
-    const { title,content,excerpt,category,meta_title,meta_description,keywords,published } = req.body;
+    const { title,content,excerpt,category,featured_image,meta_title,meta_description,keywords,published } = req.body;
     if (!title||!content) return res.status(400).json({ success:false, message:'Title and content required' });
     let slug = slugify(title,{ lower:true, strict:true });
     const [ex] = await db.query('SELECT id FROM blog_posts WHERE slug=?',[slug]);
     if (ex.length) slug = slug+'-'+Date.now();
     const [ins] = await db.query(
-      `INSERT INTO blog_posts (title,slug,content,excerpt,category,meta_title,meta_description,
-        keywords,author_id,is_published,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      [sanitiseText(title),slug,content,excerpt||null,category||null,
+      `INSERT INTO blog_posts (title,slug,content,excerpt,category,featured_image,meta_title,meta_description,
+        keywords,author_id,is_published,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [sanitiseText(title),slug,content,excerpt||null,category||null,featured_image||null,
        meta_title||null,meta_description||null,keywords||null,req.user.id,
        published?1:0, published?new Date():null]
     );
@@ -246,12 +246,13 @@ async function createBlogPost(req, res) {
 
 async function updateBlogPost(req, res) {
   try {
-    const { title,content,excerpt,category,meta_title,meta_description,keywords,published } = req.body;
+    const { title,content,excerpt,category,featured_image,meta_title,meta_description,keywords,published } = req.body;
     const updates=[]; const args=[];
     if (title)            { updates.push('title=?');            args.push(sanitiseText(title)); }
     if (content)          { updates.push('content=?');          args.push(content); }
-    if (excerpt)          { updates.push('excerpt=?');          args.push(excerpt); }
-    if (category)         { updates.push('category=?');         args.push(category); }
+    if (excerpt!==undefined)        { updates.push('excerpt=?');        args.push(excerpt||null); }
+    if (category!==undefined)       { updates.push('category=?');       args.push(category||null); }
+    if (featured_image!==undefined) { updates.push('featured_image=?'); args.push(featured_image||null); }
     if (meta_title)       { updates.push('meta_title=?');       args.push(meta_title); }
     if (meta_description) { updates.push('meta_description=?'); args.push(meta_description); }
     if (keywords)         { updates.push('keywords=?');         args.push(keywords); }
@@ -317,6 +318,17 @@ async function getLeagueFixtures(req, res) {
     sql += ' ORDER BY match_date ASC';
     const [rows] = await db.query(sql, args);
     res.json({ success: true, data: rows });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
+// Real bookmaker odds for a single fixture (for the prediction form)
+async function getFixtureOdds(req, res) {
+  try {
+    const fixtureId = parseInt(req.query.fixture_id);
+    if (!fixtureId) return res.status(400).json({ success: false, message: 'fixture_id required' });
+    const api  = require('../services/apiFootball');
+    const odds = await api.fetchFixtureOdds(fixtureId).catch(() => null);
+    res.json({ success: true, data: odds });   // data may be null if no odds published
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 }
 

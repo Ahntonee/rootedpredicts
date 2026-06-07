@@ -34,11 +34,38 @@
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div class="form-group" style="margin:0;"><label class="form-label">Title *</label><input type="text" class="form-control" id="b-title" placeholder="Article title"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div class="form-group" style="margin:0;"><label class="form-label">Category</label><input type="text" class="form-control" id="b-cat" placeholder="e.g. Betting Guide, Match Preview"></div>
+          <div class="form-group" style="margin:0;"><label class="form-label">Category</label>
+            <select class="form-control" id="b-cat">
+              <option value="">Select category…</option>
+              <option>Match Preview</option>
+              <option>Betting Guide</option>
+              <option>League Analysis</option>
+              <option>Tips Strategy</option>
+              <option>Sport Talk</option>
+            </select>
+          </div>
           <div class="form-group" style="margin:0;"><label class="form-label">Meta Title</label><input type="text" class="form-control" id="b-meta-title" placeholder="SEO title"></div>
         </div>
+
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Featured Image</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" class="form-control" id="b-image" placeholder="Paste an image URL, or upload from your device →" style="flex:1;">
+            <label class="btn btn-outline btn-sm" style="margin:0;cursor:pointer;white-space:nowrap;"><span class="material-icons-round">upload</span>Upload<input type="file" id="b-image-file" accept="image/*" style="display:none;"></label>
+          </div>
+          <img id="b-image-preview" alt="" style="display:none;max-height:130px;margin-top:8px;border-radius:8px;border:1px solid var(--border);">
+        </div>
+
         <div class="form-group" style="margin:0;"><label class="form-label">Excerpt</label><textarea class="form-control" id="b-excerpt" rows="2" placeholder="Short summary for blog listing page..."></textarea></div>
-        <div class="form-group" style="margin:0;"><label class="form-label">Content *</label><textarea class="form-control" id="b-content" rows="8" placeholder="Full article content (HTML supported)..."></textarea></div>
+
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+            Content *
+            <label class="btn btn-outline btn-sm" style="margin:0;padding:3px 9px;font-size:0.72rem;cursor:pointer;"><span class="material-icons-round" style="font-size:0.85rem;">image</span>Insert Image<input type="file" id="b-content-image" accept="image/*" style="display:none;"></label>
+          </label>
+          <textarea class="form-control" id="b-content" rows="8" placeholder="Full article content (HTML supported). Use Insert Image to add pictures from your device."></textarea>
+        </div>
+
         <div class="form-group" style="margin:0;"><label class="form-label">Meta Description</label><textarea class="form-control" id="b-meta-desc" rows="2" placeholder="SEO meta description (max 160 chars)..."></textarea></div>
         <div class="form-group" style="margin:0;"><label class="form-label">Keywords</label><input type="text" class="form-control" id="b-keywords" placeholder="comma, separated, keywords"></div>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-user-select:text;user-select:text;"><input type="checkbox" id="b-published"><span class="form-label" style="margin:0;">Publish immediately</span></label>
@@ -54,14 +81,43 @@
 <script src="/js/app.js"></script>
 <script src="/js/admin.js"></script>
 <script>
-const theme=localStorage.getItem('afro_theme')||'dark';document.documentElement.setAttribute('data-theme',theme);
-let blogEditId=null;
-async function loadPosts(){
-  const json=await Admin.api('GET','/api/admin/blog');
-  document.getElementById('blog-loading').style.display='none';
-  if(!json.success)return;
-  document.getElementById('blog-table').style.display='table';
-  document.getElementById('blog-tbody').innerHTML=json.data.map(p=>`
+const theme = localStorage.getItem('afro_theme') || 'dark';
+document.documentElement.setAttribute('data-theme', theme);
+let blogEditId = null;
+
+// ── Resize an uploaded image client-side and return a compact base64 data URL ──
+function fileToResizedDataURL(file, maxW = 1000, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) return reject(new Error('Not an image'));
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(cv.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showImagePreview(src) {
+  const el = document.getElementById('b-image-preview');
+  if (src) { el.src = src; el.style.display = 'block'; } else { el.style.display = 'none'; el.removeAttribute('src'); }
+}
+
+async function loadPosts() {
+  const json = await Admin.api('GET', '/api/admin/blog');
+  document.getElementById('blog-loading').style.display = 'none';
+  if (!json.success) return;
+  document.getElementById('blog-table').style.display = 'table';
+  document.getElementById('blog-tbody').innerHTML = json.data.map(p => `
     <tr>
       <td style="font-weight:600;font-size:0.875rem;">${p.title}</td>
       <td style="font-size:0.82rem;color:var(--muted);">${p.category||'—'}</td>
@@ -74,56 +130,102 @@ async function loadPosts(){
       </div></td>
     </tr>`).join('');
 }
-function openNew(){blogEditId=null;document.getElementById('blog-modal-title').textContent='New Blog Post';['b-title','b-excerpt','b-content','b-meta-title','b-meta-desc','b-keywords','b-cat'].forEach(id=>document.getElementById(id).value='');document.getElementById('b-published').checked=false;Admin.showModal('blog-modal');}
-async function editPost(id){
-  const json=await Admin.api('GET','/api/admin/blog');
-  const p=json.data.find(x=>x.id===id);
-  if(!p)return;
-  blogEditId=id;
-  document.getElementById('blog-modal-title').textContent='Edit Post';
-  document.getElementById('b-title').value=p.title;
-  document.getElementById('b-cat').value=p.category||'';
-  document.getElementById('b-published').checked=!!p.is_published;
+
+function openNew() {
+  blogEditId = null;
+  document.getElementById('blog-modal-title').textContent = 'New Blog Post';
+  ['b-title','b-excerpt','b-content','b-meta-title','b-meta-desc','b-keywords','b-image'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('b-cat').value = '';
+  document.getElementById('b-published').checked = false;
+  showImagePreview('');
   Admin.showModal('blog-modal');
 }
-async function deletePost(id){
-  Admin.confirm('Delete this blog post?',async()=>{
-    const json=await Admin.api('DELETE','/api/admin/blog/'+id);
-    if(json.success){Admin.toast('Post deleted');loadPosts();}
-    else Admin.toast(json.message||'Failed','error');
+
+async function editPost(id) {
+  const json = await Admin.api('GET', '/api/admin/blog');
+  const p = json.data.find(x => x.id === id);
+  if (!p) return;
+  blogEditId = id;
+  document.getElementById('blog-modal-title').textContent = 'Edit Post';
+  document.getElementById('b-title').value       = p.title || '';
+  document.getElementById('b-cat').value          = p.category || '';
+  document.getElementById('b-excerpt').value      = p.excerpt || '';
+  document.getElementById('b-content').value      = p.content || '';
+  document.getElementById('b-meta-title').value   = p.meta_title || '';
+  document.getElementById('b-meta-desc').value    = p.meta_description || '';
+  document.getElementById('b-keywords').value     = p.keywords || '';
+  document.getElementById('b-image').value        = p.featured_image || '';
+  showImagePreview(p.featured_image || '');
+  document.getElementById('b-published').checked  = !!p.is_published;
+  Admin.showModal('blog-modal');
+}
+
+async function deletePost(id) {
+  Admin.confirm('Delete this blog post?', async () => {
+    const json = await Admin.api('DELETE', '/api/admin/blog/' + id);
+    if (json.success) { Admin.toast('Post deleted'); loadPosts(); }
+    else Admin.toast(json.message || 'Failed', 'error');
   });
 }
-document.getElementById('save-blog-btn').addEventListener('click',async()=>{
-  const body={title:document.getElementById('b-title').value.trim(),content:document.getElementById('b-content').value.trim(),excerpt:document.getElementById('b-excerpt').value.trim(),category:document.getElementById('b-cat').value.trim(),meta_title:document.getElementById('b-meta-title').value.trim(),meta_description:document.getElementById('b-meta-desc').value.trim(),keywords:document.getElementById('b-keywords').value.trim(),published:document.getElementById('b-published').checked};
-  const url=blogEditId?'/api/admin/blog/'+blogEditId:'/api/admin/blog';
-  const method=blogEditId?'PUT':'POST';
-  const json=await Admin.api(method,url,body);
-  if(json.success){Admin.toast(blogEditId?'Post updated':'Post created');Admin.hideModal('blog-modal');loadPosts();}
-  else Admin.toast(json.message||'Save failed','error');
-});
-document.addEventListener('DOMContentLoaded',async()=>{
+
+async function savePost() {
+  const btn = document.getElementById('save-blog-btn');
+  const body = {
+    title:            document.getElementById('b-title').value.trim(),
+    content:          document.getElementById('b-content').value.trim(),
+    excerpt:          document.getElementById('b-excerpt').value.trim(),
+    category:         document.getElementById('b-cat').value.trim(),
+    featured_image:   document.getElementById('b-image').value.trim(),
+    meta_title:       document.getElementById('b-meta-title').value.trim(),
+    meta_description: document.getElementById('b-meta-desc').value.trim(),
+    keywords:         document.getElementById('b-keywords').value.trim(),
+    published:        document.getElementById('b-published').checked,
+  };
+  if (!body.title || !body.content) { Admin.toast('Title and content are required', 'error'); return; }
+  btn.disabled = true;
+  const url    = blogEditId ? '/api/admin/blog/' + blogEditId : '/api/admin/blog';
+  const method = blogEditId ? 'PUT' : 'POST';
+  const json   = await Admin.api(method, url, body);
+  btn.disabled = false;
+  if (json.success) { Admin.toast(blogEditId ? 'Post updated' : 'Post created'); Admin.hideModal('blog-modal'); loadPosts(); }
+  else Admin.toast(json.message || 'Save failed', 'error');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   Admin.buildSidebar();
-  const u=await Admin.requireAdmin();
-  if(!u)return;
+  const u = await Admin.requireAdmin();
+  if (!u) return;
   loadPosts();
-  document.getElementById('new-post-btn').addEventListener('click',openNew);
-  document.getElementById('save-blog-btn').addEventListener('click',async()=>{
-    const body={
-      title:document.getElementById('b-title').value.trim(),
-      content:document.getElementById('b-content').value.trim(),
-      excerpt:document.getElementById('b-excerpt').value.trim(),
-      category:document.getElementById('b-cat').value.trim(),
-      meta_title:document.getElementById('b-meta-title').value.trim(),
-      meta_description:document.getElementById('b-meta-desc').value.trim(),
-      keywords:document.getElementById('b-keywords').value.trim(),
-      published:document.getElementById('b-published').checked
-    };
-    if(!body.title||!body.content){Admin.toast('Title and content are required','error');return;}
-    const url=blogEditId?'/api/admin/blog/'+blogEditId:'/api/admin/blog';
-    const method=blogEditId?'PUT':'POST';
-    const json=await Admin.api(method,url,body);
-    if(json.success){Admin.toast(blogEditId?'Post updated':'Post created');Admin.hideModal('blog-modal');loadPosts();}
-    else Admin.toast(json.message||'Save failed','error');
+  document.getElementById('new-post-btn').addEventListener('click', openNew);
+  document.getElementById('save-blog-btn').addEventListener('click', savePost);
+
+  // Featured image: URL typed → preview
+  document.getElementById('b-image').addEventListener('input', e => showImagePreview(e.target.value.trim()));
+
+  // Featured image: device upload → resized base64
+  document.getElementById('b-image-file').addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const data = await fileToResizedDataURL(file, 1000, 0.8);
+      document.getElementById('b-image').value = data;
+      showImagePreview(data);
+      Admin.toast('Image added');
+    } catch (err) { Admin.toast('Could not read that image', 'error'); }
+    e.target.value = '';
+  });
+
+  // Insert image into content (device upload → <img> at cursor)
+  document.getElementById('b-content-image').addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const data = await fileToResizedDataURL(file, 1000, 0.8);
+      const ta = document.getElementById('b-content');
+      const tag = `\n<img src="${data}" alt="" style="max-width:100%;border-radius:8px;margin:12px 0;">\n`;
+      const pos = ta.selectionStart || ta.value.length;
+      ta.value = ta.value.slice(0, pos) + tag + ta.value.slice(pos);
+      Admin.toast('Image inserted into content');
+    } catch (err) { Admin.toast('Could not read that image', 'error'); }
+    e.target.value = '';
   });
 });
 </script>

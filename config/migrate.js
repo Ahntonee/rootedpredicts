@@ -573,6 +573,26 @@ const MIGRATIONS = [
   },
 
   // ----------------------------------------------------------
+  // 19d. Widen blog featured_image to hold uploaded (base64) images
+  // ----------------------------------------------------------
+  {
+    name: 'Widen blog_posts.featured_image to LONGTEXT',
+    fn: async (conn) => {
+      const [[col]] = await conn.query(
+        `SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'blog_posts' AND COLUMN_NAME = 'featured_image'`,
+        [DB_NAME]
+      );
+      if (col && col.DATA_TYPE !== 'longtext') {
+        await conn.query('ALTER TABLE blog_posts MODIFY COLUMN featured_image LONGTEXT DEFAULT NULL');
+        console.log('[MIGRATE] ✓ blog_posts.featured_image -> LONGTEXT');
+      } else {
+        console.log('[MIGRATE] ↷ blog_posts.featured_image already LONGTEXT');
+      }
+    },
+  },
+
+  // ----------------------------------------------------------
   // 19c. Live/finished score + status on predictions
   // ----------------------------------------------------------
   {

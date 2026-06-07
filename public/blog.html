@@ -32,64 +32,84 @@
   <div class="container" style="padding-top:28px;">
 
     <!-- Category filter -->
-    <div class="market-tabs" style="margin-bottom:28px;">
-      <button class="market-tab active">All Articles</button>
-      <button class="market-tab">Match Previews</button>
-      <button class="market-tab">Betting Guides</button>
-      <button class="market-tab">League Analysis</button>
-      <button class="market-tab">Tips Strategy</button>
+    <div class="market-tabs" style="margin-bottom:28px;" id="blog-cats">
+      <button class="market-tab active" data-cat="">All Articles</button>
+      <button class="market-tab" data-cat="Match Preview">Match Previews</button>
+      <button class="market-tab" data-cat="Betting Guide">Betting Guides</button>
+      <button class="market-tab" data-cat="League Analysis">League Analysis</button>
+      <button class="market-tab" data-cat="Tips Strategy">Tips Strategy</button>
+      <button class="market-tab" data-cat="Sport Talk">Sport Talk</button>
     </div>
-    <!-- Featured post -->
-    <div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:32px;overflow:hidden;">
-      <div style="height:280px;background:linear-gradient(135deg,var(--navy),var(--midnight));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:4rem;color:rgba(233,69,96,0.4);">emoji_events</span></div>
-      <div style="padding:28px;">
-        <div class="blog-category">Featured &middot; Match Preview</div>
-        <h2 style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--text);margin-bottom:10px;line-height:1.2;">Champions League Semi-Finals 2026 — Full Predictions &amp; Analysis</h2>
-        <p style="font-size:0.875rem;color:var(--muted);line-height:1.7;margin-bottom:16px;">Our in-depth breakdown of both semi-final legs including head-to-head records, squad form, and our confidence-rated tips for each fixture.</p>
-        <div class="blog-card-meta" style="margin-bottom:16px;"><span class="material-icons-round">calendar_today</span>May 6, 2026 <span class="material-icons-round">schedule</span>8 min read <span class="material-icons-round">person</span>RP Analyst</div>
-        <a href="/blog-post.html" class="btn btn-primary btn-sm"><span class="material-icons-round">article</span>Read Article</a>
+
+    <div id="blog-content" style="margin-bottom:32px;">
+      <div style="padding:60px;text-align:center;color:var(--muted);">
+        <span class="material-icons-round" style="font-size:2.5rem;display:block;margin-bottom:8px;animation:spin 1s linear infinite;">article</span>
+        Loading articles…
       </div>
     </div>
-    <!-- Blog grid -->
-    <div class="blog-grid" style="margin-bottom:32px;">
-      <a href="/blog-post.html" class="blog-card" style="text-decoration:none;">
-        <div style="height:180px;background:linear-gradient(135deg,var(--navy),var(--midnight));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(233,69,96,0.4);">school</span></div>
-        <div class="blog-card-body"><div class="blog-category">Betting Guide</div><h3 class="blog-card-title">Best Over 2.5 Tips for the Premier League This Season</h3><p class="blog-card-excerpt">Discover which Premier League fixtures consistently deliver over 2.5 goals based on historical data, team attacking records, and defensive weaknesses.</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span>May 5, 2026 <span class="material-icons-round">schedule</span>5 min read</div></div>
-      </a>
-      <a href="/blog-post.html" class="blog-card" style="text-decoration:none;">
-        <div style="height:180px;background:linear-gradient(135deg,var(--midnight),#1a0a2e);display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(233,69,96,0.4);">help_outline</span></div>
-        <div class="blog-card-body"><div class="blog-category">Betting Guide</div><h3 class="blog-card-title">What is BTTS? A Complete Guide to Both Teams to Score Betting</h3><p class="blog-card-excerpt">Everything you need to know about BTTS betting — how it works, how to spot value, and the best leagues for both teams to score tips.</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span>May 4, 2026 <span class="material-icons-round">schedule</span>7 min read</div></div>
-      </a>
-      <a href="/blog-post.html" class="blog-card" style="text-decoration:none;">
-        <div style="height:180px;background:linear-gradient(135deg,#1a0a2e,var(--navy));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(233,69,96,0.4);">analytics</span></div>
-        <div class="blog-card-body"><div class="blog-category">League Analysis</div><h3 class="blog-card-title">Bundesliga 2025/26 — Why German Football is the Best League to Bet On</h3><p class="blog-card-excerpt">Our analysis of why the Bundesliga produces the most predictable results and highest over 2.5 goal rate of any top-5 European league.</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span>May 2, 2026 <span class="material-icons-round">schedule</span>6 min read</div></div>
-      </a>
-      <a href="/blog-post.html" class="blog-card" style="text-decoration:none;">
-        <div style="height:180px;background:linear-gradient(135deg,var(--navy),#0f1a2e);display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(233,69,96,0.4);">lightbulb</span></div>
-        <div class="blog-card-body"><div class="blog-category">Tips Strategy</div><h3 class="blog-card-title">How to Build a Winning Football Accumulator — The Right Way</h3><p class="blog-card-excerpt">Stop picking accas randomly. Learn our data-backed method for building accumulators with the highest probability of success.</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span>Apr 30, 2026 <span class="material-icons-round">schedule</span>9 min read</div></div>
-      </a>
-      <a href="/blog-post.html" class="blog-card" style="text-decoration:none;">
-        <div style="height:180px;background:linear-gradient(135deg,#0a1a2e,var(--midnight));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(233,69,96,0.4);">sports_soccer</span></div>
-        <div class="blog-card-body"><div class="blog-category">Match Preview</div><h3 class="blog-card-title">Arsenal vs Chelsea Preview — Premier League Matchday 36</h3><p class="blog-card-excerpt">Full match preview including team news, head-to-head stats, form analysis, and our algorithm-generated prediction for the North London vs West London derby.</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span>Apr 28, 2026 <span class="material-icons-round">schedule</span>5 min read</div></div>
-      </a>
-      <a href="/blog-post.html" class="blog-card" style="text-decoration:none;">
-        <div style="height:180px;background:linear-gradient(135deg,var(--midnight),var(--navy));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(233,69,96,0.4);">public</span></div>
-        <div class="blog-card-body"><div class="blog-category">Betting Guide</div><h3 class="blog-card-title">Football Betting Tips Nigeria — How to Win on SportyBet &amp; Bet9ja</h3><p class="blog-card-excerpt">A complete guide for Nigerian bettors covering the best markets, leagues to follow, and how to use Rooted Predictions predictions for SportyBet and Bet9ja.</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span>Apr 25, 2026 <span class="material-icons-round">schedule</span>7 min read</div></div>
-      </a>
-    </div>
-    <!-- Pagination -->
-    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:32px;">
-      <button class="btn btn-outline btn-sm" disabled><span class="material-icons-round">chevron_left</span></button>
-      <button class="btn btn-primary btn-sm">1</button>
-      <button class="btn btn-outline btn-sm">2</button>
-      <button class="btn btn-outline btn-sm">3</button>
-      <button class="btn btn-outline btn-sm"><span class="material-icons-round">chevron_right</span></button>
-    </div>
-    <!-- AdSense above footer -->
+
   </div>
 </main>
 <footer class="site-footer" id="site-footer"></footer>
 <script src="/js/app.js"></script>
 <script src="/js/content-protection.js"></script>
+<script>
+(function () {
+  const content = document.getElementById('blog-content');
+  const ICONS = { 'Match Preview':'sports_soccer','Betting Guide':'school','League Analysis':'analytics','Tips Strategy':'lightbulb','Sport Talk':'forum' };
+  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+  const thumb = (p, h) => p.featured_image
+    ? `<div style="height:${h}px;background:#0b2a1a url('${p.featured_image}') center/cover no-repeat;"></div>`
+    : `<div style="height:${h}px;background:linear-gradient(135deg,var(--navy),var(--midnight));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:${h>200?'4rem':'3rem'};color:rgba(26,138,68,0.4);">${ICONS[p.category]||'article'}</span></div>`;
+
+  function render(posts) {
+    if (!posts.length) {
+      content.innerHTML = `<div class="card" style="padding:48px;text-align:center;"><span class="material-icons-round" style="font-size:3rem;color:var(--border);display:block;margin-bottom:12px;">article</span><p style="color:var(--muted);">No articles published yet. Check back soon!</p></div>`;
+      return;
+    }
+    const [feat, ...rest] = posts;
+    let html = `
+      <a href="/blog/${feat.slug}" style="text-decoration:none;"><div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:32px;overflow:hidden;">
+        ${thumb(feat, 280)}
+        <div style="padding:28px;">
+          <div class="blog-category">Featured${feat.category?' · '+esc(feat.category):''}</div>
+          <h2 style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--text);margin-bottom:10px;line-height:1.2;">${esc(feat.title)}</h2>
+          <p style="font-size:0.875rem;color:var(--muted);line-height:1.7;margin-bottom:16px;">${esc(feat.excerpt||'')}</p>
+          <div class="blog-card-meta" style="margin-bottom:16px;"><span class="material-icons-round">calendar_today</span>${fmtDate(feat.published_at)}${feat.author_name?' <span class="material-icons-round">person</span>'+esc(feat.author_name):''}</div>
+          <span class="btn btn-primary btn-sm"><span class="material-icons-round">article</span>Read Article</span>
+        </div>
+      </div></a>`;
+    if (rest.length) {
+      html += `<div class="blog-grid" style="margin-bottom:32px;">` + rest.map(p => `
+        <a href="/blog/${p.slug}" class="blog-card" style="text-decoration:none;">
+          ${thumb(p, 180)}
+          <div class="blog-card-body"><div class="blog-category">${esc(p.category||'Article')}</div><h3 class="blog-card-title">${esc(p.title)}</h3><p class="blog-card-excerpt">${esc(p.excerpt||'')}</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span>${fmtDate(p.published_at)}</div></div>
+        </a>`).join('') + `</div>`;
+    }
+    content.innerHTML = html;
+  }
+
+  async function load(category) {
+    content.innerHTML = `<div style="padding:60px;text-align:center;color:var(--muted);"><span class="material-icons-round" style="font-size:2.5rem;display:block;margin-bottom:8px;animation:spin 1s linear infinite;">article</span>Loading…</div>`;
+    try {
+      const res = await fetch('/api/blog?limit=30' + (category ? '&category=' + encodeURIComponent(category) : ''));
+      const json = await res.json();
+      render((json.success && json.data && json.data.posts) ? json.data.posts : []);
+    } catch (e) {
+      content.innerHTML = `<div class="card" style="padding:48px;text-align:center;color:var(--muted);">Could not load articles. <a href="javascript:location.reload()" style="color:var(--green);">Retry</a></div>`;
+    }
+  }
+
+  document.querySelectorAll('#blog-cats .market-tab').forEach(tab => {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('#blog-cats .market-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      load(this.dataset.cat);
+    });
+  });
+  load('');
+})();
+</script>
 </body>
 </html>

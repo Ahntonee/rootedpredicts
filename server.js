@@ -233,6 +233,11 @@ app.get('/prediction/:slug', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'prediction-detail.html'));
 });
 
+// ── Pretty blog post URL → serve the blog post page
+app.get('/blog/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'blog-post.html'));
+});
+
 // ── SPA fallback for public pages
 app.get('/{*path}', (req, res) => {
   if (req.path.startsWith('/api/')) {

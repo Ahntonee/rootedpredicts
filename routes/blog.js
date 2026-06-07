@@ -24,17 +24,21 @@ router.get('/categories', asyncHandler(async (req, res) => {
 router.get('/', asyncHandler(async (req, res) => {
   const { category, search } = req.query;
   const { page, limit, offset } = parsePagination(req.query);
-  let sql  = `SELECT bp.id, bp.title, bp.slug, bp.excerpt, bp.featured_image,
-       bp.category, bp.published_at, u.name as author_name
-     FROM blog_posts bp LEFT JOIN users u ON bp.author_id = u.id
-     WHERE bp.is_published = 1`;
+  let where = 'WHERE bp.is_published = 1';
   const args = [];
-  if (category) { sql += ' AND bp.category = ?'; args.push(category); }
-  if (search)   { sql += ' AND (bp.title LIKE ? OR bp.excerpt LIKE ?)'; args.push(`%${search}%`, `%${search}%`); }
-  const [[{ total }]] = await db.query(sql.replace('SELECT bp.id', 'SELECT COUNT(*) as total').split('ORDER')[0], args);
-  sql += ' ORDER BY bp.published_at DESC LIMIT ? OFFSET ?';
-  args.push(limit, offset);
-  const [posts] = await db.query(sql, args);
+  if (category) { where += ' AND bp.category = ?'; args.push(category); }
+  if (search)   { where += ' AND (bp.title LIKE ? OR bp.excerpt LIKE ?)'; args.push(`%${search}%`, `%${search}%`); }
+
+  const [[{ total }]] = await db.query(
+    `SELECT COUNT(*) as total FROM blog_posts bp ${where}`, args
+  );
+  const [posts] = await db.query(
+    `SELECT bp.id, bp.title, bp.slug, bp.excerpt, bp.featured_image,
+            bp.category, bp.published_at, u.name as author_name
+     FROM blog_posts bp LEFT JOIN users u ON bp.author_id = u.id
+     ${where} ORDER BY bp.published_at DESC LIMIT ? OFFSET ?`,
+    [...args, limit, offset]
+  );
   return successResponse(res, { posts, pagination: paginate(parseInt(total), page, limit) });
 }));
 
