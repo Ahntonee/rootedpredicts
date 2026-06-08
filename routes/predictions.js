@@ -192,12 +192,27 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     args.push(parseInt(confidence_min));
   }
 
+  // Category filter (homepage pills) — maps a betting category to tip/market.
+  // 'free'/'all' = no extra filter; 'banker' = highest-confidence first.
+  let categorySort = null;
+  const category = (req.query.category || '').toLowerCase();
+  if (category && category !== 'free' && category !== 'all') {
+    if      (category === '2-5-goals')    sql += " AND p.tip LIKE '%2.5%'";
+    else if (category === '3-5-goals')    sql += " AND p.tip LIKE '%3.5%'";
+    else if (category === 'acca')         sql += " AND p.market = 'Accumulator'";
+    else if (category === 'away-win')     sql += " AND p.tip LIKE '%Away%'";
+    else if (category === 'btts')         sql += " AND p.market = 'BTTS'";
+    else if (category === 'double-chance')sql += " AND (p.market = 'Draw No Bet' OR p.tip LIKE '%Double Chance%' OR p.tip IN ('1X','2X','12'))";
+    else if (category === 'home-win')     sql += " AND p.tip LIKE '%Home%'";
+    else if (category === 'banker')       categorySort = 'confidence_score DESC';
+  }
+
   // Sorting — whitelist to prevent injection
   const allowedSort  = ['match_date', 'confidence_score', 'published_at', 'market'];
   const allowedOrder = ['ASC', 'DESC'];
   const safeSort  = allowedSort.includes(sort)   ? sort  : 'match_date';
   const safeOrder = allowedOrder.includes(order.toUpperCase()) ? order.toUpperCase() : 'ASC';
-  sql += ` ORDER BY p.${safeSort} ${safeOrder}`;
+  sql += categorySort ? ` ORDER BY p.${categorySort}` : ` ORDER BY p.${safeSort} ${safeOrder}`;
 
   // Count query
   const countSql = sql.replace(

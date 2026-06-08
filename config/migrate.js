@@ -701,6 +701,31 @@ async function runMigrations() {
 async function seedStaticPages(conn) {
   const pages = [
     {
+      slug: 'home',
+      page_title: 'Rooted Predictions — Free Football Predictions & Betting Tips',
+      meta_description: 'Accurate daily football predictions and betting tips across 1,200+ leagues. Free picks plus premium VIP tips, every market covered, results graded automatically.',
+      hero_title: 'Accurate Football Predictions, Every Day',
+      hero_subtitle: null,
+      last_updated: null,
+      content: `<h2 style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--text);margin:0 0 14px;">Data-Driven Football Predictions You Can Trust</h2>
+<p style="font-size:1rem;color:var(--text-soft);line-height:1.85;margin-bottom:16px;">Rooted Predictions delivers daily football tips built on real data, not guesswork. Every fixture is scored by our algorithm using recent form, head-to-head history, home and away goal averages and league standings — then graded against the final result so you can see exactly how each pick performed.</p>
+<p style="font-size:1rem;color:var(--text-soft);line-height:1.85;margin-bottom:28px;">We cover 1,200+ competitions worldwide, from the Premier League, La Liga and the Champions League to leagues across Africa, Asia and the Americas. Free picks are published every day, with premium VIP selections for members who want our highest-confidence tips.</p>
+
+<h3 style="font-family:var(--font-head);font-size:1.25rem;font-weight:800;color:var(--text);margin:0 0 12px;">Every Market, Covered Daily</h3>
+<p style="font-size:0.95rem;color:var(--text-soft);line-height:1.8;margin-bottom:16px;">Whatever you like to bet, we have a tip for it. Browse predictions by category — Over 2.5 and Over 3.5 Goals, Both Teams To Score (BTTS), Home Win, Away Win, Double Chance, accumulator builders and our Banker of the Day. Each card shows the suggested tip, a confidence score and the latest odds where available.</p>
+
+<h3 style="font-family:var(--font-head);font-size:1.25rem;font-weight:800;color:var(--text);margin:24px 0 12px;">Transparent, Graded Results</h3>
+<p style="font-size:0.95rem;color:var(--text-soft);line-height:1.8;margin-bottom:16px;">Unlike sites that quietly delete losing tips, we grade every published prediction won or lost as soon as the match finishes and publish the running record on our leaderboard. Live matches update in real time with the current score, and finished games show the full-time result alongside whether the tip landed.</p>
+
+<h3 style="font-family:var(--font-head);font-size:1.25rem;font-weight:800;color:var(--text);margin:24px 0 12px;">Free Tips & Premium VIP</h3>
+<p style="font-size:0.95rem;color:var(--text-soft);line-height:1.8;margin-bottom:24px;">Start completely free — create an account to save predictions and follow your favourite leagues. Ready for more? Our VIP package unlocks premium high-confidence selections, early access before they go public, and our Telegram alerts so you never miss a pick.</p>
+
+<div style="background:rgba(233,69,96,0.05);border:1px solid rgba(233,69,96,0.2);border-radius:12px;padding:18px 22px;">
+  <p style="font-size:0.875rem;color:var(--text-soft);line-height:1.7;margin:0;"><strong>Please gamble responsibly.</strong> Predictions are provided for informational and entertainment purposes only and never guarantee a result. Only stake what you can afford to lose. You must be 18+ to use this service. For support visit <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" style="color:var(--green);">BeGambleAware.org</a>.</p>
+</div>`,
+      extra: null,
+    },
+    {
       slug: 'about',
       page_title: 'About Rooted Predictions — Global Football Prediction Platform',
       meta_description: 'Rooted Predictions is a global football prediction platform serving free and VIP tips powered by algorithm-generated predictions and API-Football data covering 1,200+ leagues worldwide.',

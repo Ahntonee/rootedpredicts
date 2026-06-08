@@ -677,6 +677,16 @@
       });
     });
 
+    // Homepage category pills → auto-filter the predictions list by category
+    document.querySelectorAll('#category-tabs-home .market-tab').forEach(tab => {
+      tab.addEventListener('click', function () {
+        const cat = this.dataset.category || 'free';
+        if (document.getElementById('predictions-grid')) {
+          loadPredictions('predictions-grid', { category: cat, limit: 20, upcoming: 1 });
+        }
+      });
+    });
+
     // League change event — reload predictions
     document.addEventListener('leagueChanged', e => {
       const leagueId = e.detail.id === 'all' ? null : e.detail.id;

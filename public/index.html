@@ -61,22 +61,14 @@
 <header class="site-header" id="site-header"></header>
 <section class="hero">
   <div class="container hero-inner">
-    <div class="hero-grid">
-      <div>
-        <div class="hero-tag"><span class="material-icons-round">bolt</span>Free predictions updated daily</div>
-        <h1>Predictions you can actually <em>bet on</em> and get results!</h1>
-        <p class="hero-sub">Bet smarter. Every single day. Algorithm-powered tips for the Premier League, La Liga &amp; Champions League.</p>
-        <div class="hero-cta">
-          <a href="/register.html" class="btn btn-primary btn-lg"><span class="material-icons-round">person_add</span>Create Free Account</a>
-          <a href="/login.html" class="btn btn-secondary btn-lg"><span class="material-icons-round">login</span>Log In</a>
-          <a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="btn btn-secondary btn-lg"><svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;flex-shrink:0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>Join Telegram</a>
-        </div>
-      </div>
-      <div class="hero-stats">
-        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;"><div id="hero-accuracy" style="font-family:var(--font-head);font-size:2rem;font-weight:900;color:var(--yellow);">—</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">Prediction Accuracy</div></div>
-        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;"><div id="hero-leagues" style="font-family:var(--font-head);font-size:2rem;font-weight:900;color:var(--yellow);">—</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">Leagues Covered</div></div>
-        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;"><div id="hero-members" style="font-family:var(--font-head);font-size:2rem;font-weight:900;color:var(--yellow);">—</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">Active Members</div></div>
-        <div style="background:rgba(26,138,68,0.18);border:1px solid rgba(26,138,68,0.35);border-radius:12px;padding:16px;"><div style="font-family:var(--font-head);font-size:2rem;font-weight:900;color:#4ade80;">100%</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.08em;">Free — Always</div></div>
+    <div>
+      <div class="hero-tag"><span class="material-icons-round">bolt</span>Free predictions updated daily</div>
+      <h1>Predictions you can actually <em>bet on</em> and get results!</h1>
+      <p class="hero-sub">Bet smarter. Every single day. Algorithm-powered tips across 1,200+ leagues worldwide — free daily picks plus premium VIP tips.</p>
+      <div class="hero-cta">
+        <a href="/register.html" class="btn btn-primary btn-lg"><span class="material-icons-round">person_add</span>Create Free Account</a>
+        <a href="/login.html" class="btn btn-secondary btn-lg"><span class="material-icons-round">login</span>Log In</a>
+        <a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="btn btn-secondary btn-lg"><svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;flex-shrink:0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>Join Telegram</a>
       </div>
     </div>
   </div>
@@ -94,10 +86,16 @@
           <div class="date-nav" id="date-nav-home"></div>
         </div>
       </div>
-      <div class="market-tabs" id="market-tabs-home">
-        <button class="market-tab active" data-market="all">All Tips</button>
-        <button class="market-tab" data-market="1x2"><span class="material-icons-round" style="font-size:0.9rem;">filter_1</span>1X2</button>
-        <button class="market-tab" data-market="over-2-5">Over 2.5</button>
+      <div class="market-tabs" id="category-tabs-home" style="overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-ms-overflow-style:none;">
+        <button class="market-tab active" data-category="free">Free Pick</button>
+        <button class="market-tab" data-category="banker"><span class="material-icons-round" style="font-size:0.9rem;">local_fire_department</span>Banker of the Day</button>
+        <button class="market-tab" data-category="2-5-goals">2.5 Goals</button>
+        <button class="market-tab" data-category="3-5-goals">3.5 Goals</button>
+        <button class="market-tab" data-category="home-win">Home Win</button>
+        <button class="market-tab" data-category="away-win">Away Win</button>
+        <button class="market-tab" data-category="btts">BTTS</button>
+        <button class="market-tab" data-category="double-chance">Double Chance</button>
+        <button class="market-tab" data-category="acca">Acca Tips</button>
       </div>
     </section>
     <div class="page-layout" style="padding-top:24px;">
@@ -113,18 +111,6 @@
       <aside class="sidebar">
         <div class="sidebar-card" style="background:linear-gradient(135deg,var(--navy),var(--midnight));border-color:rgba(26,138,68,0.3);">
           <div style="padding:20px;text-align:center;"><svg viewBox="0 0 24 24" fill="currentColor" style="width:32px;height:32px;color:#26A5E4;margin:0 auto 8px;display:block;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg><h3 style="font-family:var(--font-head);font-size:1.3rem;font-weight:800;color:#fff;margin:8px 0 6px;">Join Our Telegram</h3><p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;">Get daily tips &amp; predictions straight to your phone.</p><a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="btn-telegram" style="width:100%;justify-content:center;">Join @rootedpredict</a></div>
-        </div>
-        <div class="sidebar-card">
-          <div class="sidebar-card-header"><span class="material-icons-round">bar_chart</span>Today's Performance</div>
-          <div class="sidebar-card-body">
-            <div style="display:flex;flex-direction:column;gap:10px;">
-              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><span style="font-size:0.85rem;color:var(--text-soft);">Tips Published</span><span style="font-weight:700;">24</span></div>
-              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><span style="font-size:0.85rem;color:var(--text-soft);">Won</span><span id="hs-won" style="font-weight:700;color:var(--green);">—</span></div>
-              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><span style="font-size:0.85rem;color:var(--text-soft);">Lost</span><span id="hs-lost" style="font-weight:700;color:var(--red);">—</span></div>
-              <div style="display:flex;justify-content:space-between;padding:8px 0;"><span style="font-size:0.85rem;color:var(--text-soft);">Pending</span><span id="hs-pending" style="font-weight:700;color:var(--muted);">—</span></div>
-            </div>
-            <div style="margin-top:12px;padding:10px;background:rgba(22,163,74,0.1);border-radius:8px;text-align:center;"><div id="hs-rate" style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--green);">—</div><div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">All-Time Accuracy</div></div>
-          </div>
         </div>
         <div class="sidebar-card">
           <div class="sidebar-card-header"><span class="material-icons-round">emoji_events</span>Covered Leagues</div>
@@ -148,10 +134,16 @@
     <!-- Blog teaser -->
     <section class="section">
       <div class="section-header"><h2 class="section-title">Latest from the <span>Blog</span></h2><a href="/blog.html" class="btn btn-outline btn-sm">View All Articles</a></div>
-      <div class="blog-grid">
-        <a href="/blog.html" class="blog-card" style="text-decoration:none;"><div style="height:180px;background:linear-gradient(135deg,var(--navy),var(--midnight));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(233,69,96,0.5);">article</span></div><div class="blog-card-body"><div class="blog-category">Betting Guide</div><h3 class="blog-card-title">Best Over 2.5 Tips for the Premier League This Season</h3><p class="blog-card-excerpt">Discover which Premier League fixtures consistently deliver over 2.5 goals based on historical data and team form analysis.</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span> May 6, 2026 <span class="material-icons-round">schedule</span> 5 min read</div></div></a>
-        <a href="/blog.html" class="blog-card" style="text-decoration:none;"><div style="height:180px;background:linear-gradient(135deg,var(--midnight),#1a0a2e);display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(233,69,96,0.5);">school</span></div><div class="blog-card-body"><div class="blog-category">Betting Guide</div><h3 class="blog-card-title">What is BTTS? A Complete Guide to Both Teams to Score</h3><p class="blog-card-excerpt">Everything you need to know about BTTS betting — how it works, how to find value, and which leagues offer the best opportunities.</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span> May 4, 2026 <span class="material-icons-round">schedule</span> 7 min read</div></div></a>
-        <a href="/blog.html" class="blog-card" style="text-decoration:none;"><div style="height:180px;background:linear-gradient(135deg,#1a0a2e,var(--navy));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(233,69,96,0.5);">emoji_events</span></div><div class="blog-card-body"><div class="blog-category">Match Preview</div><h3 class="blog-card-title">Champions League Semi-Finals 2026 — Predictions &amp; Analysis</h3><p class="blog-card-excerpt">Our in-depth analysis of the Champions League semi-finals including form, H2H data and expert tips for both legs.</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span> May 2, 2026 <span class="material-icons-round">schedule</span> 8 min read</div></div></a>
+      <div class="blog-grid" id="home-blog-grid">
+        <div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--muted);"><span class="material-icons-round" style="animation:spin 1s linear infinite;">article</span></div>
+      </div>
+    </section>
+
+    <!-- SEO content — editable from Admin → Site Pages → Home -->
+    <section class="section" id="home-seo-section" style="display:none;padding-top:0;">
+      <div class="card" style="padding:28px 32px;">
+        <h2 id="home-seo-title" class="section-title" style="margin-bottom:18px;"></h2>
+        <div id="home-seo-content"></div>
       </div>
     </section>
   </div>
@@ -172,14 +164,34 @@
     btn.addEventListener('click',function(){document.querySelectorAll('#date-nav-home .date-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');});
     nav.appendChild(btn);
   }
-  document.querySelectorAll('#market-tabs-home .market-tab').forEach(tab=>{
-    tab.addEventListener('click',function(){
-      document.querySelectorAll('#market-tabs-home .market-tab').forEach(t=>t.classList.remove('active'));
-      this.classList.add('active');
-      const market=this.dataset.market;
-      document.querySelectorAll('#predictions-grid .pred-card').forEach(card=>{card.style.display=(market==='all'||card.dataset.market===market)?'block':'none';});
-    });
-  });
+  // Render the editable SEO content from the 'home' static page
+  fetch('/api/pages/home').then(r=>r.json()).then(j=>{
+    const d = (j && (j.page || j.data || j)) || {};
+    if (!d.content) return;
+    const titleEl = document.getElementById('home-seo-title');
+    const contentEl = document.getElementById('home-seo-content');
+    if (titleEl) titleEl.textContent = d.hero_title || 'About Rooted Predictions';
+    if (contentEl) contentEl.innerHTML = d.content;
+    const sec = document.getElementById('home-seo-section');
+    if (sec) sec.style.display = '';
+  }).catch(()=>{});
+
+  // Latest blog posts (real, from the DB)
+  fetch('/api/blog?limit=3').then(r=>r.json()).then(j=>{
+    const grid = document.getElementById('home-blog-grid');
+    const posts = (j && j.data && j.data.posts) || [];
+    if (!grid) return;
+    if (!posts.length) { grid.innerHTML = '<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--muted);font-size:0.875rem;">No articles published yet.</div>'; return; }
+    const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const fmt = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+    grid.innerHTML = posts.map(p => `
+      <a href="/blog/${p.slug}" class="blog-card" style="text-decoration:none;">
+        ${p.featured_image
+          ? `<div style="height:180px;background:#0b2a1a url('${p.featured_image}') center/cover no-repeat;"></div>`
+          : `<div style="height:180px;background:linear-gradient(135deg,var(--navy),var(--midnight));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(26,138,68,0.5);">article</span></div>`}
+        <div class="blog-card-body"><div class="blog-category">${esc(p.category||'Article')}</div><h3 class="blog-card-title">${esc(p.title)}</h3><p class="blog-card-excerpt">${esc(p.excerpt||'')}</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span> ${fmt(p.published_at)}</div></div>
+      </a>`).join('');
+  }).catch(()=>{});
 })();
 </script>
 </body>

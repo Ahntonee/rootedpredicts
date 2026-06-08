@@ -46,7 +46,10 @@
     <!-- Left: page list -->
     <div class="card" style="padding:12px;">
       <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;padding:4px 8px 10px;">Pages</div>
-      <button class="page-tab active" data-slug="about" onclick="selectPage('about',this)">
+      <button class="page-tab active" data-slug="home" onclick="selectPage('home',this)">
+        <span class="material-icons-round">home</span>Home (SEO)
+      </button>
+      <button class="page-tab" data-slug="about" onclick="selectPage('about',this)">
         <span class="material-icons-round">info</span>About Us
       </button>
       <button class="page-tab" data-slug="terms" onclick="selectPage('terms',this)">
@@ -212,7 +215,7 @@
 const theme = localStorage.getItem('afro_theme') || 'dark';
 document.documentElement.setAttribute('data-theme', theme);
 
-let currentSlug = 'about';
+let currentSlug = 'home';
 let allPages    = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -235,7 +238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   await loadAllPages();
-  renderPage('about');
+  renderPage('home');
 });
 
 async function loadAllPages() {
@@ -255,7 +258,7 @@ function selectPage(slug, btn) {
   document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   currentSlug = slug;
-  document.getElementById('preview-link').href = `/${slug}.html`;
+  document.getElementById('preview-link').href = slug === 'home' ? '/' : `/${slug}.html`;
   renderPage(slug);
 }
 
