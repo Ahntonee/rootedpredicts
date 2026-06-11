@@ -106,7 +106,7 @@ router.get('/leaderboard', asyncHandler(async (req, res) => {
   const [recent] = await db.query(
     `SELECT home_team, away_team, tip, odds, result, home_score, away_score, match_date
      FROM predictions WHERE ${decided}
-     ORDER BY match_date DESC LIMIT 12`
+     ORDER BY match_date DESC LIMIT 30`
   );
 
   return successResponse(res, { overall, by_market: byMarket, by_league: byLeague, recent });
