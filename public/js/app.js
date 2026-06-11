@@ -97,7 +97,6 @@
             <a href="/index.html"           class="nav-link ${active('/index.html')}">Home</a>
             <a href="/predictions.html"     class="nav-link ${active('/predictions.html')}">Predictions</a>
             <a href="/leagues.html"         class="nav-link ${active('/leagues.html')}">Leagues</a>
-            <a href="/leaderboard.html"     class="nav-link ${active('/leaderboard.html')}">Leaderboard</a>
             <a href="/blog.html"            class="nav-link ${active('/blog.html')}">Blog</a>
           </nav>
           <div class="header-actions">
@@ -166,7 +165,6 @@
               <li><a href="/predictions.html?market=btts">BTTS Tips</a></li>
               <li><a href="/predictions.html?market=1x2">1X2 Predictions</a></li>
               <li><a href="/predictions.html?market=correct-score">Correct Score</a></li>
-              <li><a href="/leaderboard.html">Leaderboard</a></li>
             </ul>
           </div>
           <div class="footer-col">

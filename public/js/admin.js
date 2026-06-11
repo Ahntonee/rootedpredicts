@@ -129,6 +129,7 @@
         <a href="/admin/predictions.html" class="admin-nav-link"><span class="material-icons-round">sports_soccer</span>Predictions</a>
         <a href="/admin/analytics.html"   class="admin-nav-link"><span class="material-icons-round">insights</span>Intelligence</a>
         <a href="/admin/blog.html"        class="admin-nav-link"><span class="material-icons-round">article</span>Blog Posts</a>
+        <a href="/leaderboard.html"       class="admin-nav-link" target="_blank"><span class="material-icons-round">leaderboard</span>Leaderboard</a>
         <div class="admin-nav-section">Management</div>
         <a href="/admin/users.html"       class="admin-nav-link"><span class="material-icons-round">people</span>Users</a>
         <a href="/admin/leagues.html"     class="admin-nav-link"><span class="material-icons-round">emoji_events</span>Leagues</a>
