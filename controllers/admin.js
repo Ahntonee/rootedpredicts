@@ -147,8 +147,8 @@ async function updatePrediction(req, res) {
     if (home_form)        { updates.push('home_form=?');        args.push(home_form); }
     if (away_form)        { updates.push('away_form=?');        args.push(away_form); }
     if (h2h_summary)      { updates.push('h2h_summary=?');      args.push(h2h_summary); }
-    if (published===true) { updates.push('published_at=NOW()'); }
-    if (published===false){ updates.push('published_at=NULL');  }
+    if (published===true) { updates.push('published_at=COALESCE(published_at,NOW())'); }
+    if (published===false){ updates.push('published_at=NULL'); }
     if (!updates.length)  return res.status(400).json({ success:false, message:'Nothing to update' });
     updates.push('updated_at=NOW()'); args.push(id);
     await db.query(`UPDATE predictions SET ${updates.join(',')} WHERE id=?`, args);
