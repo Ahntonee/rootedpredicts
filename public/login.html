@@ -87,6 +87,7 @@
         body: JSON.stringify({
           email:    document.getElementById('email').value.trim(),
           password: document.getElementById('password').value,
+          remember: document.querySelector('input[name="remember"]').checked,
         }),
       });
       const json = await res.json();

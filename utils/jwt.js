@@ -20,8 +20,9 @@ if (!SECRET) {
  * @param {Object} payload - Data to embed (id, role, email)
  * @returns {string} Signed JWT string
  */
-function generateToken(payload) {
-  return jwt.sign(payload, SECRET, { expiresIn: EXPIRES_IN });
+function generateToken(payload, rememberMe = false) {
+  const expiresIn = rememberMe ? '30d' : EXPIRES_IN;
+  return jwt.sign(payload, SECRET, { expiresIn });
 }
 
 /**
@@ -43,14 +44,17 @@ function verifyToken(token) {
  * secure = HTTPS only in production
  * sameSite = CSRF protection
  */
-function setTokenCookie(res, token) {
+function setTokenCookie(res, token, rememberMe = false) {
   const isProduction = process.env.NODE_ENV === 'production';
+  const maxAge = rememberMe
+    ? 30 * 24 * 60 * 60 * 1000  // 30 days
+    :  7 * 24 * 60 * 60 * 1000; // 7 days
 
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     secure:   isProduction,
     sameSite: isProduction ? 'strict' : 'lax',
-    maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days in ms
+    maxAge,
     path:     '/',
   });
 }

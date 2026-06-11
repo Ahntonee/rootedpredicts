@@ -182,6 +182,7 @@ app.use('/api/users',         require('./routes/users'));
 
 // Phase 6+
 app.use('/api/subscriptions', require('./routes/subscriptions'));
+app.use('/api/comments',      require('./routes/comments'));
 app.use('/api/blog',          require('./routes/blog'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/admin/analytics', require('./routes/analytics'));

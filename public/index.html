@@ -56,142 +56,820 @@
     ]
   }
   </script>
+  <style>
+    /* ── Hero banner ── */
+    .home-hero-banner {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .home-hero-banner h1 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--green);
+      margin-bottom: 6px;
+      font-family: var(--font-head);
+    }
+    .home-hero-banner p {
+      font-size: 0.88rem;
+      color: var(--text-soft);
+      max-width: 520px;
+    }
+    .home-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+
+    /* ── Category tabs (scrollable pill row) ── */
+    .category-tabs-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding-bottom: 4px;
+      margin-bottom: 16px;
+    }
+    .category-tabs-row::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 16px;
+      border-radius: 50px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text-soft);
+      font-size: 0.82rem;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cat-tab:hover { border-color: var(--green); color: var(--green); }
+    .cat-tab.active { background: var(--green); border-color: var(--green); color: #fff; font-weight: 600; }
+
+    /* ── FREE PICKS table ── */
+    .picks-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .picks-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 18px 20px 12px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .picks-header-title { font-family: var(--font-head); font-size: 1.5rem; font-weight: 900; color: var(--text); letter-spacing: 0.04em; }
+    .picks-header-date { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .day-switcher {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border-radius: 50px;
+      padding: 4px;
+    }
+    .day-btn {
+      padding: 6px 16px;
+      border-radius: 50px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-soft);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: all 0.15s;
+    }
+    .day-btn.active { background: var(--green); color: #fff; font-weight: 600; }
+    .day-btn:hover:not(.active) { color: var(--text); }
+    .cal-btn {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--muted);
+    }
+
+    /* pick row */
+    .pick-league-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px 4px;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .pick-league-row img { width: 18px; height: 18px; object-fit: contain; }
+    .pick-league-row strong { color: var(--text-soft); font-weight: 600; }
+    .pick-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px 12px 44px;
+    }
+    .pick-match { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; }
+    .pick-home { font-weight: 600; color: var(--text); }
+    .pick-time { font-size: 0.75rem; color: var(--muted); background: var(--surface); padding: 2px 7px; border-radius: 4px; }
+    .pick-away { font-weight: 400; color: var(--text-soft); }
+    .pick-odds-box {
+      text-align: center;
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
+      padding: 6px 16px;
+      min-width: 72px;
+    }
+    .pick-odds-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .pick-odds-val { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .pick-tip-box {
+      text-align: center;
+      background: rgba(234,179,8,0.08);
+      border: 1.5px solid rgba(234,179,8,0.3);
+      border-radius: 50px;
+      padding: 6px 16px;
+      min-width: 100px;
+    }
+    .pick-tip-label { font-size: 0.65rem; color: rgba(234,179,8,0.8); text-transform: uppercase; letter-spacing: 0.04em; }
+    .pick-tip-val {
+      font-size: 0.88rem; font-weight: 700; color: var(--text);
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+    }
+    .pick-tip-val .fire { color: #f97316; font-size: 0.9rem; }
+
+    /* ── Premium Results ── */
+    .premium-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .premium-section h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .premium-section .sub { font-size: 0.875rem; color: var(--text-soft); margin-bottom: 22px; }
+    .premium-calendar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .cal-day {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 64px;
+      padding: 10px 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .cal-day-num { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .cal-day-mon { font-size: 0.72rem; color: var(--muted); }
+    .cal-result-won { color: #16a34a; font-size: 1.1rem; }
+    .cal-result-lost { color: #dc2626; font-size: 1.1rem; }
+    .cal-result-pending { color: var(--muted); font-size: 1.1rem; }
+    .join-us-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 40px;
+      border-radius: 50px;
+      background: linear-gradient(135deg, #854d0e, #ca8a04);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .join-us-btn:hover { opacity: 0.88; }
+
+    /* ── Recent Winnings ── */
+    .winnings-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .winnings-header {
+      font-family: var(--font-head);
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: var(--text);
+      padding: 18px 20px 12px;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+    }
+    .winning-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px 12px 44px;
+    }
+    .winning-league-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px 4px;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .winning-league-row img { width: 18px; height: 18px; object-fit: contain; }
+    .winning-league-row strong { color: var(--text-soft); font-weight: 600; }
+    .winning-match { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; }
+    .winning-date { font-size: 0.72rem; color: var(--muted); background: var(--surface); padding: 2px 7px; border-radius: 4px; display: flex; align-items: center; gap: 3px; }
+    .win-status-box {
+      text-align: center;
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
+      padding: 6px 14px;
+      min-width: 72px;
+    }
+    .win-status-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .win-status-icon { font-size: 1.1rem; }
+    .win-status-icon.won { color: #16a34a; }
+
+    /* ── SEO content block ── */
+    .seo-content-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px 36px;
+      margin-bottom: 24px;
+    }
+    .seo-content-block h2 {
+      font-size: 1.2rem; font-weight: 800; color: var(--text);
+      margin: 24px 0 10px; padding-bottom: 6px;
+      border-bottom: 2px solid var(--border);
+    }
+    .seo-content-block h2:first-child { margin-top: 0; }
+    .seo-content-block h3 {
+      font-size: 1rem; font-weight: 700; color: var(--text); margin: 18px 0 8px;
+    }
+    .seo-content-block p {
+      font-size: 0.88rem; color: var(--text-soft); line-height: 1.85; margin-bottom: 10px;
+    }
+    .seo-content-block ul {
+      padding-left: 20px; margin-bottom: 12px;
+    }
+    .seo-content-block ul li {
+      font-size: 0.88rem; color: var(--text-soft); line-height: 1.8; margin-bottom: 4px;
+    }
+
+    /* ── FAQ ── */
+    .faq-block { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px 32px; margin-bottom: 24px; }
+    .faq-block h2 { font-size: 1.2rem; font-weight: 800; color: var(--text); margin-bottom: 20px; }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 14px 0; }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q { font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .faq-a { font-size: 0.85rem; color: var(--text-soft); line-height: 1.75; }
+
+    /* ── Loading skeleton ── */
+    .pick-skeleton { padding: 16px 20px; border-top: 1px solid var(--border); }
+    .skel { background: var(--surface); border-radius: 6px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    @media (max-width: 640px) {
+      .home-hero-banner { flex-direction: column; }
+      .pick-row, .winning-row { grid-template-columns: 1fr; gap: 6px; }
+      .pick-odds-box, .pick-tip-box, .win-status-box { min-width: unset; }
+      .seo-content-block { padding: 20px 18px; }
+    }
+  </style>
 </head>
 <body>
 <header class="site-header" id="site-header"></header>
-<section class="hero">
-  <div class="container hero-inner">
-    <div>
-      <div class="hero-tag"><span class="material-icons-round">bolt</span>Free predictions updated daily</div>
-      <h1>Predictions you can actually <em>bet on</em> and get results!</h1>
-      <p class="hero-sub">Bet smarter. Every single day. Algorithm-powered tips across 1,200+ leagues worldwide — free daily picks plus premium VIP tips.</p>
-      <div class="hero-cta">
-        <a href="/register.html" class="btn btn-primary btn-lg"><span class="material-icons-round">person_add</span>Create Free Account</a>
-        <a href="/login.html" class="btn btn-secondary btn-lg"><span class="material-icons-round">login</span>Log In</a>
-        <a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="btn btn-secondary btn-lg"><svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;flex-shrink:0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>Join Telegram</a>
-      </div>
-    </div>
-  </div>
-</section>
-<main>
-  <div class="container">
 
-    <section class="section" style="padding-bottom:0;">
-      <div class="section-filters-wrap">
-        <div class="section-filters-top">
-          <div id="league-filter-home"></div>
-          <a href="/predictions.html" class="btn btn-outline btn-sm">View All Tips <span class="material-icons-round">arrow_forward</span></a>
-        </div>
-        <div class="date-nav-wrap">
-          <div class="date-nav" id="date-nav-home"></div>
-        </div>
-      </div>
-      <div class="market-tabs" id="category-tabs-home" style="overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-ms-overflow-style:none;">
-        <button class="market-tab active" data-category="free">Free Pick</button>
-        <button class="market-tab" data-category="banker"><span class="material-icons-round" style="font-size:0.9rem;">local_fire_department</span>Banker of the Day</button>
-        <button class="market-tab" data-category="2-5-goals">2.5 Goals</button>
-        <button class="market-tab" data-category="3-5-goals">3.5 Goals</button>
-        <button class="market-tab" data-category="home-win">Home Win</button>
-        <button class="market-tab" data-category="away-win">Away Win</button>
-        <button class="market-tab" data-category="btts">BTTS</button>
-        <button class="market-tab" data-category="double-chance">Double Chance</button>
-        <button class="market-tab" data-category="acca">Acca Tips</button>
-      </div>
-    </section>
-    <div class="page-layout" style="padding-top:24px;">
+<main>
+  <div class="container" style="padding-top:20px;padding-bottom:40px;">
+
+    <!-- ── Hero Banner ── -->
+    <div class="home-hero-banner">
       <div>
-        <div id="predictions-grid" style="display:flex;flex-direction:column;gap:12px;">
-          <div style="padding:40px;text-align:center;color:var(--muted);">
-            <span class="material-icons-round" style="font-size:2.5rem;display:block;margin-bottom:8px;animation:spin 1s linear infinite;">sports_soccer</span>
-            Loading predictions…
-          </div>
-        </div>
-        <div style="text-align:center;margin-top:28px;"><a href="/predictions.html" class="btn btn-outline"><span class="material-icons-round">expand_more</span>View All Predictions</a></div>
+        <h1>Best Football Prediction Site in the World</h1>
+        <p>Rooted Predictions provides daily accurate football tips for leagues worldwide with a proven winning rate for bettors.</p>
       </div>
-      <aside class="sidebar">
-        <div class="sidebar-card" style="background:linear-gradient(135deg,var(--navy),var(--midnight));border-color:rgba(26,138,68,0.3);">
-          <div style="padding:20px;text-align:center;"><svg viewBox="0 0 24 24" fill="currentColor" style="width:32px;height:32px;color:#26A5E4;margin:0 auto 8px;display:block;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg><h3 style="font-family:var(--font-head);font-size:1.3rem;font-weight:800;color:#fff;margin:8px 0 6px;">Join Our Telegram</h3><p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;">Get daily tips &amp; predictions straight to your phone.</p><a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="btn-telegram" style="width:100%;justify-content:center;">Join @rootedpredict</a></div>
-        </div>
-        <div class="sidebar-card">
-          <div class="sidebar-card-header"><span class="material-icons-round">emoji_events</span>Covered Leagues</div>
-          <div class="sidebar-card-body" style="padding:8px 0;">
-            <a href="/predictions.html?league=39" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'"><img src="https://media.api-sports.io/football/leagues/39.png" width="22" height="22" style="object-fit:contain;" alt="PL" onerror="this.style.display='none'"><span style="font-size:0.875rem;font-weight:500;">Premier League</span><span style="margin-left:auto;font-size:0.75rem;color:var(--muted);">England</span></a>
-            <a href="/predictions.html?league=140" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'"><img src="https://media.api-sports.io/football/leagues/140.png" width="22" height="22" style="object-fit:contain;" alt="La Liga" onerror="this.style.display='none'"><span style="font-size:0.875rem;font-weight:500;">La Liga</span><span style="margin-left:auto;font-size:0.75rem;color:var(--muted);">Spain</span></a>
-            <a href="/predictions.html?league=2" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'"><img src="https://media.api-sports.io/football/leagues/2.png" width="22" height="22" style="object-fit:contain;" alt="UCL" onerror="this.style.display='none'"><span style="font-size:0.875rem;font-weight:500;">Champions League</span><span style="margin-left:auto;font-size:0.75rem;color:var(--muted);">Europe</span></a>
-          </div>
-        </div>
-      </aside>
+      <div class="home-hero-actions">
+        <a href="/pricing.html" class="btn btn-primary"><span class="material-icons-round" style="font-size:1rem;">workspace_premium</span>Join VIP</a>
+        <a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="btn-telegram">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;flex-shrink:0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
+          Join us on Telegram
+        </a>
+      </div>
     </div>
-    <!-- How it works -->
-    <section class="section" style="padding-top:56px;">
-      <div class="section-header"><h2 class="section-title">How <span>Rooted Predictions</span> Works</h2></div>
-      <div class="grid-3">
-        <div class="card" style="padding:24px;text-align:center;"><div style="width:56px;height:56px;background:rgba(26,138,68,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;"><span class="material-icons-round" style="font-size:1.8rem;color:var(--green);">database</span></div><h3 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:8px;">Data Collection</h3><p style="font-size:0.875rem;color:var(--text-soft);line-height:1.7;">Real-time data from API-Football for the Premier League, La Liga &amp; Champions League: team form, H2H records, goal averages, and standings.</p></div>
-        <div class="card" style="padding:24px;text-align:center;"><div style="width:56px;height:56px;background:rgba(26,138,68,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;"><span class="material-icons-round" style="font-size:1.8rem;color:var(--green);">analytics</span></div><h3 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:8px;">Algorithm Analysis</h3><p style="font-size:0.875rem;color:var(--text-soft);line-height:1.7;">Our algorithm scores each 1X2 and Over 2.5 prediction 0–100% based on form, H2H records, goal averages, and table position gap.</p></div>
-        <div class="card" style="padding:24px;text-align:center;"><div style="width:56px;height:56px;background:rgba(26,138,68,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;"><span class="material-icons-round" style="font-size:1.8rem;color:var(--green);">bolt</span></div><h3 style="font-family:var(--font-head);font-size:1.2rem;font-weight:700;margin-bottom:8px;">Free Daily Tips</h3><p style="font-size:0.875rem;color:var(--text-soft);line-height:1.7;">High-confidence picks published daily — completely free. Follow us on Telegram to get tips straight to your phone.</p></div>
+
+    <!-- ── Category Tabs ── -->
+    <div class="category-tabs-row" id="category-tabs-home">
+      <button class="cat-tab active" data-category="free">Free Pick</button>
+      <button class="cat-tab" data-category="2-5-goals">2.5 Goals</button>
+      <button class="cat-tab" data-category="3-5-goals">3.5 Goals</button>
+      <button class="cat-tab" data-category="acca">Acca tips</button>
+      <button class="cat-tab" data-category="away-win">Away Win</button>
+      <button class="cat-tab" data-category="btts">Btts</button>
+      <button class="cat-tab" data-category="double-chance">Double Chance</button>
+      <button class="cat-tab" data-category="home-win">Home Win</button>
+      <button class="cat-tab" data-category="banker"><span class="material-icons-round" style="font-size:0.85rem;">local_fire_department</span>Banker of the Day</button>
+    </div>
+
+    <!-- ── Free Picks Table ── -->
+    <div class="picks-wrap">
+      <div class="picks-header">
+        <div>
+          <div class="picks-header-title">FREE PICKS</div>
+          <div class="picks-header-date" id="picks-date-label"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="day-switcher">
+            <button class="day-btn" id="day-yesterday">Yesterday</button>
+            <button class="day-btn active" id="day-today">Today</button>
+            <button class="day-btn" id="day-tomorrow">Tomorrow</button>
+          </div>
+          <div class="cal-btn" title="View all predictions"><span class="material-icons-round" style="font-size:1rem;">calendar_month</span></div>
+        </div>
       </div>
-    </section>
-    <!-- Blog teaser -->
-    <section class="section">
+      <div id="free-picks-list">
+        <div class="pick-skeleton"><div class="skel" style="height:16px;width:60%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:80%;"></div></div>
+        <div class="pick-skeleton"><div class="skel" style="height:16px;width:55%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:75%;"></div></div>
+        <div class="pick-skeleton"><div class="skel" style="height:16px;width:65%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:70%;"></div></div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);text-align:center;">
+        <a href="/predictions.html" class="btn btn-outline btn-sm">View All Predictions <span class="material-icons-round" style="font-size:0.9rem;">arrow_forward</span></a>
+      </div>
+    </div>
+
+    <!-- ── Premium Plan Results ── -->
+    <div class="premium-section">
+      <h2>Surest Place for Winning</h2>
+      <p class="sub">2 odds Rollover is available, if you are interested kindly subscribe<br>to our telegram and win daily</p>
+      <div style="font-size:0.78rem;font-weight:700;letter-spacing:0.08em;color:var(--muted);text-align:left;margin-bottom:8px;padding:0 4px;">PREMIUM PLAN RESULTS</div>
+      <div class="premium-calendar" id="premium-calendar"></div>
+      <a href="/pricing.html" class="join-us-btn">
+        Join Us <span class="material-icons-round" style="font-size:1rem;">check_circle</span>
+      </a>
+    </div>
+
+    <!-- ── Recent Winnings ── -->
+    <div class="winnings-section">
+      <div class="winnings-header">RECENT WINNINGS</div>
+      <div id="recent-winnings-list">
+        <div class="pick-skeleton"><div class="skel" style="height:16px;width:60%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:80%;"></div></div>
+        <div class="pick-skeleton"><div class="skel" style="height:16px;width:55%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:75%;"></div></div>
+        <div class="pick-skeleton"><div class="skel" style="height:16px;width:65%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:70%;"></div></div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);text-align:center;">
+        <a href="/leaderboard.html" class="btn btn-outline btn-sm">View Full Record <span class="material-icons-round" style="font-size:0.9rem;">arrow_forward</span></a>
+      </div>
+    </div>
+
+    <!-- ── SEO Long-form Content ── -->
+    <div class="seo-content-block">
+
+      <h2>Best Football Prediction Site in the World</h2>
+      <p>Rooted Predictions is the best football prediction site in the world. We provide daily accurate football tips for leagues worldwide with a high winning rate for bettors.</p>
+
+      <h2>Most Accurate Soccer Prediction and Tips</h2>
+      <p>Rooted Predictions is the most accurate and reliable football prediction site and betting tips resource. We provide tips for leagues in Europe, Africa, Asia, the Americas and beyond.</p>
+      <p>Many other sites give random tips, but we focus on accuracy and detailed research. We spend hours checking every match — analysing team form, injuries, past results and even how coaches set up their teams.</p>
+      <p>Every prediction is carefully verified before it is posted. This is why Rooted Predictions is a winning prediction site that people trust.</p>
+      <p>We provide predictions for all types of bets including BTTS, over 1.5, over 2.5, over 3.5, double chance, home win, away win, and draws. Each tip comes with a clear explanation so that anyone can understand it.</p>
+      <p>Our site is also a correct-score prediction resource — because we carefully analyse games before recommending them.</p>
+      <p>By following our tips, you can make better decisions, avoid losses, and build long-term profits.</p>
+      <p>Rooted Predictions is one of the top football prediction sites and many users check our site daily to find accurate football predictions for free.</p>
+
+      <h2>Sure Football Prediction for Today</h2>
+      <p>Rooted Predictions delivers the best football predictions with sure winning games every day. Every day we provide carefully selected matches with a high chance of winning.</p>
+      <p>We do not give random games. Each prediction is made by studying team form, player performance, past results, and league patterns.</p>
+      <p>Our predictions cover major leagues like Premier League, La Liga, Serie A, Bundesliga, and Ligue 1, as well as smaller leagues like Norway, Finland, Poland, Japan, and Saudi Arabia.</p>
+      <p>This variety of categories makes it easy to find predictions that fit your betting style.</p>
+      <p>Rooted Predictions is the surest prediction site because all tips are checked and backed by data. Bettors trust our predictions to win more often.</p>
+      <p>You can also combine tips into accumulators for bigger payouts.</p>
+
+      <h2>100% Sure Correct Football Prediction</h2>
+      <p>Rooted Predictions has highly accurate football predictions, because we use team form, player stats, past games, and league patterns to choose matches with the best chance to win.</p>
+      <p>We are a correct-score prediction resource that applies detailed analysis. Tips are perfect for single bets, double bets, or accumulators.</p>
+      <p>Many users report consistent wins by following our daily predictions.</p>
+      <p>Rooted Predictions is not just a betting tip site — it is a winning and surest prediction platform.</p>
+      <p>We update predictions daily to reflect injuries, suspensions, and other changes.</p>
+      <p>With Rooted Predictions you get accurate football predictions for free, making betting easy, safe, and profitable.</p>
+
+      <h2>Prediction Site That Never Loses</h2>
+      <p>Rooted Predictions is a prediction site that focuses only on high-probability games. We do not overwhelm users with dozens of random matches. Instead, we carefully select predictions most likely to win.</p>
+      <p>Because of that, we are now among the top football prediction sites and winning prediction resources that users trust every day.</p>
+
+      <h2>Surest Six Straight Win for Today</h2>
+      <p>Rooted Predictions has the surest six straight-win predictions. Every day, our experts select six games with the highest chance to win.</p>
+      <p>Users often combine these matches into accumulators for bigger payouts. The selection process is careful — studying team form, past matches, head-to-head results, player performance, and league patterns.</p>
+      <p>Each prediction is made to reduce risk and increase profit.</p>
+      <p>By focusing on the top six matches, users do not get overwhelmed.</p>
+
+      <h2>Direct Win Football Predictions</h2>
+      <p>We give direct win football predictions that show which team is most likely to win. We also study every match carefully, looking at team form, player fitness, strategies, and past results.</p>
+      <p>We provide tips for home wins, away wins, and draws. Each prediction comes with a simple explanation to help you understand why the match is selected.</p>
+      <p>By using these tips, users can avoid guesswork and bet confidently. Rooted Predictions is the surest and winning prediction site for consistent wins.</p>
+
+      <h2>How We Make Our Predictions to Help Users Make Profit</h2>
+      <p>At Rooted Predictions, helping users make money is our main goal. We combine data analysis, team stats, player performance, and league trends.</p>
+      <p>We check injuries, suspensions, and tactical changes before posting any prediction. This makes Rooted Predictions a surest, winning, and correct-score prediction platform.</p>
+      <p>Our predictions are easy to understand, even for beginners. We explain why a match is selected and which bets have the best chance to win.</p>
+      <p>Users can build single bets, accumulators, or doubles. By following Rooted Predictions, users can bet safely and profitably every day.</p>
+
+      <h2>How to Make Profit from Rooted Predictions</h2>
+      <p>We promise you will not regret using Rooted Predictions if you follow our tips carefully. To make profits, we advise not to stake on every game listed.</p>
+      <p>Trying to play all matches at once can lead to losses. It is better to focus on two or three games in a single bet slip.</p>
+      <p>Betting smart, not a lot, is the key. Avoid combining four or five matches unless you are ready for the risk.</p>
+      <p>For bigger bets, you can join our VIP category, where handpicked predictions, advice, and insider tips help maximise profits.</p>
+      <p>By following these steps, you can turn your bets into consistent wins and make profit with Rooted Predictions.</p>
+
+      <h2>Categories We Cover</h2>
+      <p>We have predictions for all types of bets, making Rooted Predictions a top football prediction site. Categories include:</p>
+      <ul>
+        <li>Free Pick</li>
+        <li>1.5 Goals</li>
+        <li>2.5 Goals</li>
+        <li>3.5 Goals</li>
+        <li>Acca Tips</li>
+        <li>Away Win</li>
+        <li>BTTS</li>
+        <li>Double Chance</li>
+        <li>Draw</li>
+        <li>Home Win</li>
+        <li>Banker of the Day</li>
+      </ul>
+    </div>
+
+    <!-- ── FAQ ── -->
+    <div class="faq-block">
+      <h2>Frequently Asked Questions</h2>
+      <div class="faq-item">
+        <div class="faq-q">Which site is the best football prediction website?</div>
+        <div class="faq-a">Rooted Predictions is one of the best football prediction websites. We provide free daily football predictions, accurate tips, and correct scores for leagues worldwide.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What is the easiest game to bet on?</div>
+        <div class="faq-a">The easiest games to bet on are those with predictable outcomes, like teams with consistent home wins or away wins.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">How can I find the most accurate football predictions?</div>
+        <div class="faq-a">For the most accurate football predictions, rely on Rooted Predictions. We analyse team form, player stats, head-to-head records, and league patterns before every tip.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I make profits with free daily football predictions?</div>
+        <div class="faq-a">Yes. Rooted Predictions offers daily free football predictions that help users make profits. Focus on a few carefully selected games per day for best results.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What is the best way to use football betting tips?</div>
+        <div class="faq-a">The best way is to combine tips with strategy. Bet only on 2–3 selections per slip, manage your stake, and use our VIP category for higher-confidence picks.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Conclusion</div>
+        <div class="faq-a">Rooted Predictions is the best football prediction site in the world, providing accurate, reliable, and profitable tips daily. We are a winning prediction site, a surest prediction platform, and a correct-score resource that never stops improving.<br><br>Rooted Predictions gives everything a football fan needs to bet safely and profitably. Stop wasting time on random sites that give guesses — use Rooted Predictions to bet confidently, win consistently, and enjoy football betting like never before.</div>
+      </div>
+    </div>
+
+    <!-- ── Blog teaser ── -->
+    <section class="section" style="padding-top:0;">
       <div class="section-header"><h2 class="section-title">Latest from the <span>Blog</span></h2><a href="/blog.html" class="btn btn-outline btn-sm">View All Articles</a></div>
       <div class="blog-grid" id="home-blog-grid">
         <div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--muted);"><span class="material-icons-round" style="animation:spin 1s linear infinite;">article</span></div>
       </div>
     </section>
 
-    <!-- SEO content — editable from Admin → Site Pages → Home -->
-    <section class="section" id="home-seo-section" style="display:none;padding-top:0;">
-      <div class="card" style="padding:28px 32px;">
-        <h2 id="home-seo-title" class="section-title" style="margin-bottom:18px;"></h2>
-        <div id="home-seo-content"></div>
-      </div>
-    </section>
   </div>
 </main>
+
 <footer class="site-footer" id="site-footer"></footer>
 <script src="/js/app.js"></script>
 <script src="/js/content-protection.js"></script>
 <script>
-(function(){
-  const nav=document.getElementById('date-nav-home');
-  if(!nav)return;
-  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  for(let i=-1;i<=4;i++){
-    const d=new Date();d.setDate(d.getDate()+i);
-    const btn=document.createElement('button');
-    btn.className='date-btn'+(i===0?' active':'');
-    btn.innerHTML=`<span class="day-name">${i===0?'Today':i===-1?'Yest':days[d.getDay()]}</span><span class="day-num">${d.getDate()}</span>`;
-    btn.addEventListener('click',function(){document.querySelectorAll('#date-nav-home .date-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');});
-    nav.appendChild(btn);
-  }
-  // Render the editable SEO content from the 'home' static page
-  fetch('/api/pages/home').then(r=>r.json()).then(j=>{
-    const d = (j && (j.page || j.data || j)) || {};
-    if (!d.content) return;
-    const titleEl = document.getElementById('home-seo-title');
-    const contentEl = document.getElementById('home-seo-content');
-    if (titleEl) titleEl.textContent = d.hero_title || 'About Rooted Predictions';
-    if (contentEl) contentEl.innerHTML = d.content;
-    const sec = document.getElementById('home-seo-section');
-    if (sec) sec.style.display = '';
-  }).catch(()=>{});
+(function () {
+  'use strict';
 
-  // Latest blog posts (real, from the DB)
-  fetch('/api/blog?limit=3').then(r=>r.json()).then(j=>{
+  // ── Date label
+  function formatDateLabel(d) {
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const dd = String(d.getDate()).padStart(2, '0');
+    const suffix = ['th','st','nd','rd'];
+    const v = d.getDate() % 100;
+    const s = suffix[(v - 20) % 10] || suffix[v] || suffix[0];
+    return `${days[d.getDay()]}${s} ${dd} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  let currentOffset = 0; // 0=today, -1=yesterday, 1=tomorrow
+
+  function getDateFor(offset) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d;
+  }
+
+  function isoDate(d) { return d.toISOString().split('T')[0]; }
+
+  // ── Render date label
+  function updateDateLabel() {
+    const el = document.getElementById('picks-date-label');
+    if (el) el.textContent = formatDateLabel(getDateFor(currentOffset));
+  }
+
+  // ── Day switcher
+  document.getElementById('day-yesterday').addEventListener('click', function () {
+    currentOffset = -1;
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    updateDateLabel();
+    loadFreePicks();
+  });
+  document.getElementById('day-today').addEventListener('click', function () {
+    currentOffset = 0;
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    updateDateLabel();
+    loadFreePicks();
+  });
+  document.getElementById('day-tomorrow').addEventListener('click', function () {
+    currentOffset = 1;
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    updateDateLabel();
+    loadFreePicks();
+  });
+  document.querySelector('.cal-btn').addEventListener('click', function () {
+    window.location.href = '/predictions.html';
+  });
+
+  // ── Category tabs
+  document.querySelectorAll('#category-tabs-home .cat-tab').forEach(tab => {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('#category-tabs-home .cat-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      const cat = this.dataset.category;
+      document.querySelectorAll('#free-picks-list .pick-league-group').forEach(g => {
+        const cards = g.querySelectorAll('.pick-card');
+        let visible = 0;
+        cards.forEach(c => {
+          const match = cat === 'free' || c.dataset.category === cat;
+          c.style.display = match ? '' : 'none';
+          if (match) visible++;
+        });
+        g.style.display = visible > 0 ? '' : 'none';
+      });
+    });
+  });
+
+  // ── Build pick HTML
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function buildPicksHTML(predictions) {
+    if (!predictions.length) {
+      return `<div style="padding:36px;text-align:center;color:var(--muted);font-size:0.875rem;">
+        <span class="material-icons-round" style="font-size:2rem;display:block;margin-bottom:8px;">sports_soccer</span>
+        No predictions available for this day.
+      </div>`;
+    }
+
+    // Group by league
+    const groups = {};
+    predictions.forEach(p => {
+      const key = p.league_id || p.league_name || 'Other';
+      if (!groups[key]) groups[key] = { league: p, preds: [] };
+      groups[key].preds.push(p);
+    });
+
+    return Object.values(groups).map(g => {
+      const league = g.league;
+      const leagueImg = league.league_logo
+        ? `<img src="${esc(league.league_logo)}" alt="" onerror="this.style.display='none'">`
+        : `<span class="material-icons-round" style="font-size:1rem;color:var(--muted);">sports_soccer</span>`;
+      const country = league.league_country ? esc(league.league_country) + ': ' : '';
+
+      const rows = g.preds.map(p => {
+        const time = p.match_date ? new Date(p.match_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+        const odds = p.odds ? parseFloat(p.odds).toFixed(2) : '—';
+        const tip  = p.tip || '—';
+        const cat  = p.market || 'free';
+        return `<div class="pick-row pick-card" data-category="${esc(cat)}">
+          <div class="pick-match">
+            <span class="pick-home">${esc(p.home_team)}</span>
+            <span class="pick-time">${esc(time)}</span>
+            <span class="pick-away">${esc(p.away_team)}</span>
+          </div>
+          <div class="pick-odds-box">
+            <div class="pick-odds-label">ODDS</div>
+            <div class="pick-odds-val">${esc(odds)}</div>
+          </div>
+          <div class="pick-tip-box">
+            <div class="pick-tip-label">TIPS</div>
+            <div class="pick-tip-val"><span class="fire">🔥</span>${esc(tip)}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div class="pick-league-group">
+        <div class="pick-league-row">${leagueImg}<span>${country}<strong>${esc(league.league_name || 'League')}</strong></span></div>
+        ${rows}
+      </div>`;
+    }).join('');
+  }
+
+  // ── Load free picks from API
+  function loadFreePicks() {
+    const list = document.getElementById('free-picks-list');
+    list.innerHTML = `<div class="pick-skeleton"><div class="skel" style="height:16px;width:60%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:80%;"></div></div>
+      <div class="pick-skeleton"><div class="skel" style="height:16px;width:55%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:75%;"></div></div>`;
+
+    const date = isoDate(getDateFor(currentOffset));
+    fetch(`/api/predictions?date=${date}&limit=12`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(j => {
+        const preds = (j && j.data && j.data.predictions) || [];
+        list.innerHTML = buildPicksHTML(preds);
+      })
+      .catch(() => {
+        list.innerHTML = `<div style="padding:28px;text-align:center;color:var(--muted);font-size:0.875rem;">Could not load predictions. Please try again.</div>`;
+      });
+  }
+
+  // ── Premium calendar (last 6 days + today)
+  function buildPremiumCalendar() {
+    const cal = document.getElementById('premium-calendar');
+    if (!cal) return;
+
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const today = new Date();
+
+    // Fetch recent stats to determine won/lost per day
+    fetch('/api/predictions/stats')
+      .then(r => r.json())
+      .then(j => {
+        // Build 6 days ending today
+        const days = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(today);
+          d.setDate(today.getDate() - i);
+          days.push(d);
+        }
+
+        // Use daily_results from stats if available, else default to won for past days
+        const dailyMap = {};
+        if (j && j.data && j.data.daily_results) {
+          j.data.daily_results.forEach(dr => { dailyMap[dr.date] = dr.result; });
+        }
+
+        cal.innerHTML = days.map(d => {
+          const iso = isoDate(d);
+          const isToday = isoDate(d) === isoDate(today);
+          let icon, cls;
+          if (isToday) {
+            icon = '○'; cls = 'cal-result-pending';
+          } else {
+            const res = dailyMap[iso];
+            if (res === 'lost') { icon = '✗'; cls = 'cal-result-lost'; }
+            else { icon = '✓'; cls = 'cal-result-won'; }
+          }
+          return `<div class="cal-day">
+            <span class="${cls}" style="font-size:1.2rem;font-weight:700;">${icon}</span>
+            <span class="cal-day-num">${d.getDate()}</span>
+            <span class="cal-day-mon">${months[d.getMonth()]}</span>
+          </div>`;
+        }).join('');
+      })
+      .catch(() => {
+        // Fallback static calendar
+        const days = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(today);
+          d.setDate(today.getDate() - i);
+          days.push(d);
+        }
+        cal.innerHTML = days.map((d, idx) => {
+          const isToday = idx === 5;
+          const icon = isToday ? '○' : '✓';
+          const cls  = isToday ? 'cal-result-pending' : 'cal-result-won';
+          return `<div class="cal-day">
+            <span class="${cls}" style="font-size:1.2rem;font-weight:700;">${icon}</span>
+            <span class="cal-day-num">${d.getDate()}</span>
+            <span class="cal-day-mon">${months[d.getMonth()]}</span>
+          </div>`;
+        }).join('');
+      });
+  }
+
+  // ── Recent Winnings
+  function buildWinningsHTML(predictions) {
+    if (!predictions.length) {
+      return `<div style="padding:28px;text-align:center;color:var(--muted);font-size:0.875rem;">No recent settled results.</div>`;
+    }
+
+    const groups = {};
+    predictions.forEach(p => {
+      const key = p.league_id || p.league_name || 'Other';
+      if (!groups[key]) groups[key] = { league: p, preds: [] };
+      groups[key].preds.push(p);
+    });
+
+    return Object.values(groups).map(g => {
+      const league = g.league;
+      const leagueImg = league.league_logo
+        ? `<img src="${esc(league.league_logo)}" alt="" onerror="this.style.display='none'">`
+        : `<span class="material-icons-round" style="font-size:1rem;color:var(--muted);">sports_soccer</span>`;
+      const country = league.league_country ? esc(league.league_country) + ': ' : '';
+
+      const rows = g.preds.map(p => {
+        const dateStr = p.match_date
+          ? new Date(p.match_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          : '';
+        const score = (p.home_score != null && p.away_score != null)
+          ? `${p.home_score}:${p.away_score}` : '';
+        const tip = p.prediction || p.tip || '—';
+        const won = p.result === 'won';
+        return `<div class="winning-row">
+          <div class="winning-match">
+            <span style="font-weight:600;color:var(--text);">${esc(p.home_team)}</span>
+            ${score ? `<span class="pick-time">${esc(score)}</span>` : ''}
+            <span style="color:var(--text-soft);">${esc(p.away_team)}</span>
+            <span class="winning-date"><span class="material-icons-round" style="font-size:0.75rem;">calendar_today</span>${esc(dateStr)}</span>
+          </div>
+          <div class="win-status-box">
+            <div class="win-status-label">STATUS</div>
+            <div class="win-status-icon ${won ? 'won' : ''}">${won ? '✓' : '✗'}</div>
+          </div>
+          <div class="pick-tip-box">
+            <div class="pick-tip-label">TIPS</div>
+            <div class="pick-tip-val"><span class="fire">🔥</span>${esc(tip)}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div class="pick-league-group">
+        <div class="winning-league-row">${leagueImg}<span>${country}<strong>${esc(league.league_name || 'League')}</strong></span></div>
+        ${rows}
+      </div>`;
+    }).join('');
+  }
+
+  function loadRecentWinnings() {
+    fetch('/api/predictions?result=won&limit=8', { credentials: 'include' })
+      .then(r => r.json())
+      .then(j => {
+        const preds = (j && j.data && j.data.predictions) || [];
+        document.getElementById('recent-winnings-list').innerHTML = buildWinningsHTML(preds);
+      })
+      .catch(() => {
+        document.getElementById('recent-winnings-list').innerHTML =
+          `<div style="padding:28px;text-align:center;color:var(--muted);font-size:0.875rem;">Could not load recent results.</div>`;
+      });
+  }
+
+  // ── Blog posts
+  fetch('/api/blog?limit=3').then(r => r.json()).then(j => {
     const grid = document.getElementById('home-blog-grid');
     const posts = (j && j.data && j.data.posts) || [];
     if (!grid) return;
-    if (!posts.length) { grid.innerHTML = '<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--muted);font-size:0.875rem;">No articles published yet.</div>'; return; }
-    const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const fmt = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+    if (!posts.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--muted);font-size:0.875rem;">No articles published yet.</div>';
+      return;
+    }
+    const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     grid.innerHTML = posts.map(p => `
       <a href="/blog/${p.slug}" class="blog-card" style="text-decoration:none;">
         ${p.featured_image
           ? `<div style="height:180px;background:#0b2a1a url('${p.featured_image}') center/cover no-repeat;"></div>`
           : `<div style="height:180px;background:linear-gradient(135deg,var(--navy),var(--midnight));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(26,138,68,0.5);">article</span></div>`}
-        <div class="blog-card-body"><div class="blog-category">${esc(p.category||'Article')}</div><h3 class="blog-card-title">${esc(p.title)}</h3><p class="blog-card-excerpt">${esc(p.excerpt||'')}</p><div class="blog-card-meta"><span class="material-icons-round">calendar_today</span> ${fmt(p.published_at)}</div></div>
+        <div class="blog-card-body">
+          <div class="blog-category">${esc(p.category || 'Article')}</div>
+          <h3 class="blog-card-title">${esc(p.title)}</h3>
+          <p class="blog-card-excerpt">${esc(p.excerpt || '')}</p>
+          <div class="blog-card-meta"><span class="material-icons-round">calendar_today</span> ${fmt(p.published_at)}</div>
+        </div>
       </a>`).join('');
-  }).catch(()=>{});
+  }).catch(() => {});
+
+  // ── Init
+  updateDateLabel();
+  loadFreePicks();
+  buildPremiumCalendar();
+  loadRecentWinnings();
+
 })();
 </script>
 </body>

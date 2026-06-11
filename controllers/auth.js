@@ -239,7 +239,7 @@ async function verifyRegistration(req, res) {
 
 // ── LOGIN ─────────────────────────────────────────────────────
 async function login(req, res) {
-  const { email, password } = req.body;
+  const { email, password, remember } = req.body;
 
   try {
     // Fetch user by email
@@ -267,9 +267,10 @@ async function login(req, res) {
       return errorResponse(res, 'Invalid email or password.', 401);
     }
 
-    // Generate JWT and set httpOnly cookie
-    const token = generateToken({ id: user.id, role: user.role, email: user.email });
-    setTokenCookie(res, token);
+    // Generate JWT and set httpOnly cookie (30 days if remember-me checked)
+    const rememberMe = remember === true || remember === 'true';
+    const token = generateToken({ id: user.id, role: user.role, email: user.email }, rememberMe);
+    setTokenCookie(res, token, rememberMe);
 
     // Update last login timestamp
     await db.query('UPDATE users SET updated_at = NOW() WHERE id = ?', [user.id]);
