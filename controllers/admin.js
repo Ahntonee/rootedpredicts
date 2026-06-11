@@ -77,7 +77,7 @@ async function getPrediction(req, res) {
 // ── Create prediction
 async function createPrediction(req, res) {
   try {
-    const { league_id,home_team,away_team,home_team_logo,away_team_logo,
+    const { league_id,fixture_id,home_team,away_team,home_team_logo,away_team_logo,
             match_date,tip,market,odds,odds_data,confidence_score,visibility,category,analysis,
             home_form,away_form,h2h_summary,published } = req.body;
     if (!home_team||!away_team||!match_date||!tip||!market) {
@@ -86,7 +86,8 @@ async function createPrediction(req, res) {
     const oddsJson = odds_data && Object.keys(odds_data).length ? JSON.stringify(odds_data) : null;
     // Derive visibility from category if provided
     const derivedVis = category === 'Banker of the Day' ? 'vip' : (visibility || 'free');
-    const leagueIdVal = league_id ? parseInt(league_id) : null;
+    const leagueIdVal  = league_id  ? parseInt(league_id)  : null;
+    const fixtureIdVal = fixture_id ? parseInt(fixture_id) : null;
     let leagueName = 'Match';
     if (leagueIdVal) {
       const [lRows] = await db.query('SELECT name FROM leagues WHERE id=?',[leagueIdVal]);
@@ -96,10 +97,10 @@ async function createPrediction(req, res) {
     const [existing] = await db.query('SELECT id FROM predictions WHERE slug=?',[slug]);
     if (existing.length) slug = slug+'-'+Date.now();
     const [ins] = await db.query(
-      `INSERT INTO predictions (league_id,home_team,away_team,home_team_logo,away_team_logo,
+      `INSERT INTO predictions (fixture_id,league_id,home_team,away_team,home_team_logo,away_team_logo,
         match_date,tip,market,odds,odds_data,confidence_score,visibility,category,analysis,home_form,away_form,
-        h2h_summary,slug,result,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?)`,
-      [leagueIdVal,sanitiseText(home_team),sanitiseText(away_team),home_team_logo||null,
+        h2h_summary,slug,result,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?)`,
+      [fixtureIdVal,leagueIdVal,sanitiseText(home_team),sanitiseText(away_team),home_team_logo||null,
        away_team_logo||null,match_date,sanitiseText(tip),sanitiseText(market),
        odds||null,oddsJson,confidence_score||null,derivedVis,category||null,analysis||null,
        home_form||null,away_form||null,h2h_summary||null,slug,
@@ -121,10 +122,11 @@ async function createPrediction(req, res) {
 async function updatePrediction(req, res) {
   try {
     const { id } = req.params;
-    const { league_id,home_team,away_team,match_date,tip,market,odds,odds_data,
+    const { fixture_id,league_id,home_team,away_team,match_date,tip,market,odds,odds_data,
             confidence_score,visibility,category,result,analysis,
             home_form,away_form,h2h_summary,published } = req.body;
     const updates=[]; const args=[];
+    if (fixture_id !== undefined) { updates.push('fixture_id=?'); args.push(fixture_id ? parseInt(fixture_id) : null); }
     if (league_id)        { updates.push('league_id=?');        args.push(league_id); }
     if (home_team)        { updates.push('home_team=?');        args.push(sanitiseText(home_team)); }
     if (away_team)        { updates.push('away_team=?');        args.push(sanitiseText(away_team)); }
@@ -415,8 +417,10 @@ async function updateSiteStats(req, res) {
     for (const [key, val] of Object.entries(updates)) {
       const clean = (val == null || String(val).trim() === '') ? null : String(val).trim().slice(0, 60);
       await db.query(
-        'UPDATE site_stat_overrides SET override_value=?, updated_at=NOW() WHERE metric_key=?',
-        [clean, key]
+        `INSERT INTO site_stat_overrides (metric_key, label, override_value)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE override_value = VALUES(override_value), updated_at = NOW()`,
+        [key, key, clean]
       );
     }
     res.json({ success: true, message: 'Homepage stats saved' });

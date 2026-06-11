@@ -641,6 +641,74 @@ const MIGRATIONS = [
   },
 
   // ----------------------------------------------------------
+  // 19f. Password-reset columns on users
+  // ----------------------------------------------------------
+  {
+    name: 'Add password_reset columns to users',
+    fn: async (conn) => {
+      const [cols] = await conn.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users'
+           AND COLUMN_NAME IN ('password_reset_token','password_reset_expires')`,
+        [DB_NAME]
+      );
+      const existing = cols.map(c => c.COLUMN_NAME);
+      if (!existing.includes('password_reset_token')) {
+        await conn.query(`ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(64) DEFAULT NULL`);
+        console.log('[MIGRATE] ✓ Added users.password_reset_token');
+      }
+      if (!existing.includes('password_reset_expires')) {
+        await conn.query(`ALTER TABLE users ADD COLUMN password_reset_expires DATETIME DEFAULT NULL`);
+        console.log('[MIGRATE] ✓ Added users.password_reset_expires');
+      }
+      if (existing.length === 2) {
+        console.log('[MIGRATE] ↷ password_reset columns already exist');
+      }
+    },
+  },
+
+  // ----------------------------------------------------------
+  // 19g. Make league_id nullable on predictions (admin can
+  //      create a tip without picking a league)
+  // ----------------------------------------------------------
+  {
+    name: 'Make predictions.league_id nullable',
+    fn: async (conn) => {
+      const [cols] = await conn.query(
+        `SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'predictions' AND COLUMN_NAME = 'league_id'`,
+        [DB_NAME]
+      );
+      if (cols.length && cols[0].IS_NULLABLE === 'NO') {
+        await conn.query(`ALTER TABLE predictions MODIFY COLUMN league_id INT UNSIGNED DEFAULT NULL`);
+        console.log('[MIGRATE] ✓ predictions.league_id is now nullable');
+      } else {
+        console.log('[MIGRATE] ↷ predictions.league_id already nullable');
+      }
+    },
+  },
+
+  // ----------------------------------------------------------
+  // 19h. Widen tip column to 100 chars
+  // ----------------------------------------------------------
+  {
+    name: 'Widen predictions.tip to VARCHAR(100)',
+    fn: async (conn) => {
+      const [cols] = await conn.query(
+        `SELECT CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'predictions' AND COLUMN_NAME = 'tip'`,
+        [DB_NAME]
+      );
+      if (cols.length && cols[0].CHARACTER_MAXIMUM_LENGTH < 100) {
+        await conn.query(`ALTER TABLE predictions MODIFY COLUMN tip VARCHAR(100) NOT NULL`);
+        console.log('[MIGRATE] ✓ predictions.tip widened to VARCHAR(100)');
+      } else {
+        console.log('[MIGRATE] ↷ predictions.tip already wide enough');
+      }
+    },
+  },
+
+  // ----------------------------------------------------------
   // 19. Pending registrations — holds OTP + hashed password
   //     until email is verified; deleted after account creation
   // ----------------------------------------------------------
