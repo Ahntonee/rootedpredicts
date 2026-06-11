@@ -115,7 +115,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
       p.id, p.fixture_id, p.league_id, p.home_team, p.away_team,
       p.home_team_logo, p.away_team_logo, p.match_date,
       p.tip, p.market, p.odds, p.confidence_score,
-      p.visibility, p.result, p.slug, p.published_at,
+      p.category, p.visibility, p.result, p.slug, p.published_at,
       p.home_score, p.away_score, p.status_short, p.elapsed,
       p.home_form, p.away_form, p.h2h_summary,
       l.name as league_name, l.country as league_country,
@@ -192,19 +192,33 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     args.push(parseInt(confidence_min));
   }
 
-  // Category filter (homepage pills) — maps a betting category to tip/market.
-  // 'free'/'all' = no extra filter; 'banker' = highest-confidence first.
+  // Category filter — matches against the predictions.category DB column.
+  // URL slugs (e.g. '2-5-goals') map to DB display values (e.g. '2.5 Goals').
+  // 'free'/'all' = no extra filter; 'banker' also sorts by confidence DESC.
+  const CATEGORY_MAP = {
+    'free-pick':    'Free Pick',
+    '2-5-goals':    '2.5 Goals',
+    '3-5-goals':    '3.5 Goals',
+    'acca':         'Acca Tips',
+    'away-win':     'Away Win',
+    'btts':         'BTTS',
+    'double-chance':'Double Chance',
+    'home-win':     'Home Win',
+    'banker':       'Banker of the Day',
+  };
   let categorySort = null;
   const category = (req.query.category || '').toLowerCase();
   if (category && category !== 'free' && category !== 'all') {
-    if      (category === '2-5-goals')    sql += " AND p.tip LIKE '%2.5%'";
-    else if (category === '3-5-goals')    sql += " AND p.tip LIKE '%3.5%'";
-    else if (category === 'acca')         sql += " AND p.market = 'Accumulator'";
-    else if (category === 'away-win')     sql += " AND p.tip LIKE '%Away%'";
-    else if (category === 'btts')         sql += " AND p.market = 'BTTS'";
-    else if (category === 'double-chance')sql += " AND (p.market = 'Draw No Bet' OR p.tip LIKE '%Double Chance%' OR p.tip IN ('1X','2X','12'))";
-    else if (category === 'home-win')     sql += " AND p.tip LIKE '%Home%'";
-    else if (category === 'banker')       categorySort = 'confidence_score DESC';
+    if (category === 'banker') {
+      sql += " AND p.category = 'Banker of the Day'";
+      categorySort = 'confidence_score DESC';
+    } else {
+      const dbCat = CATEGORY_MAP[category];
+      if (dbCat) {
+        sql += ' AND p.category = ?';
+        args.push(dbCat);
+      }
+    }
   }
 
   // Sorting — whitelist to prevent injection
