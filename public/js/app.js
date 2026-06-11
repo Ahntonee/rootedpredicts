@@ -547,18 +547,33 @@
       // today's published matches (any status), limit high enough to cover the day
       const res  = await fetch('/api/predictions?limit=40');
       const json = await res.json();
-      const preds = (json.success && json.data && json.data.predictions) || [];
+      let allPreds = (json.success && json.data && json.data.predictions) || [];
+      // Deduplicate: keep only the highest-confidence prediction per match
+      const seen = {};
+      allPreds.forEach(p => {
+        const key = `${p.home_team}|${p.away_team}`;
+        if (!seen[key] || (p.confidence_score || 0) > (seen[key].confidence_score || 0)) seen[key] = p;
+      });
+      const preds = Object.values(seen);
       if (!preds.length) { wrap.style.display = 'none'; clearTimeout(window.__tickerPoll); return; }
 
+      const now = Date.now();
       let anyLive = false;
       const item = p => {
         const hasScore = p.home_score != null && p.away_score != null;
+        const matchTime = new Date(p.match_date).getTime();
+        const isPast = matchTime < now;
         let mid;
         if (LIVE_ST.includes(p.status_short) && hasScore) {
           anyLive = true;
           mid = `<span class="live-dot"></span><span class="score" style="color:var(--red);">${p.home_score}-${p.away_score}</span>${p.elapsed ? " " + p.elapsed + "'" : ''}`;
         } else if (FIN_ST.includes(p.status_short) && hasScore) {
           mid = `<span class="score">${p.home_score}-${p.away_score}</span> FT`;
+        } else if (isPast) {
+          // Match time has passed but no score synced yet — show FT placeholder
+          mid = hasScore
+            ? `<span class="score">${p.home_score}-${p.away_score}</span> FT`
+            : `<span class="score" style="color:var(--muted);">FT</span>`;
         } else {
           const d = new Date(p.match_date);
           mid = `<span class="score">${isNaN(d) ? '' : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>`;
