@@ -46,7 +46,7 @@ async function getPredictions(req, res) {
   try {
     const { page=1, limit=20, result, visibility, league, date } = req.query;
     const offset = (parseInt(page)-1) * parseInt(limit);
-    let sql  = `SELECT p.*,l.name as league_name,l.logo_url as league_logo
+    let sql  = `SELECT p.*,COALESCE(p.category,'Free Pick') as category,l.name as league_name,l.logo_url as league_logo
                 FROM predictions p LEFT JOIN leagues l ON p.league_id=l.id WHERE 1=1`;
     const args = [];
     if (result)     { sql += ' AND p.result=?';           args.push(result); }
@@ -61,28 +61,47 @@ async function getPredictions(req, res) {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 
+// ── Get single prediction by ID
+async function getPrediction(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT p.*,l.name as league_name,l.logo_url as league_logo
+       FROM predictions p LEFT JOIN leagues l ON p.league_id=l.id WHERE p.id=?`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ success:false, message:'Prediction not found' });
+    res.json({ success:true, data:rows[0] });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+}
+
 // ── Create prediction
 async function createPrediction(req, res) {
   try {
     const { league_id,home_team,away_team,home_team_logo,away_team_logo,
-            match_date,tip,market,odds,odds_data,confidence_score,visibility,analysis,
+            match_date,tip,market,odds,odds_data,confidence_score,visibility,category,analysis,
             home_form,away_form,h2h_summary,published } = req.body;
-    if (!league_id||!home_team||!away_team||!match_date||!tip||!market) {
+    if (!home_team||!away_team||!match_date||!tip||!market) {
       return res.status(400).json({ success:false, message:'Missing required fields' });
     }
     const oddsJson = odds_data && Object.keys(odds_data).length ? JSON.stringify(odds_data) : null;
-    const [lRows] = await db.query('SELECT name FROM leagues WHERE id=?',[league_id]);
-    const leagueName = lRows.length ? lRows[0].name : 'League';
+    // Derive visibility from category if provided
+    const derivedVis = category === 'Banker of the Day' ? 'vip' : (visibility || 'free');
+    const leagueIdVal = league_id ? parseInt(league_id) : null;
+    let leagueName = 'Match';
+    if (leagueIdVal) {
+      const [lRows] = await db.query('SELECT name FROM leagues WHERE id=?',[leagueIdVal]);
+      if (lRows.length) leagueName = lRows[0].name;
+    }
     let slug = slugify(`${leagueName} ${home_team} vs ${away_team} ${match_date.split('T')[0]}`,{ lower:true, strict:true });
     const [existing] = await db.query('SELECT id FROM predictions WHERE slug=?',[slug]);
     if (existing.length) slug = slug+'-'+Date.now();
     const [ins] = await db.query(
       `INSERT INTO predictions (league_id,home_team,away_team,home_team_logo,away_team_logo,
-        match_date,tip,market,odds,odds_data,confidence_score,visibility,analysis,home_form,away_form,
-        h2h_summary,slug,result,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?)`,
-      [league_id,sanitiseText(home_team),sanitiseText(away_team),home_team_logo||null,
+        match_date,tip,market,odds,odds_data,confidence_score,visibility,category,analysis,home_form,away_form,
+        h2h_summary,slug,result,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?)`,
+      [leagueIdVal,sanitiseText(home_team),sanitiseText(away_team),home_team_logo||null,
        away_team_logo||null,match_date,sanitiseText(tip),sanitiseText(market),
-       odds||null,oddsJson,confidence_score||null,visibility||'free',analysis||null,
+       odds||null,oddsJson,confidence_score||null,derivedVis,category||null,analysis||null,
        home_form||null,away_form||null,h2h_summary||null,slug,
        published ? new Date() : null]
     );
@@ -103,7 +122,7 @@ async function updatePrediction(req, res) {
   try {
     const { id } = req.params;
     const { league_id,home_team,away_team,match_date,tip,market,odds,odds_data,
-            confidence_score,visibility,result,analysis,
+            confidence_score,visibility,category,result,analysis,
             home_form,away_form,h2h_summary,published } = req.body;
     const updates=[]; const args=[];
     if (league_id)        { updates.push('league_id=?');        args.push(league_id); }
@@ -115,9 +134,16 @@ async function updatePrediction(req, res) {
     if (odds!==undefined) { updates.push('odds=?');             args.push(odds); }
     if (odds_data!==undefined) { updates.push('odds_data=?');   args.push(odds_data && Object.keys(odds_data).length ? JSON.stringify(odds_data) : null); }
     if (confidence_score) { updates.push('confidence_score=?'); args.push(confidence_score); }
-    if (visibility)       { updates.push('visibility=?');       args.push(visibility); }
+    // Category → visibility: Banker of the Day = vip, rest = free
+    if (category !== undefined) {
+      updates.push('category=?'); args.push(category||null);
+      const derivedVis = category === 'Banker of the Day' ? 'vip' : 'free';
+      updates.push('visibility=?'); args.push(derivedVis);
+    } else if (visibility) {
+      updates.push('visibility=?'); args.push(visibility);
+    }
     if (result)           { updates.push('result=?');           args.push(result); }
-    if (analysis)         { updates.push('analysis=?');         args.push(analysis); }
+    if (analysis !== undefined) { updates.push('analysis=?');   args.push(analysis||null); }
     if (home_form)        { updates.push('home_form=?');        args.push(home_form); }
     if (away_form)        { updates.push('away_form=?');        args.push(away_form); }
     if (h2h_summary)      { updates.push('h2h_summary=?');      args.push(h2h_summary); }
@@ -223,6 +249,19 @@ async function getBlogPosts(req, res) {
        LEFT JOIN users u ON bp.author_id=u.id ORDER BY bp.created_at DESC`
     );
     res.json({ success:true, data:rows });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+}
+
+// ── Get single blog post by ID
+async function getBlogPost(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT bp.*,u.name as author_name FROM blog_posts bp
+       LEFT JOIN users u ON bp.author_id=u.id WHERE bp.id=?`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ success:false, message:'Post not found' });
+    res.json({ success:true, data:rows[0] });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 
@@ -352,15 +391,20 @@ async function getSiteStats(req, res) {
       predictions:     String(pr.c),
     };
 
-    const [rows] = await db.query(
-      'SELECT metric_key,label,override_value FROM site_stat_overrides ORDER BY sort_order ASC'
-    );
-    const data = rows.map(r => ({
-      key:      r.metric_key,
-      label:    r.label,
-      live:     liveMap[r.metric_key] != null ? liveMap[r.metric_key] : '—',
-      override: r.override_value || '',
-    }));
+    let rows = [];
+    try {
+      [rows] = await db.query(
+        'SELECT metric_key,label,override_value FROM site_stat_overrides ORDER BY sort_order ASC'
+      );
+    } catch (_) { /* table may not exist yet — return live values only */ }
+    const data = rows.length
+      ? rows.map(r => ({
+          key:      r.metric_key,
+          label:    r.label,
+          live:     liveMap[r.metric_key] != null ? liveMap[r.metric_key] : '—',
+          override: r.override_value || '',
+        }))
+      : Object.entries(liveMap).map(([k, v]) => ({ key: k, label: k, live: v, override: '' }));
     res.json({ success: true, data });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 }
@@ -380,11 +424,11 @@ async function updateSiteStats(req, res) {
 }
 
 module.exports = {
-  getStats, getPredictions, createPrediction, updatePrediction, deletePrediction,
+  getStats, getPredictions, getPrediction, createPrediction, updatePrediction, deletePrediction,
   scorePrediction, scoreAllPredictions, previewScore,
   getUsers, updateUser, getLeagues, updateLeague,
-  getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost,
+  getBlogPosts, getBlogPost, createBlogPost, updateBlogPost, deleteBlogPost,
   getSeoSettings, updateSeoSettings,
   getSiteStats, updateSiteStats,
-  getFormLeagues, getLeagueFixtures,
+  getFormLeagues, getLeagueFixtures, getFixtureOdds,
 };

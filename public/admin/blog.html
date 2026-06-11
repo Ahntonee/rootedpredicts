@@ -142,8 +142,8 @@ function openNew() {
 }
 
 async function editPost(id) {
-  const json = await Admin.api('GET', '/api/admin/blog');
-  const p = json.data.find(x => x.id === id);
+  const json = await Admin.api('GET', '/api/admin/blog/'+id);
+  const p = json.data;
   if (!p) return;
   blogEditId = id;
   document.getElementById('blog-modal-title').textContent = 'Edit Post';

@@ -126,6 +126,7 @@ async function loadApiStatus() {
 async function runSync(btnId, url, resultId, method, body) {
   const btn = document.getElementById(btnId);
   const res = document.getElementById(resultId);
+  const originalHTML = btn.innerHTML;
   btn.disabled=true; btn.innerHTML='<span class="material-icons-round" style="animation:spin 1s linear infinite">sync</span>Syncing...';
   log('Starting: '+url, 'info');
   try {
@@ -140,7 +141,7 @@ async function runSync(btnId, url, resultId, method, body) {
       Admin.toast(json.message||'Sync failed','error');
     }
   } catch(e) { log('Network error: '+e.message,'error'); Admin.toast('Network error','error'); }
-  btn.disabled=false; btn.innerHTML='<span class="material-icons-round">sync</span>'+btn.textContent.replace('Syncing...','Sync');
+  btn.disabled=false; btn.innerHTML=originalHTML;
 }
 
 document.getElementById('sync-leagues-btn').addEventListener('click',()=>runSync('sync-leagues-btn','/api/sync/leagues','sync-leagues-result'));

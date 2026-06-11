@@ -72,15 +72,18 @@ app.use('/api/auth/register', authLimiter);
 app.use(compression());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// Raw body preserved for Stripe webhook; all other routes get parsed JSON
+// Raw body preserved for Stripe webhook; admin blog/pages routes get a 10 MB
+// limit to support base64 embedded images; all other routes stay at 10 KB.
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/webhooks/stripe') {
-    express.raw({ type: 'application/json' })(req, res, next);
-  } else {
-    express.json({ limit: '10kb' })(req, res, next);
+    return express.raw({ type: 'application/json' })(req, res, next);
   }
+  const large = req.originalUrl.startsWith('/api/admin/blog') ||
+                req.originalUrl.startsWith('/api/admin/pages') ||
+                req.originalUrl.startsWith('/api/pages');
+  express.json({ limit: large ? '10mb' : '10kb' })(req, res, next);
 });
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // ── Static files

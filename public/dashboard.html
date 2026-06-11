@@ -157,14 +157,31 @@ async function checkAuth() {
     const { data } = await res.json();
     if (!data) { window.location.href = '/login.html'; return; }
 
-    document.getElementById('user-plan').textContent    = data.role === 'admin' ? 'Admin' : 'Free';
+    document.getElementById('user-plan').textContent    = data.role === 'admin' ? 'Admin' : data.role === 'vip' ? 'VIP' : 'Free';
     document.getElementById('user-country').textContent = data.country || '—';
     document.getElementById('user-since').textContent   = data.created_at
       ? new Date(data.created_at).toLocaleDateString('en-GB', { month:'short', year:'numeric' }) : '—';
   } catch(e) { /* stay on page during dev */ }
 }
 
+async function loadStats() {
+  try {
+    const res  = await fetch('/api/users/stats', { credentials:'include' });
+    const json = await res.json();
+    if (!json.success) return;
+    const d = json.data;
+    document.getElementById('stat-bookmarks').textContent = d.bookmarks || 0;
+    document.getElementById('stat-bets').textContent      = d.bets      || 0;
+    const pl = parseFloat(d.net_pl || 0);
+    const plEl = document.getElementById('stat-profit');
+    plEl.textContent = (pl >= 0 ? '+' : '') + '$' + Math.abs(pl).toFixed(2);
+    plEl.style.color = pl >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('stat-winrate').textContent   = (d.win_rate || 0) + '%';
+  } catch(e) { /* non-fatal */ }
+}
+
 checkAuth();
+loadStats();
 </script>
 </body>
 </html>

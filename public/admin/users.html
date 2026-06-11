@@ -114,14 +114,6 @@ function editUser(id,name,role,banned) {
   Admin.showModal('user-modal');
 }
 
-document.getElementById('save-user-btn').addEventListener('click', async () => {
-  const id   = document.getElementById('u-edit-id').value;
-  const body = { role: document.getElementById('u-role').value, is_banned: document.getElementById('u-banned').checked };
-  const json = await Admin.api('PUT','/api/admin/users/'+id,body);
-  if (json.success) { Admin.toast('User updated'); Admin.hideModal('user-modal'); loadUsers(userPage); }
-  else Admin.toast(json.message||'Failed','error');
-});
-
 document.addEventListener('DOMContentLoaded', async () => {
   Admin.buildSidebar();
   const user = await Admin.requireAdmin();

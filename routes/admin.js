@@ -17,10 +17,11 @@ router.get('/stats', asyncHandler(admin.getStats));
 // Predictions
 router.get   ('/predictions',          asyncHandler(admin.getPredictions));
 router.post  ('/predictions',          asyncHandler(admin.createPrediction));
-router.put   ('/predictions/:id',      asyncHandler(admin.updatePrediction));
-router.delete('/predictions/:id',      asyncHandler(admin.deletePrediction));
 router.post  ('/predictions/score-all',   asyncHandler(admin.scoreAllPredictions));
 router.post  ('/predictions/preview-score',asyncHandler(admin.previewScore));
+router.get   ('/predictions/:id',      asyncHandler(admin.getPrediction));
+router.put   ('/predictions/:id',      asyncHandler(admin.updatePrediction));
+router.delete('/predictions/:id',      asyncHandler(admin.deletePrediction));
 router.post  ('/predictions/:id/score',   asyncHandler(admin.scorePrediction));
 
 // Users
@@ -34,6 +35,7 @@ router.put('/leagues/:id',   asyncHandler(admin.updateLeague));
 // Blog
 router.get   ('/blog',       asyncHandler(admin.getBlogPosts));
 router.post  ('/blog',       asyncHandler(admin.createBlogPost));
+router.get   ('/blog/:id',   asyncHandler(admin.getBlogPost));
 router.put   ('/blog/:id',   asyncHandler(admin.updateBlogPost));
 router.delete('/blog/:id',   asyncHandler(admin.deleteBlogPost));
 
@@ -45,8 +47,9 @@ router.put('/seo/:page',       asyncHandler(admin.updateSeoSettings));
 router.get('/site-stats',      asyncHandler(admin.getSiteStats));
 router.put('/site-stats',      asyncHandler(admin.updateSiteStats));
 
-// Prediction form helpers (league dropdown + fixture lookup)
+// Prediction form helpers (league dropdown + fixture lookup + odds)
 router.get('/form/leagues',    asyncHandler(admin.getFormLeagues));
 router.get('/form/fixtures',   asyncHandler(admin.getLeagueFixtures));
+router.get('/form/odds',       asyncHandler(admin.getFixtureOdds));
 
 module.exports = router;

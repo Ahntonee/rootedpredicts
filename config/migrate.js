@@ -621,6 +621,26 @@ const MIGRATIONS = [
   },
 
   // ----------------------------------------------------------
+  // 19e. Category column on predictions (Free Pick, Home Win, etc.)
+  // ----------------------------------------------------------
+  {
+    name: 'Add category column to predictions',
+    fn: async (conn) => {
+      const [cols] = await conn.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'predictions' AND COLUMN_NAME = 'category'`,
+        [DB_NAME]
+      );
+      if (!cols.length) {
+        await conn.query(`ALTER TABLE predictions ADD COLUMN category VARCHAR(50) DEFAULT NULL AFTER visibility`);
+        console.log('[MIGRATE] ✓ Added predictions.category');
+      } else {
+        console.log('[MIGRATE] ↷ predictions.category already exists');
+      }
+    },
+  },
+
+  // ----------------------------------------------------------
   // 19. Pending registrations — holds OTP + hashed password
   //     until email is verified; deleted after account creation
   // ----------------------------------------------------------
