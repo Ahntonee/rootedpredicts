@@ -663,14 +663,30 @@
       const country = league.league_country ? esc(league.league_country) + ': ' : '';
 
       const rows = g.preds.map(p => {
-        const time = p.match_date ? new Date(p.match_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+        const LIVE_ST = ['1H','2H','HT','ET','BT','P','SUSP','INT','LIVE'];
+        const FIN_ST  = ['FT','AET','PEN'];
+        const hasScore = p.home_score != null && p.away_score != null;
+        const isPast   = p.match_date && new Date(p.match_date).getTime() < Date.now();
+        let timeDisplay;
+        if (LIVE_ST.includes(p.status_short) && hasScore) {
+          timeDisplay = `<span class="pick-time" style="color:var(--red);font-weight:700;">${p.home_score}–${p.away_score} ${p.elapsed ? p.elapsed+"'" : 'LIVE'}</span>`;
+        } else if (FIN_ST.includes(p.status_short) && hasScore) {
+          timeDisplay = `<span class="pick-time">${p.home_score}–${p.away_score} FT</span>`;
+        } else if (isPast) {
+          timeDisplay = hasScore
+            ? `<span class="pick-time">${p.home_score}–${p.away_score} FT</span>`
+            : `<span class="pick-time" style="color:var(--muted);">FT</span>`;
+        } else {
+          const t = p.match_date ? new Date(p.match_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+          timeDisplay = `<span class="pick-time">${esc(t)}</span>`;
+        }
         const odds = p.odds ? parseFloat(p.odds).toFixed(2) : '—';
         const tip  = p.tip || '—';
         const cat  = p.market || 'free';
         return `<div class="pick-row pick-card" data-category="${esc(cat)}">
           <div class="pick-match">
             <span class="pick-home">${esc(p.home_team)}</span>
-            <span class="pick-time">${esc(time)}</span>
+            ${timeDisplay}
             <span class="pick-away">${esc(p.away_team)}</span>
           </div>
           <div class="pick-odds-box">
