@@ -148,12 +148,14 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
 
   // Date filter
   if (date) {
-    // specific day
     sql += ' AND DATE(p.match_date) = ?';
     args.push(date);
   } else if (req.query.upcoming) {
     // today onwards — keeps the homepage populated even when today is empty
     sql += ' AND DATE(p.match_date) >= CURDATE()';
+  } else if (req.query.all_dates || (result && result !== 'all' && result !== 'pending')) {
+    // No date restriction when browsing settled results (won/lost/void) or
+    // when caller explicitly passes all_dates=1
   } else {
     sql += ' AND DATE(p.match_date) = CURDATE()';
   }
