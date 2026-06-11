@@ -183,12 +183,17 @@ async function savePost() {
   };
   if (!body.title || !body.content) { Admin.toast('Title and content are required', 'error'); return; }
   btn.disabled = true;
-  const url    = blogEditId ? '/api/admin/blog/' + blogEditId : '/api/admin/blog';
-  const method = blogEditId ? 'PUT' : 'POST';
-  const json   = await Admin.api(method, url, body);
-  btn.disabled = false;
-  if (json.success) { Admin.toast(blogEditId ? 'Post updated' : 'Post created'); Admin.hideModal('blog-modal'); loadPosts(); }
-  else Admin.toast(json.message || 'Save failed', 'error');
+  try {
+    const url    = blogEditId ? '/api/admin/blog/' + blogEditId : '/api/admin/blog';
+    const method = blogEditId ? 'PUT' : 'POST';
+    const json   = await Admin.api(method, url, body);
+    if (json.success) { Admin.toast(blogEditId ? 'Post updated' : 'Post created'); Admin.hideModal('blog-modal'); loadPosts(); }
+    else Admin.toast(json.message || 'Save failed', 'error');
+  } catch (e) {
+    Admin.toast(e.message || 'Save failed', 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

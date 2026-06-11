@@ -28,10 +28,20 @@
 
   // ── API helper ────────────────────────────────────────────
   async function api(method, url, body) {
-    const opts = { method, credentials: 'include', headers: {} };
-    if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
-    const res  = await fetch(url, opts);
-    return res.json();
+    try {
+      const opts = { method, credentials: 'include', headers: {} };
+      if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+      const res  = await fetch(url, opts);
+      // Non-JSON responses (413, 502, nginx errors) would throw on res.json()
+      const text = await res.text();
+      try { return JSON.parse(text); }
+      catch (_) {
+        // Server returned non-JSON (e.g. 413 Payload Too Large HTML page)
+        return { success: false, message: `Server error ${res.status}: ${text.slice(0, 120)}` };
+      }
+    } catch (e) {
+      return { success: false, message: e.message || 'Network error' };
+    }
   }
 
   // ── Toast notification ────────────────────────────────────
