@@ -192,14 +192,28 @@ async function syncResults(date) {
   for (const item of fixtures) {
     const { fixture, goals, teams } = item;
     if (!fixture || fixture.status.short !== 'FT') continue;
+    const homeTeam = teams?.home?.name || '';
+    const awayTeam = teams?.away?.name || '';
+    const hg = goals ? goals.home : null;
+    const ag = goals ? goals.away : null;
+
     const [preds] = await db.query(
-      'SELECT id,tip,market FROM predictions WHERE fixture_id=? AND result=?',
-      [fixture.id, 'pending']
+      `SELECT id, tip, market FROM predictions
+       WHERE result = 'pending'
+         AND (fixture_id = ?
+              OR (fixture_id IS NULL
+                  AND DATE(match_date) = ?
+                  AND home_team LIKE ? AND away_team LIKE ?))`,
+      [fixture.id, date, `%${homeTeam.slice(0, 10)}%`, `%${awayTeam.slice(0, 10)}%`]
     );
     for (const pred of preds) {
       const result = evaluateTip(pred.tip, pred.market, goals, teams);
       if (result) {
-        await db.query('UPDATE predictions SET result=?,updated_at=NOW() WHERE id=?', [result, pred.id]);
+        await db.query(
+          `UPDATE predictions SET result=?, home_score=?, away_score=?, status_short='FT', updated_at=NOW()
+           WHERE id=?`,
+          [result, hg, ag, pred.id]
+        );
         updated++;
       }
     }
@@ -215,8 +229,54 @@ const LIVE_STATUSES     = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LI
 // ── Sync scores + status for every fixture on a date (live, finished, upcoming)
 // Updates home_score/away_score/status_short/elapsed on matching predictions,
 // and grades won/lost the moment a match finishes.
+// Matches by fixture_id first; falls back to home_team+away_team+date for
+// manually-created predictions that have no fixture_id.
 async function syncScores(date) {
   const { data: fixtures } = await request('/fixtures', { date, timezone: 'UTC' });
+  let updated = 0, graded = 0;
+  for (const item of fixtures) {
+    const { fixture, goals, teams } = item;
+    if (!fixture) continue;
+    const status  = fixture.status.short;
+    const elapsed = fixture.status.elapsed || null;
+    const hg = goals ? goals.home : null;
+    const ag = goals ? goals.away : null;
+    const homeTeam = teams?.home?.name || '';
+    const awayTeam = teams?.away?.name || '';
+
+    // Primary match: by fixture_id
+    // Fallback: home_team + away_team + match date (for manually-entered predictions)
+    const [preds] = await db.query(
+      `SELECT id, tip, market, result FROM predictions
+       WHERE fixture_id = ?
+          OR (fixture_id IS NULL
+              AND DATE(match_date) = ?
+              AND home_team LIKE ? AND away_team LIKE ?)`,
+      [fixture.id, date, `%${homeTeam.slice(0, 10)}%`, `%${awayTeam.slice(0, 10)}%`]
+    );
+    for (const pred of preds) {
+      let result = pred.result;
+      if (FINISHED_STATUSES.includes(status) && pred.result === 'pending') {
+        const r = evaluateTip(pred.tip, pred.market, goals, teams);
+        if (r) { result = r; graded++; }
+      }
+      await db.query(
+        `UPDATE predictions SET home_score=?, away_score=?, status_short=?, elapsed=?, result=?, updated_at=NOW()
+         WHERE id=?`,
+        [hg, ag, status, elapsed, result, pred.id]
+      );
+      updated++;
+    }
+  }
+  console.log(`[API-Football] Score sync for ${date}: ${updated} updated, ${graded} graded`);
+  return { updated, graded, total: fixtures.length };
+}
+
+// ── Sync only in-play matches globally (1 API call) — for frequent live updates
+// Also grades predictions the moment a match transitions to FT/AET/PEN so we
+// don't have to wait for the 20-min syncScores cron to pick them up.
+async function syncLive() {
+  const { data: fixtures } = await request('/fixtures', { live: 'all' });
   let updated = 0, graded = 0;
   for (const item of fixtures) {
     const { fixture, goals, teams } = item;
@@ -243,27 +303,9 @@ async function syncScores(date) {
       updated++;
     }
   }
-  console.log(`[API-Football] Score sync for ${date}: ${updated} updated, ${graded} graded`);
-  return { updated, graded, total: fixtures.length };
-}
-
-// ── Sync only in-play matches globally (1 API call) — for frequent live updates
-async function syncLive() {
-  const { data: fixtures } = await request('/fixtures', { live: 'all' });
-  let updated = 0;
-  for (const item of fixtures) {
-    const { fixture, goals } = item;
-    if (!fixture) continue;
-    const [r] = await db.query(
-      `UPDATE predictions SET home_score=?, away_score=?, status_short=?, elapsed=?, updated_at=NOW()
-       WHERE fixture_id=?`,
-      [goals ? goals.home : null, goals ? goals.away : null,
-       fixture.status.short, fixture.status.elapsed || null, fixture.id]
-    );
-    if (r.affectedRows) updated++;
-  }
-  console.log(`[API-Football] Live sync: ${updated} predictions updated (${fixtures.length} live globally)`);
-  return { updated, live: fixtures.length };
+  if (updated > 0 || graded > 0)
+    console.log(`[API-Football] Live sync: ${updated} updated, ${graded} graded (${fixtures.length} live globally)`);
+  return { updated, graded, live: fixtures.length };
 }
 
 // ── Evaluate tip outcome — handles all standard tip formats ───────────────────
