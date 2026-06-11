@@ -119,7 +119,7 @@ function validatePrediction(req, res, next) {
   // Sanitise
   req.body.home_team = sanitiseText(home_team).slice(0, 150);
   req.body.away_team = sanitiseText(away_team).slice(0, 150);
-  req.body.tip       = sanitiseText(tip).slice(0, 50);
+  req.body.tip       = sanitiseText(tip).slice(0, 100);
   req.body.market    = sanitiseText(market).slice(0, 50);
 
   next();

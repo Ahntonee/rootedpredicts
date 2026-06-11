@@ -119,8 +119,10 @@ async function initiateRegister(req, res) {
        password_hash, country || null, token, expiresAt]
     );
 
-    // Send verification email — await so we can report real delivery failures
-    // instead of telling the user "code sent" when SMTP actually failed.
+    // Send verification email — await to catch real SMTP failures.
+    // If SMTP is not configured (dev/staging) we log a warning and continue
+    // so the OTP flow isn't completely blocked in non-production environments.
+    const smtpConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
     const emailResult = await sendVerificationEmail(
       { name: sanitiseText(name), email: email.toLowerCase() },
       token
@@ -129,9 +131,13 @@ async function initiateRegister(req, res) {
     if (!emailResult || !emailResult.success) {
       console.error('[AUTH] Verification email FAILED for', email.toLowerCase(),
         '—', emailResult && emailResult.error);
-      return errorResponse(res,
-        'We could not send the verification email right now. Please try again in a moment, and check your spam folder.',
-        502);
+      if (smtpConfigured) {
+        return errorResponse(res,
+          'We could not send the verification email right now. Please try again in a moment, and check your spam folder.',
+          502);
+      }
+      // SMTP not configured — allow dev/staging to proceed; OTP is logged below
+      console.warn('[AUTH] SMTP not configured — OTP for', email.toLowerCase(), 'is:', token);
     }
 
     console.log('[AUTH] Verification code sent to', email.toLowerCase());

@@ -276,8 +276,11 @@
 <script src="/js/content-protection.js"></script>
 <script>
 // ── State ──────────────────────────────────────────────────────
-let pendingEmail = '';
-let resendInterval = null;
+let pendingEmail    = '';
+let pendingName     = '';
+let pendingPassword = '';
+let pendingCountry  = '';
+let resendInterval  = null;
 
 // ── Helpers ────────────────────────────────────────────────────
 function showError(step, msg) {
@@ -326,7 +329,10 @@ document.getElementById('register-form').addEventListener('submit', async functi
     const json = await res.json();
 
     if (json.success) {
-      pendingEmail = email;
+      pendingEmail    = email;
+      pendingName     = name;
+      pendingPassword = pw;
+      pendingCountry  = country;
       document.getElementById('display-email').textContent = email;
       document.getElementById('otp-input').value = '';
       setStep(2);
@@ -409,15 +415,11 @@ function startResendCountdown() {
 
 async function resendCode() {
   clearError(2);
-  const name    = document.getElementById('name').value.trim();
-  const pw      = document.getElementById('password').value;
-  const country = document.getElementById('country').value;
-
   try {
     const res  = await fetch('/api/auth/register', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ name, email: pendingEmail, password: pw, country }),
+      body:    JSON.stringify({ name: pendingName, email: pendingEmail, password: pendingPassword, country: pendingCountry }),
     });
     const json = await res.json();
     if (json.success) {
