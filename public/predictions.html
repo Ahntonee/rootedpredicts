@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Today's Football Predictions — All Leagues | Rooted Predictions</title>
-  <meta name="description" content="Browse today's free football predictions across top leagues. Filter by market, league, or continent. Over 2.5 and 1X2 tips updated daily.">
+  <title id="page-title">Free Football Predictions Today | Rooted Predictions</title>
+  <meta name="description" id="page-desc" content="Browse today's free football predictions across top leagues. Filter by market, league, or continent. Updated daily.">
   <meta name="keywords" content="football predictions today, free tips, over 2.5 goals, 1X2 predictions, Premier League tips, Rooted Predictions">
   <link rel="canonical" href="https://www.rootedpredict.com/predictions.html">
   <meta property="og:title" content="Today's Football Predictions — All Leagues | Rooted Predictions">
@@ -19,92 +19,631 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* ── Category tabs ── */
+    .category-tabs-row {
+      display: flex; gap: 6px; overflow-x: auto;
+      scrollbar-width: none; -ms-overflow-style: none;
+      padding-bottom: 4px; margin-bottom: 16px;
+    }
+    .category-tabs-row::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 8px 16px; border-radius: 50px;
+      border: 1px solid var(--border); background: var(--card);
+      color: var(--text-soft); font-size: 0.82rem; font-weight: 500;
+      white-space: nowrap; cursor: pointer; transition: all 0.15s;
+    }
+    .cat-tab:hover { border-color: var(--green); color: var(--green); }
+    .cat-tab.active { background: var(--green); border-color: var(--green); color: #fff; font-weight: 600; }
+
+    /* ── Picks table ── */
+    .picks-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 24px; }
+    .picks-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px 20px 12px; flex-wrap: wrap; gap: 12px; }
+    .picks-header-title { font-family: var(--font-head); font-size: 1.5rem; font-weight: 900; color: var(--text); letter-spacing: 0.04em; }
+    .picks-header-date { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .day-switcher { display: flex; align-items: center; gap: 6px; background: var(--surface); border-radius: 50px; padding: 4px; }
+    .day-btn { padding: 6px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 500; color: var(--text-soft); cursor: pointer; border: none; background: transparent; transition: all 0.15s; }
+    .day-btn.active { background: var(--green); color: #fff; font-weight: 600; }
+    .day-btn:hover:not(.active) { color: var(--text); }
+    .cal-btn { width: 32px; height: 32px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); }
+
+    /* pick rows */
+    .pick-league-row { display: flex; align-items: center; gap: 8px; padding: 10px 20px 4px; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--muted); }
+    .pick-league-row img { width: 18px; height: 18px; object-fit: contain; }
+    .pick-league-row strong { color: var(--text-soft); font-weight: 600; }
+    .pick-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 10px 20px 12px 44px; }
+    .pick-match { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; flex-wrap: wrap; }
+    .pick-home { font-weight: 600; color: var(--text); }
+    .pick-time { font-size: 0.75rem; color: var(--muted); background: var(--surface); padding: 2px 7px; border-radius: 4px; }
+    .pick-away { font-weight: 400; color: var(--text-soft); }
+    .pick-odds-box { text-align: center; border: 1.5px solid var(--border); border-radius: 50px; padding: 6px 16px; min-width: 72px; }
+    .pick-odds-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .pick-odds-val { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .pick-tip-box { text-align: center; background: rgba(234,179,8,0.08); border: 1.5px solid rgba(234,179,8,0.3); border-radius: 50px; padding: 6px 16px; min-width: 100px; }
+    .pick-tip-label { font-size: 0.65rem; color: rgba(234,179,8,0.8); text-transform: uppercase; letter-spacing: 0.04em; }
+    .pick-tip-val { font-size: 0.88rem; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: center; gap: 4px; }
+
+    /* skeleton */
+    .pick-skeleton { padding: 16px 20px; border-top: 1px solid var(--border); }
+    .skel { background: var(--surface); border-radius: 6px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── SEO block ── */
+    .seo-block { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 32px 36px; margin-bottom: 24px; }
+    .seo-block h2 { font-size: 1.15rem; font-weight: 800; color: var(--text); margin: 22px 0 9px; padding-bottom: 5px; border-bottom: 2px solid var(--border); }
+    .seo-block h2:first-child { margin-top: 0; }
+    .seo-block h3 { font-size: 0.97rem; font-weight: 700; color: var(--text); margin: 16px 0 6px; display: flex; align-items: center; gap: 6px; }
+    .seo-block h3::before { content: "•"; color: var(--green); font-size: 1.2rem; }
+    .seo-block p { font-size: 0.875rem; color: var(--text-soft); line-height: 1.85; margin-bottom: 9px; }
+    .seo-block ol, .seo-block ul { padding-left: 22px; margin-bottom: 10px; }
+    .seo-block li { font-size: 0.875rem; color: var(--text-soft); line-height: 1.8; margin-bottom: 3px; }
+    .seo-block strong { color: var(--text); }
+
+    @media (max-width: 640px) {
+      .pick-row { grid-template-columns: 1fr; gap: 6px; }
+      .seo-block { padding: 20px 16px; }
+    }
+  </style>
 </head>
 <body>
 <header class="site-header" id="site-header"></header>
-<div style="background:var(--navy);padding:28px 0 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+
+<!-- Top hero bar -->
+<div style="background:var(--navy);padding:24px 0 0;border-bottom:1px solid rgba(255,255,255,0.06);">
   <div class="container">
-    <div style="margin-bottom:16px;"><nav style="font-size:0.78rem;color:rgba(255,255,255,0.45);display:flex;align-items:center;gap:6px;"><a href="/" style="color:rgba(255,255,255,0.45);">Home</a><span class="material-icons-round" style="font-size:0.8rem;">chevron_right</span><span style="color:rgba(255,255,255,0.7);">Predictions</span></nav></div>
-    <h1 style="font-family:var(--font-head);font-size:2rem;font-weight:900;color:#fff;margin-bottom:6px;">Today's Football Predictions</h1>
-    <p style="font-size:0.9rem;color:rgba(255,255,255,0.55);margin-bottom:20px;">Free predictions across top leagues — updated daily</p>
-    <!-- Continent tabs -->
-    <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:0;scrollbar-width:none;" id="continent-tabs">
-      <button class="market-tab active" data-continent="all" style="border-radius:8px 8px 0 0;border-bottom:none;">All</button>
-      <button class="market-tab" data-continent="Europe" style="border-radius:8px 8px 0 0;border-bottom:none;">Europe</button>
-      <button class="market-tab" data-continent="Africa" style="border-radius:8px 8px 0 0;border-bottom:none;">Africa</button>
-      <button class="market-tab" data-continent="Americas" style="border-radius:8px 8px 0 0;border-bottom:none;">Americas</button>
-      <button class="market-tab" data-continent="Asia" style="border-radius:8px 8px 0 0;border-bottom:none;">Asia</button>
-      <button class="market-tab" data-continent="World" style="border-radius:8px 8px 0 0;border-bottom:none;">World Cup / Intl</button>
+    <div style="margin-bottom:12px;">
+      <nav style="font-size:0.78rem;color:rgba(255,255,255,0.45);display:flex;align-items:center;gap:6px;">
+        <a href="/" style="color:rgba(255,255,255,0.45);">Home</a>
+        <span class="material-icons-round" style="font-size:0.8rem;">chevron_right</span>
+        <span style="color:rgba(255,255,255,0.7);" id="breadcrumb-label">Predictions</span>
+      </nav>
+    </div>
+    <!-- Hero banner -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:18px;">
+      <div>
+        <h1 id="page-h1" style="font-family:var(--font-head);font-size:1.9rem;font-weight:900;color:#fff;margin-bottom:4px;">Free Football Predictions Today</h1>
+        <p id="page-sub" style="font-size:0.88rem;color:rgba(255,255,255,0.55);">Free predictions across top leagues — updated daily</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="/pricing.html" class="btn btn-primary btn-sm"><span class="material-icons-round" style="font-size:0.9rem;">workspace_premium</span>Join VIP</a>
+        <a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="btn-telegram btn-sm">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;flex-shrink:0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
+          Join us on Telegram
+        </a>
+      </div>
+    </div>
+    <!-- Category tabs -->
+    <div class="category-tabs-row" id="category-tabs-pred" style="margin-bottom:0;padding-bottom:0;">
+      <button class="cat-tab active" data-category="free" data-label="Free Pick">Free Pick</button>
+      <button class="cat-tab" data-category="2-5-goals" data-label="2.5 Goals">2.5 Goals</button>
+      <button class="cat-tab" data-category="3-5-goals" data-label="3.5 Goals">3.5 Goals</button>
+      <button class="cat-tab" data-category="acca" data-label="Acca Tips">Acca tips</button>
+      <button class="cat-tab" data-category="away-win" data-label="Away Win">Away Win</button>
+      <button class="cat-tab" data-category="btts" data-label="BTTS">Btts</button>
+      <button class="cat-tab" data-category="double-chance" data-label="Double Chance">Double Chance</button>
+      <button class="cat-tab" data-category="home-win" data-label="Home Win">Home Win</button>
+      <button class="cat-tab" data-category="banker" data-label="Banker of the Day"><span class="material-icons-round" style="font-size:0.85rem;">local_fire_department</span>Banker of the Day</button>
     </div>
   </div>
 </div>
-<main>
-  <div class="container" style="padding-top:24px;">
 
-    <!-- Filters bar -->
-    <div class="filters-bar">
-      <div class="filters-row-top">
-        <div id="league-filter-predictions"></div>
-        <div class="filters-selects">
-          <select class="form-control" id="market-select">
-            <option value="all">All Markets</option>
-            <option value="1x2">1X2</option>
-            <option value="over-2-5">Over 2.5 Goals</option>
-          </select>
+<main>
+  <div class="container" style="padding-top:20px;padding-bottom:40px;">
+
+    <!-- ── Picks table ── -->
+    <div class="picks-wrap">
+      <div class="picks-header">
+        <div>
+          <div class="picks-header-title" id="picks-title">FREE PICKS</div>
+          <div class="picks-header-date" id="picks-date-label"></div>
         </div>
-      </div>
-      <div class="date-nav-wrap">
-        <div class="date-nav" id="date-nav-pred"></div>
-      </div>
-    </div>
-    <!-- Market quick tabs -->
-    <div class="market-tabs" style="margin-bottom:20px;" id="market-tabs-pred">
-      <button class="market-tab active" data-market="all">All Tips <span class="tab-count">0</span></button>
-      <button class="market-tab" data-market="1x2">1X2 <span class="tab-count">0</span></button>
-      <button class="market-tab" data-market="over-2-5">Over 2.5 <span class="tab-count">0</span></button>
-    </div>
-    <div class="page-layout">
-      <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-          <p style="font-size:0.85rem;color:var(--muted);"><strong style="color:var(--text);" id="pred-count">0 predictions</strong> for today</p>
-          <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--muted);"><span class="badge badge-won" style="font-size:0.68rem;">WON</span> = Settled <span class="badge badge-free" style="font-size:0.68rem;">FREE</span> = No account needed</div>
-        </div>
-        <div id="pred-list" style="display:flex;flex-direction:column;gap:12px;">
-          <div style="padding:40px;text-align:center;color:var(--muted);"><span class="material-icons-round" style="font-size:2.5rem;display:block;margin-bottom:8px;animation:spin 1s linear infinite;">sports_soccer</span>Loading predictions…</div>
-        </div>
-        <div style="text-align:center;margin-top:24px;">
-          <span style="font-size:0.82rem;color:var(--muted);">Use the date bar above to browse predictions by day.</span>
-        </div>
-      </div>
-      <aside class="sidebar">
-        <div class="sidebar-card" style="background:linear-gradient(135deg,var(--navy),var(--midnight));border-color:rgba(26,138,68,0.3);"><div style="padding:20px;text-align:center;"><svg viewBox="0 0 24 24" fill="currentColor" style="width:32px;height:32px;color:#26A5E4;margin:0 auto 8px;display:block;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg><h3 style="font-family:var(--font-head);font-size:1.2rem;font-weight:800;color:#fff;margin:8px 0 6px;">Join Our Telegram</h3><p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;">Get daily free tips straight to your phone.</p><a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="btn-telegram" style="width:100%;justify-content:center;">Join @rootedpredict</a></div></div>
-        <!-- <div class="sidebar-card">
-          <div class="sidebar-card-header"><span class="material-icons-round">bar_chart</span>Today's Stats</div>
-            <div class="sidebar-card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div style="text-align:center;padding:12px;background:var(--surface);border-radius:8px;"><div id="ts-won" style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--green);">—</div><div style="font-size:0.72rem;color:var(--muted);">Won</div></div><div style="text-align:center;padding:12px;background:var(--surface);border-radius:8px;"><div id="ts-lost" style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--red);">—</div><div style="font-size:0.72rem;color:var(--muted);">Lost</div></div><div style="text-align:center;padding:12px;background:var(--surface);border-radius:8px;"><div id="ts-pending" style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--text);">—</div><div style="font-size:0.72rem;color:var(--muted);">Pending</div></div><div style="text-align:center;padding:12px;background:rgba(22,163,74,0.1);border-radius:8px;"><div id="ts-rate" style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--green);">—</div><div style="font-size:0.72rem;color:var(--muted);">Rate</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="day-switcher">
+            <button class="day-btn" id="day-yesterday">Yesterday</button>
+            <button class="day-btn active" id="day-today">Today</button>
+            <button class="day-btn" id="day-tomorrow">Tomorrow</button>
           </div>
-        </div> -->
+          <div class="cal-btn" title="All predictions"><span class="material-icons-round" style="font-size:1rem;">calendar_month</span></div>
         </div>
-        </div>
-      </aside>
+      </div>
+      <div id="picks-list">
+        <div class="pick-skeleton"><div class="skel" style="height:16px;width:60%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:80%;"></div></div>
+        <div class="pick-skeleton"><div class="skel" style="height:16px;width:55%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:75%;"></div></div>
+        <div class="pick-skeleton"><div class="skel" style="height:16px;width:65%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:70%;"></div></div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);text-align:center;" id="picks-footer">
+        <span style="font-size:0.82rem;color:var(--muted);">Use the date bar above to browse predictions by day.</span>
+      </div>
     </div>
+
+    <!-- ── SEO sections (one per category, toggled by JS) ── -->
+
+    <div class="seo-block" id="seo-free">
+      <h2>Best Football Prediction Site in the World</h2>
+      <p>Rooted Predictions is the best football prediction site in the world. We provide daily accurate football tips for leagues worldwide with a high winning rate for bettors.</p>
+      <p>Many other sites give random tips, but we focus on accuracy and detailed research. We spend hours checking every match — analysing team form, injuries, past results and how coaches set up their teams.</p>
+
+      <h2>Most Accurate Free Football Picks</h2>
+      <p>Our free picks cover all types of bets including BTTS, over 1.5, over 2.5, over 3.5, double chance, home win, away win, and draws. Every tip comes with a clear explanation so anyone can understand.</p>
+      <p>Each prediction is carefully verified before posting. This is why Rooted Predictions is a winning prediction site that people trust daily.</p>
+      <p>By following our free picks, you can make better decisions, avoid losses, and build long-term profits without spending a penny.</p>
+
+      <h2>Sure Football Prediction for Today</h2>
+      <p>Every day we provide carefully selected matches with a high chance of winning. We do not give random games — each prediction is made by studying team form, player performance, past results, and league patterns.</p>
+      <p>Our predictions cover major leagues like Premier League, La Liga, Serie A, Bundesliga, and Ligue 1, as well as smaller leagues in Norway, Finland, Poland, Japan, and Saudi Arabia.</p>
+
+      <h2>How to Make Profit with Free Picks</h2>
+      <p>To make profits, we advise not to stake on every game listed. Focus on two or three games in a single bet slip. Betting smart, not a lot, is the key.</p>
+      <p>For bigger bets, join our VIP category where handpicked predictions, advice, and insider tips help maximise profits.</p>
+
+      <h2>Categories We Cover</h2>
+      <p>We have predictions for all types of bets. Categories include: Free Pick, 1.5 Goals, 2.5 Goals, 3.5 Goals, Acca Tips, Away Win, BTTS, Double Chance, Draw, Home Win, and Banker of the Day.</p>
+
+      <h2>Frequently Asked Questions</h2>
+      <h3>Which site is the best football prediction website?</h3>
+      <p>Rooted Predictions is one of the best football prediction websites. We provide free daily predictions, accurate tips, and correct scores for leagues worldwide.</p>
+      <h3>Can I make profits with free daily football predictions?</h3>
+      <p>Yes. Rooted Predictions offers daily free picks that help users make profits. Focus on a few carefully selected games per day for best results.</p>
+      <h3>What is the best way to use football betting tips?</h3>
+      <p>Combine tips with strategy. Bet on 2–3 selections per slip, manage your stake, and use our VIP category for higher-confidence picks.</p>
+
+      <h2>Conclusion</h2>
+      <p>Rooted Predictions is the surest prediction site providing accurate, reliable, and profitable free tips daily. Stop wasting time on random sites — use Rooted Predictions to bet confidently and win consistently.</p>
+    </div>
+
+    <div class="seo-block" id="seo-2-5-goals" style="display:none;">
+      <h2>2.5 Goals</h2>
+      <p>Rooted Predictions is the best under and over 2.5 prediction site where you can get tips for games that would see more than or below 3 goals. As an accurate over 2.5 prediction site, we ensure you can find the best games that meet this requirement, covered with the most accuracy and certainty.</p>
+      <p>On this page you will understand why Rooted Predictions is the best site for sure over 2.5 predictions and under 2.5 predictions, as well as the technicalities surrounding the concept.</p>
+
+      <h2>What is over 2.5 goals prediction about?</h2>
+      <p>The over 2.5 prediction is a football forecast where a match is expected to produce three or more goals. When we say over 2.5 goals, we expect 3+ goals to be scored. The usual selection is that both teams will combine to score the 3+ goals — but as you will see, there are some tweaks we introduce to our selections.</p>
+
+      <h2>What is under 2.5 goals prediction?</h2>
+      <p>The under 2.5 goals prediction is where we forecast that there would be fewer than three goals in the match. An under 2.5 prediction tip wins if both teams fail to score more than 2 goals — they have to not score above 2.</p>
+
+      <h2>Types of 2.5 Goals Combos You Will Find on Rooted Predictions</h2>
+      <p>We offer different combinations when it comes to the 2.5 goals prediction to ensure every bettor finds something that works for them and to improve the possibility of winning the game. You will find options such as:</p>
+      <ol>
+        <li>Home or away over/under 2.5 goals</li>
+        <li>Home or away over/under 2.5 goals + BTTS</li>
+        <li>First half over/under 2.5 goals</li>
+        <li>Home or away over/under 2.5 goals + BTTS no</li>
+        <li>Home or away over/under 2.5 goals + win</li>
+      </ol>
+      <p>For clarity, when we say home over/under 2.5 goals, it means that the rule affects only the home team — and the same for the away side.</p>
+
+      <h2>What makes us the best over 2.5 prediction site in the world?</h2>
+      <p>Trusting a site is hard, but we make things simple for you. At Rooted Predictions, we are the best over 2.5 prediction site in the world because:</p>
+      <h3>We offer bettors accurate over 2.5 tips daily</h3>
+      <p>What you need are reliable betting tips that can help you win. As a 100 over 2.5 prediction site, Rooted Predictions goes over and beyond every day to make sure bettors find accurate over 2.5 tips. It is our consistency that sets us apart as one of the best.</p>
+      <h3>We provide high winning selections each day</h3>
+      <p>While no prediction site can guarantee the fullest accuracy, we do our very best to ensure that with each tip you are closest to winning. This is not possible because we guess — it is because we have a research and review process that secures the numbers for us.</p>
+      <h3>1,200+ leagues covered</h3>
+      <p>A good football prediction site does not rely on the major leagues alone. For our over 2.5 predictions today, we cover the biggest leagues in Europe — EPL, La Liga, Bundesliga, Champions League, Europa League, Serie A, and much more — plus leagues in Belgium, Finland, Norway, Venezuela, Mexico, the United States, and African countries.</p>
+      <h3>Expert help and analysis</h3>
+      <p>The difference between us and other football prediction sites is that we do not just give tips by guessing. Our experts analyse all possible match data and come up with the most confident outcome. That is how we can consistently deliver sure over 2.5 predictions every day.</p>
+      <h3>AI over 2.5 prediction</h3>
+      <p>Tech is helping the way bettors make predictions. Together with our experts, we make use of AI football analysis to see areas of a game that might otherwise be missed. Together with the AI over 2.5 prediction and our expert oversight, we are always able to provide solid predictions.</p>
+
+      <h2>Rooted Predictions Is an Accurate Over 2.5 Prediction Site You Can Rely On</h2>
+      <p>Accuracy is a big deal — and Rooted Predictions is equipped and equal to the task. It is needful to say that accurate over 2.5 predictions are not <strong>absolute guarantees</strong> — at best they are <strong>expected outcomes</strong>.</p>
+      <p>No prediction site under the sun can give you an outcome that is 100% guaranteed to happen. Even with fixed matches, there is still no guarantee. Knowing this does not mean we trade caution to the wind. The reason we can be considered a good over 2.5 prediction site is because we go through the following process:</p>
+      <h3>Team form analysis</h3>
+      <p>This is the starting point. The team form shows us how the side has been playing over the last 10 matches. For over 2.5 goals, we want to see that in their last 10 games, they have scored 3+ goals in the games they have played.</p>
+      <h3>Goalscoring trends</h3>
+      <p>Though captured in team form, we also look at goalscoring trends. Because over 2.5 goals can come from any team, we want to be sure that both teams have no problem scoring goals.</p>
+      <h3>Offensive strengths + defensive weaknesses</h3>
+      <p>We also analyse the offensive strength and defensive weaknesses of both teams. What we want to see is: both teams can score but are weak defensively, or one team has strong offensive records and the other has weak defensive records.</p>
+      <h3>Available players</h3>
+      <p>Conversely, if a team is known for being weak in defence — because they were using a 2nd-choice goalkeeper or missing strong defenders — we want to be sure the key players are not back.</p>
+      <h3>Head-to-head records</h3>
+      <p>Another important thing to check is the head-to-head record of both teams. When a match is coming up, we look at the games the two teams have played in the past. For the over 2.5 idea, we want to see that pattern in all of the games they have played.</p>
+
+      <h2>Get Today's over 2.5 prediction for free</h2>
+      <p>Rooted Predictions is where you get the best free over 2.5 prediction tips. While other sites are clamouring to have you sign up for VIP predictions, at Rooted Predictions we keep it simple, serving up accurate over 2.5 predictions and tips for free.</p>
+
+      <h2>We Also Provide Over 2.5 prediction tomorrow</h2>
+      <p>For those who love to get tips ahead of time and want to make plans about the games for the next day — we do not keep you stranded. At Rooted Predictions, we provide over 2.5 prediction tomorrow tips. What this means is that if today is Tuesday and there are Champions League matches, there would be fixtures on Wednesday too.</p>
+      <p>For most people, the over 2.5 prediction tomorrow tips create recommendations to build large accumulator tips and see what to bet ahead of time.</p>
+
+      <h2>You Can Also Get Weekend Over 2.5 Prediction on Rooted Predictions</h2>
+      <p>Yes, we provide you with weekend over 2.5 predictions. We understand that for bettors, the weekend games are too numerous to be clear on what to bet on. Our weekend over 2.5 prediction service frees you from worrying about what to bet on the weekend.</p>
+      <p>Across Europe, the Premier League, La Liga, leagues in South America, Africa, North America, Northern Europe, the Middle East, and so on — we provide weekend over 2.5 predictions and tips for the matches to be played.</p>
+
+      <h2>Conclusion</h2>
+      <p>Stop betting and losing — end the cycle of bad games today with Rooted Predictions' over 2.5 prediction and tips. We are making things easy for you by providing accurate over 2.5 predictions that you can trust.</p>
+      <p>You do not need to pay — simply bookmark this page and return every day to get winning football predictions in the over 2.5 goals market. Or you can <a href="https://t.me/rootedpredict" target="_blank" rel="noopener" style="color:var(--green);">join us on Telegram</a>.</p>
+    </div>
+
+    <div class="seo-block" id="seo-3-5-goals" style="display:none;">
+      <h2>3.5 Goals Predictions Today</h2>
+      <p>Rooted Predictions is the best over and under 3.5 goals prediction site. We find matches where four or more goals are expected, giving you the most profitable goal-line tips available daily.</p>
+      <p>The over 3.5 goals market is harder to predict than over 2.5, so we apply even deeper research — team form, goalscoring trends, head-to-head records, and defensive vulnerability.</p>
+
+      <h2>What is over 3.5 goals prediction?</h2>
+      <p>An over 3.5 prediction wins when the match produces 4 or more goals in total, scored by either team. The market is attractive because odds are typically higher than over 2.5 while still being achievable in games between attacking sides.</p>
+
+      <h2>What is under 3.5 goals prediction?</h2>
+      <p>Under 3.5 wins if three goals or fewer are scored in the match. This is a common bet for tight defensive games or matches between low-scoring sides.</p>
+
+      <h2>How We Select 3.5 Goals Tips</h2>
+      <p>We look at the following factors for every 3.5 goals prediction:</p>
+      <ol>
+        <li>Average goals per game for both teams over the last 10 matches</li>
+        <li>Head-to-head goal counts in previous meetings</li>
+        <li>Defensive injuries or suspensions affecting either side</li>
+        <li>Match context — whether teams are chasing wins, playing open football</li>
+        <li>First-half and second-half goal distribution trends</li>
+      </ol>
+
+      <h2>Why Choose Rooted Predictions for 3.5 Goals Tips</h2>
+      <h3>We offer accurate 3.5 goals tips daily</h3>
+      <p>Our team analyses every fixture carefully before recommending it. We only post tips we are confident about — never filler games to fill a list.</p>
+      <h3>1,200+ leagues covered</h3>
+      <p>We cover the EPL, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, and hundreds of other competitions worldwide including South American leagues, African leagues, and Asian competitions.</p>
+      <h3>Expert + AI analysis</h3>
+      <p>Our experts combine data-driven AI football analysis with manual research to identify high-probability over/under 3.5 games each day. Technology helps us spot patterns that are invisible to the naked eye.</p>
+
+      <h2>Get Today's 3.5 Goals Prediction for Free</h2>
+      <p>All 3.5 goals predictions on this page are free. Simply bookmark this page and return daily for updated tips. For higher-confidence premium picks, upgrade to our VIP plan.</p>
+
+      <h2>Weekend 3.5 Goals Predictions</h2>
+      <p>The weekend is the busiest time for football. Rooted Predictions provides weekend 3.5 goals tips across the Premier League, La Liga, Bundesliga, African leagues, and South American competitions — all in one place.</p>
+
+      <h2>Conclusion</h2>
+      <p>Rooted Predictions makes the over and under 3.5 goals market easy to navigate. We do the research so you can bet with confidence. Return daily, bookmark this page, and start winning with our 3.5 goals predictions.</p>
+    </div>
+
+    <div class="seo-block" id="seo-acca" style="display:none;">
+      <h2>Acca Tips — Accumulator Predictions Today</h2>
+      <p>Rooted Predictions is the best accumulator prediction site for bettors who want to multiply their winnings. Our acca tips combine multiple carefully selected picks into one bet slip for bigger payouts.</p>
+      <p>We research every leg of the accumulator independently and only combine matches where we have high confidence — ensuring your acca has the best possible chance of landing.</p>
+
+      <h2>What is an accumulator bet?</h2>
+      <p>An accumulator (acca) is a single bet that links four or more individual selections. For the bet to win, every single selection must be correct. The odds multiply with each selection, which is why accas offer the highest potential payouts in football betting.</p>
+
+      <h2>Types of Acca Tips We Provide</h2>
+      <ol>
+        <li>4-fold accumulator tips (4 selections)</li>
+        <li>5-fold accumulator tips (5 selections)</li>
+        <li>Weekend mega acca (6+ selections)</li>
+        <li>Double and treble tips for beginners</li>
+        <li>Mixed market accas (combining 1X2, BTTS, and over 2.5)</li>
+      </ol>
+
+      <h2>How We Build Our Accumulator Tips</h2>
+      <h3>We only use high-confidence selections</h3>
+      <p>Every selection in our acca tips must pass our research threshold. We never add a match just to fill up the slip. If only 4 matches pass our standards today, we post a 4-fold — not a forced 6-fold.</p>
+      <h3>We spread selections across leagues</h3>
+      <p>To reduce correlation risk, we spread acca selections across multiple leagues — Premier League, Bundesliga, La Liga, Serie A, and others. If one league has unusual circumstances (weather, cup fatigue), the entire acca is not affected.</p>
+      <h3>We check all team news before posting</h3>
+      <p>Injuries, suspensions, and lineup changes can kill an acca. We check all available team news and only confirm selections as close to kick-off as possible.</p>
+
+      <h2>Why Rooted Predictions for Acca Tips?</h2>
+      <p>Our acca tips are among the most researched on the internet. We combine AI football analysis with expert human review to make sure every leg of the accumulator is justified. Use our acca tips to complement your single bets and boost your returns.</p>
+
+      <h2>Conclusion</h2>
+      <p>Acca betting is exciting and potentially very rewarding. Rooted Predictions gives you the best-researched accumulator tips every day — for free. Bookmark this page, return daily, and start building winning bet slips with our acca tips.</p>
+    </div>
+
+    <div class="seo-block" id="seo-away-win" style="display:none;">
+      <h2>Away Win Predictions Today</h2>
+      <p>Rooted Predictions provides the most accurate away win predictions in football. Betting on away wins is one of the most rewarding markets because the odds are typically higher — but it requires careful research to identify when a visiting team is truly likely to win.</p>
+      <p>Our analysts study team form, head-to-head records, travel distances, squad depth, and tactical matchups before recommending any away win tip.</p>
+
+      <h2>What is an away win prediction?</h2>
+      <p>An away win prediction — also known as a "2" in 1X2 betting — wins when the visiting team wins the match. It is one of the three outcomes in a 1X2 market (home win, draw, away win). Away wins are less common than home wins but they happen regularly, especially when the away side is significantly stronger than the home team.</p>
+
+      <h2>How We Select Away Win Tips</h2>
+      <h3>Away team form analysis</h3>
+      <p>We look at how well the away team has been performing recently, particularly their form in away matches. A team winning 4 of their last 5 away games is a strong candidate for an away win tip.</p>
+      <h3>Home team weaknesses</h3>
+      <p>We also look at the home team — specifically their home record, injuries to key defenders, and whether they have been conceding goals at home.</p>
+      <h3>Head-to-head records</h3>
+      <p>Some away teams consistently win at certain grounds. We review full head-to-head history to spot patterns that other bettors overlook.</p>
+      <h3>Motivation and context</h3>
+      <p>A team fighting for the title or avoiding relegation will perform differently from a mid-table side with nothing to play for. We account for match context in every away win prediction.</p>
+
+      <h2>Get Free Away Win Predictions Daily</h2>
+      <p>All away win predictions on this page are free. We post updated tips daily across the Premier League, La Liga, Bundesliga, Serie A, Ligue 1, and over 1,200 other leagues worldwide.</p>
+
+      <h2>Conclusion</h2>
+      <p>Away win betting does not have to be a gamble. With Rooted Predictions, you get researched, data-backed away win tips every day. Bookmark this page and return daily for the best away win predictions in football.</p>
+    </div>
+
+    <div class="seo-block" id="seo-btts" style="display:none;">
+      <h2>BTTS Predictions Today — Both Teams to Score Tips</h2>
+      <p>Rooted Predictions is the best BTTS prediction site for football bettors. Both Teams to Score (BTTS) is one of the most popular betting markets — and we provide the most accurate BTTS tips daily across 1,200+ leagues worldwide.</p>
+      <p>BTTS Yes means both teams will score at least one goal each. BTTS No means at least one team will fail to score. We cover both outcomes.</p>
+
+      <h2>What is a BTTS prediction?</h2>
+      <p>A Both Teams to Score (BTTS) bet wins when both teams score at least one goal each during the match. It does not matter who wins the game — the only condition is that neither team keeps a clean sheet. BTTS Yes is the most common variant, though BTTS No has value in defensive matchups.</p>
+
+      <h2>How We Select BTTS Tips</h2>
+      <h3>Attacking quality of both sides</h3>
+      <p>We look at how many goals both teams have been scoring per game. If both teams average over 1.5 goals per game, BTTS Yes becomes a strong candidate.</p>
+      <h3>Defensive vulnerability</h3>
+      <p>Teams that concede frequently are ideal BTTS Yes candidates. We check goals conceded per game and defensive injury situations before every tip.</p>
+      <h3>Head-to-head BTTS record</h3>
+      <p>Some fixtures have a strong historical pattern of both teams scoring. We factor in the full head-to-head BTTS record for each matchup.</p>
+      <h3>Match importance</h3>
+      <p>High-stakes games sometimes produce cautious, low-scoring affairs. We account for match context — cup finals, relegation battles, and dead rubbers all affect scoring patterns.</p>
+
+      <h2>BTTS Yes vs BTTS No</h2>
+      <p>BTTS Yes tips are best for attacking matchups between two teams with porous defences. BTTS No tips are best for matches involving strong defensive teams or games where one side is likely to dominate completely. Rooted Predictions covers both to give you the full range of BTTS betting opportunities.</p>
+
+      <h2>Get Free BTTS Predictions Daily</h2>
+      <p>All BTTS tips on this page are completely free. We publish updated tips daily. For VIP-exclusive high-confidence picks, upgrade to our premium plan.</p>
+
+      <h2>Conclusion</h2>
+      <p>BTTS betting is one of the most reliable markets when approached with the right research. Rooted Predictions makes it easy — providing accurate, data-backed BTTS tips every day for free. Bookmark this page and return daily to find the best BTTS predictions in football.</p>
+    </div>
+
+    <div class="seo-block" id="seo-double-chance" style="display:none;">
+      <h2>Double Chance Predictions Today</h2>
+      <p>Rooted Predictions provides accurate double chance predictions for football bettors who want safer, more reliable tips. The double chance market covers two of the three possible outcomes in one bet, giving you a much higher probability of winning.</p>
+      <p>We provide double chance tips daily across all major leagues and competitions worldwide.</p>
+
+      <h2>What is a double chance bet?</h2>
+      <p>A double chance bet covers two of the three standard outcomes in a football match — home win or draw (1X), away win or draw (X2), or home win or away win (12). Because you are covering two outcomes instead of one, double chance bets are significantly safer than 1X2 bets, though the odds are lower.</p>
+
+      <h2>Types of Double Chance Tips We Provide</h2>
+      <ol>
+        <li>1X — Home win or draw (protects against upset losses when backing strong home sides)</li>
+        <li>X2 — Away win or draw (ideal for strong away teams that could draw or win)</li>
+        <li>12 — Home win or away win (no draw — for attacking games likely to produce a definitive result)</li>
+      </ol>
+
+      <h2>How We Select Double Chance Tips</h2>
+      <h3>Team quality gap analysis</h3>
+      <p>When there is a clear quality gap between two teams, 1X or X2 double chance bets offer good value. We identify these mismatches early and present them as double chance picks.</p>
+      <h3>Avoiding draws in attacking games</h3>
+      <p>When two attacking teams meet, the 12 double chance — home win or away win — eliminates the draw risk while still giving you a solid payout.</p>
+      <h3>Away team resilience</h3>
+      <p>For X2 picks, we assess how well the away team handles difficult away fixtures and whether they are strong enough not to lose.</p>
+
+      <h2>Get Free Double Chance Predictions Daily</h2>
+      <p>All double chance tips on this page are free. Updated daily across 1,200+ leagues worldwide. For higher-confidence premium picks, see our VIP plan.</p>
+
+      <h2>Conclusion</h2>
+      <p>Double chance betting is the safest way to bet on football results. Rooted Predictions gives you researched, data-driven double chance tips every day at no cost. Bookmark this page and return daily for the best double chance predictions available.</p>
+    </div>
+
+    <div class="seo-block" id="seo-home-win" style="display:none;">
+      <h2>Home Win Predictions Today</h2>
+      <p>Rooted Predictions provides the most accurate home win predictions in football. The home win — or "1" in the 1X2 market — is the most common result in football, but not every favourite wins at home. Our research pinpoints the strongest home win opportunities available each day.</p>
+      <p>We study home form, head-to-head records, squad depth, and the strength of the opposition before recommending any home win tip.</p>
+
+      <h2>What is a home win prediction?</h2>
+      <p>A home win prediction wins when the team playing at their own ground wins the match. Home advantage is real in football — teams tend to perform better in front of their own fans. However, quality and current form still determine the outcome, which is why careful selection is essential.</p>
+
+      <h2>How We Select Home Win Tips</h2>
+      <h3>Home form analysis</h3>
+      <p>We look at how many points a team has won in their last 5–10 home games, goals scored at home, and whether they have been conceding. A team unbeaten at home in 8 matches is an excellent home win candidate.</p>
+      <h3>Away team weakness</h3>
+      <p>The strength of the visiting side matters as much as the home team. We assess the away team's road record, injury list, and whether they are in poor form away from home.</p>
+      <h3>Motivation and league position</h3>
+      <p>A team in the top four fighting for Champions League qualification will be motivated to win every home game. We factor in match context and what is at stake for both sides.</p>
+      <h3>Head-to-head records</h3>
+      <p>Historical meetings at the same venue tell us a lot. Some home teams have a strong psychological advantage over specific opponents — we use this in our selection process.</p>
+
+      <h2>Get Free Home Win Predictions Daily</h2>
+      <p>All home win tips on this page are free and updated daily. We cover the Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League, and 1,200+ other leagues worldwide.</p>
+
+      <h2>Conclusion</h2>
+      <p>Home win betting is the foundation of football wagering. With Rooted Predictions, every home win tip is backed by research, data, and expert analysis. Bookmark this page, return daily, and start winning with our home win predictions.</p>
+    </div>
+
+    <div class="seo-block" id="seo-banker" style="display:none;">
+      <h2>Banker of the Day — Sure Bet Prediction</h2>
+      <p>Rooted Predictions' Banker of the Day is our single highest-confidence tip every day — one match that our research, data, and expert analysis all point towards as the most likely winner. The Banker of the Day is ideal for single bets or as the anchor selection in an accumulator.</p>
+      <p>We post one banker per day, chosen from thousands of matches analysed by our algorithm and reviewed by our expert team.</p>
+
+      <h2>What is a Banker Bet?</h2>
+      <p>A banker is a selection that a bettor is extremely confident about — often used as the guaranteed leg of an accumulator. While no bet is ever 100% guaranteed, a banker represents the highest-probability outcome available on that day based on thorough analysis.</p>
+
+      <h2>How We Choose the Banker of the Day</h2>
+      <h3>Highest confidence score</h3>
+      <p>Our algorithm scores every prediction from 0–100 based on form, head-to-head records, goal averages, and league position gaps. The Banker of the Day is the selection with the highest confidence score that day.</p>
+      <h3>Expert review</h3>
+      <p>Before publishing, our expert team reviews the algorithm's top pick and confirms or adjusts the selection based on the latest team news, injuries, and tactical considerations.</p>
+      <h3>Odds value check</h3>
+      <p>A banker must also offer fair odds. If the bookmakers have already priced a selection very short, we consider whether the value justifies the confidence. We only select bankers that offer both high probability and acceptable returns.</p>
+
+      <h2>How to Use the Banker of the Day</h2>
+      <p>You can use the Banker of the Day as a single bet for a straightforward win. You can also use it as the anchor of a 3–5 fold accumulator — pair the banker with 2–4 other Rooted Predictions tips for a significantly boosted payout while keeping your slip grounded by the highest-confidence selection.</p>
+
+      <h2>Get the Banker of the Day Free</h2>
+      <p>The Banker of the Day is published every day for free on this page. For VIP exclusive bankers with even deeper analysis and insider team news, upgrade to our VIP plan.</p>
+
+      <h2>Conclusion</h2>
+      <p>The Banker of the Day from Rooted Predictions is the smartest way to bet — one carefully chosen, deeply researched selection that gives you the best chance of winning. Bookmark this page, check back every day, and let our data do the hard work for you.</p>
+    </div>
+
   </div>
 </main>
+
 <footer class="site-footer" id="site-footer"></footer>
 <script src="/js/app.js"></script>
 <script src="/js/content-protection.js"></script>
 <script>
-(function(){
-  const nav=document.getElementById('date-nav-pred');
-  if(nav){const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];for(let i=-1;i<=4;i++){const d=new Date();d.setDate(d.getDate()+i);const btn=document.createElement('button');btn.className='date-btn'+(i===0?' active':'');btn.innerHTML=`<span class="day-name">${i===0?'Today':i===-1?'Yest':days[d.getDay()]}</span><span class="day-num">${d.getDate()}</span>`;btn.addEventListener('click',function(){document.querySelectorAll('#date-nav-pred .date-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');});nav.appendChild(btn);}}
-  document.querySelectorAll('#market-tabs-pred .market-tab').forEach(tab=>{tab.addEventListener('click',function(){document.querySelectorAll('#market-tabs-pred .market-tab').forEach(t=>t.classList.remove('active'));this.classList.add('active');const m=this.dataset.market;document.querySelectorAll('#pred-list .pred-card').forEach(c=>{c.style.display=(m==='all'||c.dataset.market===m)?'block':'none';});});});
-  document.querySelectorAll('#continent-tabs .market-tab').forEach(tab=>{tab.addEventListener('click',function(){document.querySelectorAll('#continent-tabs .market-tab').forEach(t=>t.classList.remove('active'));this.classList.add('active');const cont=this.dataset.continent;document.querySelectorAll('#pred-list .pred-card').forEach(c=>{c.style.display=(cont==='all'||c.dataset.continent===cont)?'block':'none';});});});
-  // Live "Today's Stats" sidebar from real settled results
-  fetch('/api/predictions/stats').then(r=>r.json()).then(j=>{
-    if(!j.success||!j.data)return; const s=j.data;
-    const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-    set('ts-won', s.won||0); set('ts-lost', s.lost||0); set('ts-pending', s.pending||0);
-    set('ts-rate', s.accuracy!=null?s.accuracy+'%':'New');
-  }).catch(()=>{});
+(function () {
+  'use strict';
+
+  // ── SEO meta per category
+  const CAT_META = {
+    'free':          { title: 'Free Football Predictions Today | Rooted Predictions', desc: 'Get free football predictions today across 1,200+ leagues. Expert tips updated daily.', h1: 'Free Football Predictions Today', sub: 'Free picks across top leagues — updated daily', label: 'Free Pick' },
+    '2-5-goals':     { title: 'Over 2.5 Goals Predictions Today | Rooted Predictions', desc: 'Accurate over and under 2.5 goals predictions for today. Free tips across 1,200+ leagues.', h1: '2.5 Goals Predictions Today', sub: 'Over and under 2.5 goals tips — updated daily', label: '2.5 Goals' },
+    '3-5-goals':     { title: 'Over 3.5 Goals Predictions Today | Rooted Predictions', desc: 'Accurate over and under 3.5 goals predictions for today. Free tips across top leagues.', h1: '3.5 Goals Predictions Today', sub: 'Over and under 3.5 goals tips — updated daily', label: '3.5 Goals' },
+    'acca':          { title: 'Acca Tips Today — Accumulator Predictions | Rooted Predictions', desc: 'Best football accumulator tips today. Free acca predictions across all major leagues.', h1: 'Acca Tips Today', sub: 'Accumulator predictions — researched and updated daily', label: 'Acca Tips' },
+    'away-win':      { title: 'Away Win Predictions Today | Rooted Predictions', desc: 'Best away win football predictions today. Data-backed tips across 1,200+ leagues.', h1: 'Away Win Predictions Today', sub: 'Away win tips across top leagues — updated daily', label: 'Away Win' },
+    'btts':          { title: 'BTTS Predictions Today — Both Teams to Score Tips | Rooted Predictions', desc: 'Accurate BTTS predictions for today. Both teams to score tips across top leagues daily.', h1: 'BTTS Predictions Today', sub: 'Both Teams to Score tips — updated daily', label: 'BTTS' },
+    'double-chance': { title: 'Double Chance Predictions Today | Rooted Predictions', desc: 'Best double chance football predictions today. Safe, researched tips across top leagues.', h1: 'Double Chance Predictions Today', sub: 'Double chance tips across top leagues — updated daily', label: 'Double Chance' },
+    'home-win':      { title: 'Home Win Predictions Today | Rooted Predictions', desc: 'Accurate home win football predictions for today. Expert tips across 1,200+ leagues.', h1: 'Home Win Predictions Today', sub: 'Home win tips across top leagues — updated daily', label: 'Home Win' },
+    'banker':        { title: 'Banker of the Day — Sure Bet Prediction | Rooted Predictions', desc: 'Today\'s Banker of the Day prediction. Our highest-confidence single tip — free daily.', h1: 'Banker of the Day', sub: 'Our highest-confidence pick — updated daily', label: 'Banker of the Day' },
+  };
+
+  // ── Date helpers
+  function isoDate(d) { return d.toISOString().split('T')[0]; }
+  function getDateFor(offset) { const d = new Date(); d.setDate(d.getDate() + offset); return d; }
+  function formatDateLabel(d) {
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const v = d.getDate() % 100;
+    const s = [,'st','nd','rd'][v] || 'th';
+    return `${days[d.getDay()]}${s} ${String(d.getDate()).padStart(2,'0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  let currentOffset = 0;
+  let currentCategory = 'free';
+
+  // ── Update page meta when category changes
+  function applyMeta(cat) {
+    const m = CAT_META[cat] || CAT_META['free'];
+    document.getElementById('page-title').textContent = m.title;
+    document.getElementById('page-desc').setAttribute('content', m.desc);
+    document.getElementById('page-h1').textContent = m.h1;
+    document.getElementById('page-sub').textContent = m.sub;
+    document.getElementById('picks-title').textContent = m.label.toUpperCase() + ' PICKS';
+    document.getElementById('breadcrumb-label').textContent = m.label;
+    // Show correct SEO block
+    document.querySelectorAll('.seo-block').forEach(el => el.style.display = 'none');
+    const seoEl = document.getElementById('seo-' + cat);
+    if (seoEl) seoEl.style.display = '';
+  }
+
+  // ── Category tab clicks
+  document.querySelectorAll('#category-tabs-pred .cat-tab').forEach(tab => {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('#category-tabs-pred .cat-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      currentCategory = this.dataset.category;
+      applyMeta(currentCategory);
+      loadPicks();
+    });
+  });
+
+  // ── Day switcher
+  document.getElementById('day-yesterday').addEventListener('click', function () {
+    currentOffset = -1;
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    updateDateLabel();
+    loadPicks();
+  });
+  document.getElementById('day-today').addEventListener('click', function () {
+    currentOffset = 0;
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    updateDateLabel();
+    loadPicks();
+  });
+  document.getElementById('day-tomorrow').addEventListener('click', function () {
+    currentOffset = 1;
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    updateDateLabel();
+    loadPicks();
+  });
+
+  function updateDateLabel() {
+    const el = document.getElementById('picks-date-label');
+    if (el) el.textContent = formatDateLabel(getDateFor(currentOffset));
+  }
+
+  // ── Build picks HTML
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function buildPicksHTML(predictions) {
+    if (!predictions.length) {
+      return `<div style="padding:36px;text-align:center;color:var(--muted);font-size:0.875rem;">
+        <span class="material-icons-round" style="font-size:2rem;display:block;margin-bottom:8px;">sports_soccer</span>
+        No predictions available for this selection.
+      </div>`;
+    }
+    const groups = {};
+    predictions.forEach(p => {
+      const key = p.league_id || p.league_name || 'Other';
+      if (!groups[key]) groups[key] = { league: p, preds: [] };
+      groups[key].preds.push(p);
+    });
+    return Object.values(groups).map(g => {
+      const lx = g.league;
+      const img = lx.league_logo
+        ? `<img src="${esc(lx.league_logo)}" alt="" onerror="this.style.display='none'">`
+        : `<span class="material-icons-round" style="font-size:1rem;color:var(--muted);">sports_soccer</span>`;
+      const country = lx.league_country ? esc(lx.league_country) + ': ' : '';
+      const rows = g.preds.map(p => {
+        const time = p.match_date ? new Date(p.match_date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+        const odds = p.odds ? parseFloat(p.odds).toFixed(2) : '—';
+        const tip  = p.tip || '—';
+        return `<div class="pick-row">
+          <div class="pick-match">
+            <span class="pick-home">${esc(p.home_team)}</span>
+            <span class="pick-time">${esc(time)}</span>
+            <span class="pick-away">${esc(p.away_team)}</span>
+          </div>
+          <div class="pick-odds-box">
+            <div class="pick-odds-label">ODDS</div>
+            <div class="pick-odds-val">${esc(odds)}</div>
+          </div>
+          <div class="pick-tip-box">
+            <div class="pick-tip-label">TIPS</div>
+            <div class="pick-tip-val"><span style="color:#f97316;">🔥</span>${esc(tip)}</div>
+          </div>
+        </div>`;
+      }).join('');
+      return `<div>
+        <div class="pick-league-row">${img}<span>${country}<strong>${esc(lx.league_name || 'League')}</strong></span></div>
+        ${rows}
+      </div>`;
+    }).join('');
+  }
+
+  // ── Build API URL for current state
+  function buildApiUrl() {
+    const date = isoDate(getDateFor(currentOffset));
+    const params = new URLSearchParams({ date, limit: '20' });
+    const cat = currentCategory;
+    if (cat && cat !== 'free') params.set('category', cat);
+    if (cat === 'banker') { params.delete('category'); params.set('sort', 'confidence_score'); params.set('order', 'DESC'); }
+    return `/api/predictions?${params.toString()}`;
+  }
+
+  function loadPicks() {
+    const list = document.getElementById('picks-list');
+    list.innerHTML = `<div class="pick-skeleton"><div class="skel" style="height:16px;width:60%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:80%;"></div></div>
+      <div class="pick-skeleton"><div class="skel" style="height:16px;width:55%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:75%;"></div></div>`;
+    fetch(buildApiUrl(), { credentials: 'include' })
+      .then(r => r.json())
+      .then(j => {
+        const preds = (j && j.data && j.data.predictions) || [];
+        list.innerHTML = buildPicksHTML(preds);
+      })
+      .catch(() => {
+        list.innerHTML = `<div style="padding:28px;text-align:center;color:var(--muted);font-size:0.875rem;">Could not load predictions. Please try again.</div>`;
+      });
+  }
+
+  // ── Handle ?category= URL param on load
+  (function initFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const urlCat = params.get('category');
+    if (urlCat && CAT_META[urlCat]) {
+      currentCategory = urlCat;
+      const tab = document.querySelector(`#category-tabs-pred .cat-tab[data-category="${urlCat}"]`);
+      if (tab) {
+        document.querySelectorAll('#category-tabs-pred .cat-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      }
+    }
+    applyMeta(currentCategory);
+    updateDateLabel();
+    loadPicks();
+  })();
+
 })();
 </script>
 </body>
