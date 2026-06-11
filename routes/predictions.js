@@ -50,6 +50,26 @@ router.get('/stats', asyncHandler(async (req, res) => {
     ov.forEach(r => { if (r.override_value) overrides[r.metric_key] = r.override_value; });
   } catch (e) { /* table may not exist on older deployments */ }
 
+  // Per-day won/lost for the last 7 days — drives the homepage premium calendar
+  const [dailyRows] = await db.query(
+    `SELECT
+       DATE(match_date)               as date,
+       SUM(result = 'won')            as won,
+       SUM(result = 'lost')           as lost
+     FROM predictions
+     WHERE published_at IS NOT NULL
+       AND result IN ('won','lost')
+       AND DATE(match_date) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+     GROUP BY DATE(match_date)
+     ORDER BY date ASC`
+  );
+  const daily_results = dailyRows.map(r => ({
+    date:   r.date instanceof Date ? r.date.toISOString().split('T')[0] : String(r.date).split('T')[0],
+    result: parseInt(r.won) >= parseInt(r.lost) ? 'won' : 'lost',
+    won:    parseInt(r.won)  || 0,
+    lost:   parseInt(r.lost) || 0,
+  }));
+
   const live = rows[0];
   const display = {
     accuracy:        overrides.accuracy        || (live.accuracy != null ? live.accuracy + '%' : 'New'),
@@ -58,7 +78,7 @@ router.get('/stats', asyncHandler(async (req, res) => {
     predictions:     overrides.predictions     || String(live.total || 0),
   };
 
-  return successResponse(res, { ...live, leagues_covered, members, display, overrides });
+  return successResponse(res, { ...live, leagues_covered, members, display, overrides, daily_results });
 }));
 
 // ── GET /api/predictions/leaderboard — real verified results breakdown

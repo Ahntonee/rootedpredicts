@@ -743,8 +743,9 @@
             icon = '○'; cls = 'cal-result-pending';
           } else {
             const res = dailyMap[iso];
-            if (res === 'lost') { icon = '✗'; cls = 'cal-result-lost'; }
-            else { icon = '✓'; cls = 'cal-result-won'; }
+            if (res === 'won')  { icon = '✓'; cls = 'cal-result-won'; }
+            else if (res === 'lost') { icon = '✗'; cls = 'cal-result-lost'; }
+            else { icon = '—'; cls = 'cal-result-pending'; }
           }
           return `<div class="cal-day">
             <span class="${cls}" style="font-size:1.2rem;font-weight:700;">${icon}</span>
@@ -763,8 +764,8 @@
         }
         cal.innerHTML = days.map((d, idx) => {
           const isToday = idx === 5;
-          const icon = isToday ? '○' : '✓';
-          const cls  = isToday ? 'cal-result-pending' : 'cal-result-won';
+          const icon = isToday ? '○' : '—';
+          const cls  = isToday ? 'cal-result-pending' : 'cal-result-pending';
           return `<div class="cal-day">
             <span class="${cls}" style="font-size:1.2rem;font-weight:700;">${icon}</span>
             <span class="cal-day-num">${d.getDate()}</span>
