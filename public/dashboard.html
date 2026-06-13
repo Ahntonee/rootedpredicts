@@ -84,7 +84,7 @@
         </div>
 
         <!-- Recent bet history -->
-        <div class="card" style="padding:20px;">
+        <div class="card" style="padding:20px;margin-bottom:20px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
             <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">history</span>Recent Bets</h2>
             <a href="/bet-history.html" style="font-size:0.82rem;color:var(--red);font-weight:600;">View all</a>
@@ -94,6 +94,37 @@
               <span class="material-icons-round" style="font-size:2.5rem;display:block;margin-bottom:8px;color:var(--border);">receipt_long</span>
               <p style="font-size:0.875rem;">No bets tracked yet.</p>
               <a href="/bet-history.html" class="btn btn-outline btn-sm" style="margin-top:12px;">Log a Bet</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- My Prediction Record -->
+        <div class="card" style="padding:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">leaderboard</span>My Prediction Record</h2>
+            <a href="/bet-history.html" style="font-size:0.82rem;color:var(--red);font-weight:600;">Full history</a>
+          </div>
+          <!-- Mini stats row -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;" id="record-stats">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
+              <div style="font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:var(--green);" id="rec-won">—</div>
+              <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Won</div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
+              <div style="font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:var(--red);" id="rec-lost">—</div>
+              <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Lost</div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
+              <div style="font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:var(--text);" id="rec-rate">—</div>
+              <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Win Rate</div>
+            </div>
+          </div>
+          <!-- Recent tracked bets linked to site predictions -->
+          <div id="record-list">
+            <div style="text-align:center;padding:24px;color:var(--muted);">
+              <span class="material-icons-round" style="font-size:2rem;display:block;margin-bottom:8px;color:var(--border);">bar_chart</span>
+              <p style="font-size:0.875rem;">Start tracking bets on predictions to build your record.</p>
+              <a href="/predictions.html" class="btn btn-outline btn-sm" style="margin-top:12px;">Browse Predictions</a>
             </div>
           </div>
         </div>
@@ -180,8 +211,76 @@ async function loadStats() {
   } catch(e) { /* non-fatal */ }
 }
 
+async function loadRecord() {
+  try {
+    const res  = await fetch('/api/users/bet-history?limit=5', { credentials: 'include' });
+    const json = await res.json();
+    if (!json.success) return;
+
+    const bets = json.data.bets || [];
+    const settled = bets.filter(b => b.result === 'won' || b.result === 'lost');
+    const won  = settled.filter(b => b.result === 'won').length;
+    const lost = settled.filter(b => b.result === 'lost').length;
+    const rate = settled.length ? Math.round(won / settled.length * 100) : null;
+
+    document.getElementById('rec-won').textContent  = json.data.pagination ? '…' : won;
+    document.getElementById('rec-lost').textContent = json.data.pagination ? '…' : lost;
+    document.getElementById('rec-rate').textContent = rate !== null ? rate + '%' : '—';
+
+    // Use full stats from /api/users/stats for accurate totals
+    const sRes  = await fetch('/api/users/stats', { credentials: 'include' });
+    const sJson = await sRes.json();
+    if (sJson.success) {
+      const d = sJson.data;
+      const totalBets = parseInt(d.bets) || 0;
+      const winRate   = parseFloat(d.win_rate) || 0;
+      const wonCount  = totalBets > 0 ? Math.round(totalBets * winRate / 100) : 0;
+      const lostCount = totalBets - wonCount;
+      document.getElementById('rec-won').textContent  = wonCount;
+      document.getElementById('rec-lost').textContent = lostCount >= 0 ? lostCount : '—';
+      document.getElementById('rec-rate').textContent = winRate > 0 ? winRate + '%' : (totalBets > 0 ? '0%' : '—');
+    }
+
+    if (!bets.length) return;
+    document.getElementById('record-list').innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600;">Match / Tip</th>
+            <th style="padding:8px 6px;color:var(--muted);font-weight:600;text-align:center;">Odds</th>
+            <th style="padding:8px 6px;color:var(--muted);font-weight:600;text-align:center;">P&L</th>
+            <th style="padding:8px 6px;color:var(--muted);font-weight:600;text-align:center;">Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${bets.map(b => {
+            const pl = parseFloat(b.profit_loss || 0);
+            const plStr = b.profit_loss != null ? (pl >= 0 ? '+' : '') + pl.toFixed(2) : '—';
+            const plColor = pl > 0 ? 'var(--green)' : pl < 0 ? 'var(--red)' : 'var(--muted)';
+            const badge = b.result === 'won'
+              ? '<span style="color:var(--green);font-weight:700;font-size:0.78rem;">WON</span>'
+              : b.result === 'lost'
+              ? '<span style="color:var(--red);font-weight:700;font-size:0.78rem;">LOST</span>'
+              : '<span style="color:var(--muted);font-weight:600;font-size:0.78rem;">PENDING</span>';
+            const label = (b.home_team && b.away_team) ? `${b.home_team} vs ${b.away_team}` : (b.notes || 'Manual Bet');
+            return `<tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:10px 6px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</td>
+              <td style="padding:10px 6px;text-align:center;">${b.odds || '—'}</td>
+              <td style="padding:10px 6px;text-align:center;font-weight:700;color:${plColor};">${plStr}</td>
+              <td style="padding:10px 6px;text-align:center;">${badge}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div style="padding:10px 0 0;text-align:right;">
+        <a href="/bet-history.html" style="font-size:0.8rem;color:var(--red);font-weight:600;">View full history →</a>
+      </div>`;
+  } catch (e) { /* non-fatal */ }
+}
+
 checkAuth();
 loadStats();
+loadRecord();
 </script>
 </body>
 </html>

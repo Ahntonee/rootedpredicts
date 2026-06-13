@@ -68,6 +68,19 @@
       <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">Fetches form, H2H, standings and stats for all pending TBD fixtures, generates tips automatically, and publishes high-confidence predictions. <strong style="color:var(--text);">Uses ~6 API requests per fixture.</strong></p>
       <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px;">
         <div>
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Target Date</label>
+          <select id="ap-date-mode" class="form-control" style="width:140px;">
+            <option value="today-tomorrow">Today + Tomorrow</option>
+            <option value="today">Today only</option>
+            <option value="tomorrow">Tomorrow only</option>
+            <option value="specific">Specific date…</option>
+          </select>
+        </div>
+        <div id="ap-specific-date-wrap" style="display:none;">
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Date</label>
+          <input type="date" id="ap-specific-date" class="form-control" style="width:150px;">
+        </div>
+        <div>
           <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Fixtures to process</label>
           <input type="number" id="ap-limit" value="10" min="1" max="50" class="form-control" style="width:90px;">
         </div>
@@ -156,20 +169,56 @@ document.getElementById('sync-results-btn').addEventListener('click',()=>{
   runSync('sync-results-btn','/api/sync/results','sync-results-result','POST',{date});
 });
 
+// Show/hide specific date picker
+document.getElementById('ap-date-mode').addEventListener('change', function () {
+  document.getElementById('ap-specific-date-wrap').style.display = this.value === 'specific' ? '' : 'none';
+});
+
 document.getElementById('auto-predict-btn').addEventListener('click', async () => {
-  const btn   = document.getElementById('auto-predict-btn');
-  const limit = parseInt(document.getElementById('ap-limit').value) || 10;
-  const conf  = parseInt(document.getElementById('ap-confidence').value) || 55;
-  const pub   = document.getElementById('ap-publish').checked;
+  const btn      = document.getElementById('auto-predict-btn');
+  const limit    = parseInt(document.getElementById('ap-limit').value) || 10;
+  const conf     = parseInt(document.getElementById('ap-confidence').value) || 55;
+  const pub      = document.getElementById('ap-publish').checked;
+  const dateMode = document.getElementById('ap-date-mode').value;
+
+  // Resolve date param
+  function localToday() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function localTomorrow() {
+    const d = new Date(); d.setDate(d.getDate()+1);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  let dateParam = null;
+  let dateRange = null; // for today+tomorrow mode we run twice
+  if (dateMode === 'today')    dateParam = localToday();
+  if (dateMode === 'tomorrow') dateParam = localTomorrow();
+  if (dateMode === 'specific') {
+    dateParam = document.getElementById('ap-specific-date').value;
+    if (!dateParam) { Admin.toast('Select a specific date first', 'error'); return; }
+  }
+  if (dateMode === 'today-tomorrow') dateRange = [localToday(), localTomorrow()];
 
   btn.disabled = true;
   btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite">refresh</span>Running...';
-  log(`Auto-predict started: ${limit} fixtures, min confidence ${conf}`, 'info');
+  log(`Auto-predict started: ${limit} fixtures, min conf ${conf}, date: ${dateRange ? dateRange.join(' + ') : dateParam || 'today+tomorrow'}`, 'info');
 
   try {
-    const json = await Admin.api('POST', '/api/sync/auto-predict', {
-      limit, min_confidence: conf, auto_publish: pub
-    });
+    // Run once or twice depending on mode
+    const datesToRun = dateRange || [dateParam];
+    let combined = { success: true, data: { log: [], enriched: 0, errors: 0 } };
+    for (const d of datesToRun) {
+      const body = { limit, min_confidence: conf, auto_publish: pub };
+      if (d) body.date = d;
+      const json = await Admin.api('POST', '/api/sync/auto-predict', body);
+      if (json.success) {
+        combined.data.log.push(...(json.data.log || []));
+        combined.data.enriched += json.data.enriched || 0;
+        combined.data.errors   += json.data.errors   || 0;
+      }
+    }
+    const json = combined;
 
     document.getElementById('auto-predict-result').style.display = 'block';
 

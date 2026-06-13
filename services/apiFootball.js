@@ -726,9 +726,10 @@ async function researchFixture(fixtureId) {
 
 // ── Auto-predict: enrich pending TBD predictions with form/H2H and generate tips
 async function autoPredictFixtures(db, options = {}) {
-  const limit     = options.limit || 20;
-  const minConf   = options.minConfidence || 65;   // raised from 55 → selectivity filter
+  const limit       = options.limit || 20;
+  const minConf     = options.minConfidence || 65;
   const autoPublish = options.autoPublish !== false;
+  const forceCategory = options.forceCategory || null;
 
   // Scope:
   //   options.date        → only fixtures on this date (past OR future) — for backtests/track records
@@ -742,7 +743,8 @@ async function autoPredictFixtures(db, options = {}) {
   } else if (options.includePast) {
     dateClause = '';
   } else {
-    dateClause = 'AND p.match_date >= NOW()';
+    // Default: only today and tomorrow — avoids publishing weeks-ahead fixtures
+    dateClause = 'AND DATE(p.match_date) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 1 DAY)';
   }
   args.push(limit);
 
@@ -801,10 +803,27 @@ async function autoPredictFixtures(db, options = {}) {
       const oddsJson   = marketOdds ? JSON.stringify(marketOdds) : null;
       const primaryOdd = oddsForTip(suggestion.tip, suggestion.market, marketOdds);
 
+      // Derive category from tip — or use admin-specified forceCategory
+      const TIP_TO_CATEGORY = {
+        'Over 3.5':   '3.5 Goals',
+        'Under 3.5':  '3.5 Goals',
+        'Over 2.5':   '2.5 Goals',
+        'Under 2.5':  '2.5 Goals',
+        'Over 1.5':   '1.5 Goals',
+        'Under 1.5':  '1.5 Goals',
+        'BTTS - Yes': 'BTTS',
+        'BTTS - No':  'BTTS',
+        'Home Win':   'Home Win',
+        'Away Win':   'Away Win',
+        'Draw':       'Free Pick',
+      };
+      const derivedCategory = forceCategory || TIP_TO_CATEGORY[suggestion.tip] || 'Free Pick';
+
       await db.query(
         `UPDATE predictions SET
            tip              = ?,
            market           = ?,
+           category         = ?,
            odds             = COALESCE(?, odds),
            odds_data        = COALESCE(?, odds_data),
            home_form        = ?,
@@ -818,6 +837,7 @@ async function autoPredictFixtures(db, options = {}) {
         [
           suggestion.tip,
           suggestion.market,
+          derivedCategory,
           primaryOdd,
           oddsJson,
           homeForm || null,

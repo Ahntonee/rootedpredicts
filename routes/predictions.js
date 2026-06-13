@@ -14,6 +14,7 @@ const { optionalAuth } = require('../middleware/auth');
 
 // ── GET /api/predictions/stats — Overall accuracy stats
 router.get('/stats', asyncHandler(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const { period } = req.query; // 'today' | 'month' | 'year' | 'all'
 
   let dateFilter = '';
@@ -114,6 +115,7 @@ router.get('/leaderboard', asyncHandler(async (req, res) => {
 
 // ── GET /api/predictions — Main filtered listing
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const {
     date,
     league,
@@ -143,6 +145,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     FROM predictions p
     LEFT JOIN leagues l ON p.league_id = l.id
     WHERE p.published_at IS NOT NULL
+      AND p.result != 'void'
   `;
   const args = [];
 
@@ -219,6 +222,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   // 'free'/'all' = no extra filter; 'banker' also sorts by confidence DESC.
   const CATEGORY_MAP = {
     'free-pick':    'Free Pick',
+    '1-5-goals':    '1.5 Goals',
     '2-5-goals':    '2.5 Goals',
     '3-5-goals':    '3.5 Goals',
     'acca':         'Acca Tips',

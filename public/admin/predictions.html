@@ -18,6 +18,7 @@
   <span class="admin-topbar-title">Manage Predictions</span>
   <div style="display:flex;gap:8px;">
     <button class="btn btn-outline btn-sm" id="score-all-btn" title="Run algorithm on all pending predictions"><span class="material-icons-round">auto_awesome</span>Score All</button>
+    <button class="btn btn-outline btn-sm" id="cat-manager-btn"><span class="material-icons-round">category</span>Category Manager</button>
     <button class="btn btn-primary btn-sm" id="new-pred-btn"><span class="material-icons-round">add</span>New Prediction</button>
   </div>
 </div>
@@ -128,11 +129,12 @@
           </label>
           <select class="form-control" id="m-category">
             <option value="Free Pick">Free Pick</option>
+            <option value="1.5 Goals">1.5 Goals</option>
+            <option value="2.5 Goals">2.5 Goals</option>
+            <option value="3.5 Goals">3.5 Goals</option>
             <option value="Home Win">Home Win</option>
             <option value="Away Win">Away Win</option>
             <option value="BTTS">BTTS</option>
-            <option value="2.5 Goals">2.5 Goals</option>
-            <option value="3.5 Goals">3.5 Goals</option>
             <option value="Double Chance">Double Chance</option>
             <option value="Acca Tips">Acca Tips</option>
             <option value="Banker of the Day">Banker of the Day ⭐ (VIP)</option>
@@ -206,6 +208,58 @@
     <div class="admin-modal-footer" id="research-footer" style="display:none;">
       <button class="btn btn-outline btn-sm" onclick="Admin.hideModal('research-modal')">Close</button>
       <button class="btn btn-primary btn-sm" id="apply-suggestion-btn"><span class="material-icons-round">auto_awesome</span>Apply Suggestion to Edit Form</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category Manager Modal -->
+<div id="cat-modal" class="admin-modal-overlay" style="display:none;">
+  <div class="admin-modal" style="max-width:860px;width:96vw;">
+    <div class="admin-modal-header">
+      <span class="admin-modal-title">Category Manager</span>
+      <button class="admin-close-btn" onclick="Admin.hideModal('cat-modal')"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="admin-modal-body" style="max-height:78vh;overflow-y:auto;">
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;">
+        Assign published predictions to categories, or auto-predict new ones directly into a category.
+        Showing all published predictions — use the dropdowns to reassign.
+      </p>
+
+      <!-- Per-category auto-predict row -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:20px;">
+        <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Auto-Predict Into Category</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <select class="form-control" id="cat-ap-category" style="width:180px;">
+            <option value="1.5 Goals">1.5 Goals</option>
+            <option value="2.5 Goals">2.5 Goals</option>
+            <option value="3.5 Goals">3.5 Goals</option>
+            <option value="Home Win">Home Win</option>
+            <option value="Away Win">Away Win</option>
+            <option value="BTTS">BTTS</option>
+            <option value="Double Chance">Double Chance</option>
+            <option value="Acca Tips">Acca Tips</option>
+            <option value="Free Pick">Free Pick</option>
+          </select>
+          <input type="number" id="cat-ap-limit" class="form-control" style="width:90px;" placeholder="Fixtures" value="5" min="1" max="20">
+          <input type="number" id="cat-ap-conf" class="form-control" style="width:100px;" placeholder="Min conf" value="55" min="1" max="100">
+          <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer;">
+            <input type="checkbox" id="cat-ap-publish" checked> Auto-publish
+          </label>
+          <button class="btn btn-primary btn-sm" id="cat-ap-run-btn"><span class="material-icons-round">auto_awesome</span>Run</button>
+        </div>
+        <div id="cat-ap-log" style="margin-top:10px;font-size:0.78rem;display:none;"></div>
+      </div>
+
+      <!-- Today's predictions with category dropdowns -->
+      <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">
+        Reassign Categories — Today &amp; Tomorrow's Predictions
+      </div>
+      <div id="cat-pred-list">
+        <div style="text-align:center;padding:32px;color:var(--muted);">Loading…</div>
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="Admin.hideModal('cat-modal')">Close</button>
     </div>
   </div>
 </div>
@@ -521,8 +575,9 @@ function deriveCategoryFromTip(tip, market, visibility) {
   if (market === 'BTTS' || t.includes('btts')) return 'BTTS';
   if (t.includes('home win') || t === '1' || t === 'home') return 'Home Win';
   if (t.includes('away win') || t === '2' || t === 'away') return 'Away Win';
-  if (t.includes('over 2.5') || t.includes('under 2.5')) return '2.5 Goals';
   if (t.includes('over 3.5') || t.includes('under 3.5')) return '3.5 Goals';
+  if (t.includes('over 2.5') || t.includes('under 2.5')) return '2.5 Goals';
+  if (t.includes('over 1.5') || t.includes('under 1.5')) return '1.5 Goals';
   if (t.includes('double chance') || t === '1x' || t === '2x' || t === '12') return 'Double Chance';
   if (market === 'Accumulator') return 'Acca Tips';
   return 'Free Pick';
@@ -698,6 +753,119 @@ document.addEventListener('DOMContentLoaded', async () => {
     Admin.toast('Suggestion applied — review and publish');
     await loadLeagueFixtures(d.fixture.home.name || '', d.fixture.away.name || '');
   });
+  // ── Category Manager ──────────────────────────────────────────────────────
+  const ALL_CATEGORIES = [
+    'Free Pick','1.5 Goals','2.5 Goals','3.5 Goals',
+    'Home Win','Away Win','BTTS','Double Chance','Acca Tips','Banker of the Day',
+  ];
+
+  async function openCatManager() {
+    Admin.showModal('cat-modal');
+    document.getElementById('cat-ap-log').style.display = 'none';
+    document.getElementById('cat-pred-list').innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);">Loading…</div>';
+    const today = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const [r1, r2] = await Promise.all([
+      Admin.api('GET', `/api/admin/predictions?date=${today}&limit=100`),
+      Admin.api('GET', `/api/admin/predictions?date=${tomorrow}&limit=100`),
+    ]);
+    const preds = [
+      ...((r1.success && r1.data.predictions) || []),
+      ...((r2.success && r2.data.predictions) || []),
+    ];
+    if (!preds.length) {
+      document.getElementById('cat-pred-list').innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);">No published predictions for today or tomorrow.</div>';
+      return;
+    }
+    const catOpts = ALL_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+    document.getElementById('cat-pred-list').innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+        <thead><tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600;">Match</th>
+          <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600;">Tip</th>
+          <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600;">Date</th>
+          <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600;">Category</th>
+          <th style="padding:8px 10px;"></th>
+        </tr></thead>
+        <tbody>
+          ${preds.map(p => `
+            <tr style="border-bottom:1px solid var(--border);" id="cat-row-${p.id}">
+              <td style="padding:10px;font-weight:600;">${p.home_team} vs ${p.away_team}</td>
+              <td style="padding:10px;color:var(--red);font-weight:600;">${p.tip || 'TBD'}</td>
+              <td style="padding:10px;color:var(--muted);font-size:0.78rem;">${p.match_date ? p.match_date.slice(0,10) : '—'}</td>
+              <td style="padding:10px;">
+                <select class="form-control" id="cat-sel-${p.id}" style="padding:5px 8px;font-size:0.82rem;">
+                  ${ALL_CATEGORIES.map(c => `<option value="${c}"${c === (p.category || 'Free Pick') ? ' selected' : ''}>${c}</option>`).join('')}
+                </select>
+              </td>
+              <td style="padding:10px;">
+                <button class="btn btn-outline btn-sm" style="padding:4px 10px;" onclick="saveCatRow(${p.id})">
+                  <span class="material-icons-round" style="font-size:0.9rem;">save</span>
+                </button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  window.saveCatRow = async function(id) {
+    const cat = document.getElementById('cat-sel-' + id).value;
+    const json = await Admin.api('PUT', '/api/admin/predictions/' + id, {
+      category: cat,
+      visibility: cat === 'Banker of the Day' ? 'vip' : 'free',
+    });
+    if (json.success) {
+      const row = document.getElementById('cat-row-' + id);
+      if (row) row.style.background = 'rgba(26,138,68,0.08)';
+      Admin.toast('Category updated to ' + cat);
+    } else {
+      Admin.toast(json.message || 'Update failed', 'error');
+    }
+  };
+
+  document.getElementById('cat-manager-btn').addEventListener('click', openCatManager);
+
+  document.getElementById('cat-ap-run-btn').addEventListener('click', async () => {
+    const btn      = document.getElementById('cat-ap-run-btn');
+    const category = document.getElementById('cat-ap-category').value;
+    const limit    = parseInt(document.getElementById('cat-ap-limit').value) || 5;
+    const minConf  = parseInt(document.getElementById('cat-ap-conf').value) || 55;
+    const publish  = document.getElementById('cat-ap-publish').checked;
+    const logEl    = document.getElementById('cat-ap-log');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite;font-size:0.9rem;">refresh</span>Running…';
+    logEl.style.display = 'none';
+
+    const json = await Admin.api('POST', '/api/sync/auto-predict', {
+      limit,
+      min_confidence: minConf,
+      auto_publish: publish,
+      force_category: category,
+    });
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round">auto_awesome</span>Run';
+
+    if (!json.success) {
+      logEl.style.display = 'block';
+      logEl.innerHTML = `<span style="color:var(--red);">${json.message || 'Auto-predict failed'}</span>`;
+      return;
+    }
+    const log = json.data.log || [];
+    const published = log.filter(l => l.published).length;
+    const drafted   = log.filter(l => !l.published && !l.error).length;
+    logEl.style.display = 'block';
+    logEl.innerHTML = `<strong style="color:var(--green);">✓ ${published} published · ${drafted} drafted · ${log.filter(l=>l.error).length} errors</strong><br>` +
+      log.map(l => l.error
+        ? `<span style="color:var(--red);">✗ ${l.match}: ${l.error}</span>`
+        : `<span style="color:${l.published?'var(--green)':'var(--muted)'};">${l.published?'✓ Published':'○ Draft'} — ${l.match} → <strong>${l.tip}</strong> (${l.confidence}%)</span>`
+      ).join('<br>');
+    // Reload the prediction list in background
+    loadPredictions(predPage);
+    openCatManager();
+  });
+
   document.getElementById('apply-filters').addEventListener('click', () => loadPredictions(1));
   // Auto-apply when any filter changes (e.g. picking a date shows that date immediately)
   ['f-result', 'f-visibility', 'f-date'].forEach(id => {
@@ -733,8 +901,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Suggest category from tip
     const cat = document.getElementById('m-category');
     const t = e.target.value.toLowerCase();
-    if (t.includes('2.5')) cat.value = '2.5 Goals';
-    else if (t.includes('3.5')) cat.value = '3.5 Goals';
+    if (t.includes('3.5')) cat.value = '3.5 Goals';
+    else if (t.includes('2.5')) cat.value = '2.5 Goals';
+    else if (t.includes('1.5')) cat.value = '1.5 Goals';
     else if (t === 'home win') cat.value = 'Home Win';
     else if (t === 'away win') cat.value = 'Away Win';
     else if (t.includes('btts')) cat.value = 'BTTS';

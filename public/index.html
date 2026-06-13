@@ -381,6 +381,7 @@
     <!-- ── Category Tabs ── -->
     <div class="category-tabs-row" id="category-tabs-home">
       <button class="cat-tab active" data-category="free">Free Pick</button>
+      <button class="cat-tab" data-category="1-5-goals">1.5 Goals</button>
       <button class="cat-tab" data-category="2-5-goals">2.5 Goals</button>
       <button class="cat-tab" data-category="3-5-goals">3.5 Goals</button>
       <button class="cat-tab" data-category="acca">Acca tips</button>
@@ -437,7 +438,7 @@
         <div class="pick-skeleton"><div class="skel" style="height:16px;width:65%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:70%;"></div></div>
       </div>
       <div style="padding:14px 20px;border-top:1px solid var(--border);text-align:center;">
-        <a href="/leaderboard.html" class="btn btn-outline btn-sm">View Full Record <span class="material-icons-round" style="font-size:0.9rem;">arrow_forward</span></a>
+        <a href="/predictions.html?result=won&all_dates=1" class="btn btn-outline btn-sm">View Full Record <span class="material-icons-round" style="font-size:0.9rem;">arrow_forward</span></a>
       </div>
     </div>
 
@@ -579,11 +580,17 @@
 
   function getDateFor(offset) {
     const d = new Date();
-    d.setDate(d.getDate() + offset);
+    d.setDate(d.getDate() + (offset || 0));
     return d;
   }
 
-  function isoDate(d) { return d.toISOString().split('T')[0]; }
+  // Use local year/month/day — toISOString() returns UTC which can be a different date in non-UTC timezones
+  function isoDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
 
   // ── Render date label
   function updateDateLabel() {
@@ -617,22 +624,14 @@
     window.location.href = '/predictions.html';
   });
 
-  // ── Category tabs
+  // ── Category tabs — server-side re-fetch on each click
+  let currentCategory = 'free';
   document.querySelectorAll('#category-tabs-home .cat-tab').forEach(tab => {
     tab.addEventListener('click', function () {
       document.querySelectorAll('#category-tabs-home .cat-tab').forEach(t => t.classList.remove('active'));
       this.classList.add('active');
-      const cat = this.dataset.category;
-      document.querySelectorAll('#free-picks-list .pick-league-group').forEach(g => {
-        const cards = g.querySelectorAll('.pick-card');
-        let visible = 0;
-        cards.forEach(c => {
-          const match = cat === 'free' || c.dataset.category === cat;
-          c.style.display = match ? '' : 'none';
-          if (match) visible++;
-        });
-        g.style.display = visible > 0 ? '' : 'none';
-      });
+      currentCategory = this.dataset.category;
+      loadFreePicks();
     });
   });
 
@@ -682,8 +681,7 @@
         }
         const odds = p.odds ? parseFloat(p.odds).toFixed(2) : '—';
         const tip  = p.tip || '—';
-        const cat  = p.market || 'free';
-        return `<div class="pick-row pick-card" data-category="${esc(cat)}">
+        return `<div class="pick-row pick-card">
           <div class="pick-match">
             <span class="pick-home">${esc(p.home_team)}</span>
             ${timeDisplay}
@@ -714,7 +712,10 @@
       <div class="pick-skeleton"><div class="skel" style="height:16px;width:55%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:75%;"></div></div>`;
 
     const date = isoDate(getDateFor(currentOffset));
-    fetch(`/api/predictions?date=${date}&limit=12`, { credentials: 'include' })
+    const params = new URLSearchParams({ date, limit: '20' });
+    if (currentCategory && currentCategory !== 'free') params.set('category', currentCategory);
+    if (currentCategory === 'banker') { params.delete('category'); params.set('sort', 'confidence_score'); params.set('order', 'DESC'); }
+    fetch(`/api/predictions?${params.toString()}`, { credentials: 'include' })
       .then(r => r.json())
       .then(j => {
         const preds = (j && j.data && j.data.predictions) || [];

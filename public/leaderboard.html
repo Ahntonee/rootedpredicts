@@ -101,6 +101,23 @@
 <script src="/js/content-protection.js"></script>
 <script>
 (async () => {
+  // Admin-only page — redirect anyone who isn't admin
+  try {
+    const authRes = await fetch('/api/auth/me', { credentials: 'include' });
+    const authJson = await authRes.json();
+    if (!authJson.success || !authJson.data) {
+      window.location.href = '/login.html?redirect=/leaderboard.html';
+      return;
+    }
+    if (authJson.data.role !== 'admin') {
+      window.location.href = '/dashboard.html';
+      return;
+    }
+  } catch (e) {
+    window.location.href = '/login.html';
+    return;
+  }
+
   const $ = id => document.getElementById(id);
   const accColor = a => a >= 70 ? 'var(--green)' : a >= 50 ? 'var(--yellow)' : 'var(--red)';
   const empty = (tb, cols, msg) => { $(tb).innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:var(--muted);padding:24px;">${msg}</td></tr>`; };
