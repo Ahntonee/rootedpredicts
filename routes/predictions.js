@@ -92,10 +92,11 @@ router.get('/leaderboard', asyncHandler(async (req, res) => {
      FROM predictions WHERE ${decided}`
   );
   const [byMarket] = await db.query(
-    `SELECT market, COUNT(*) total, SUM(result='won') won,
+    `SELECT category AS market, COUNT(*) total, SUM(result='won') won,
+            SUM(result='lost') lost,
             ROUND(SUM(result='won')/NULLIF(COUNT(*),0)*100,1) accuracy
      FROM predictions WHERE ${decided}
-     GROUP BY market HAVING total >= 1 ORDER BY total DESC`
+     GROUP BY category HAVING total >= 1 ORDER BY total DESC`
   );
   const [byLeague] = await db.query(
     `SELECT l.name league, l.country, COUNT(*) total, SUM(p.result='won') won,

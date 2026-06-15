@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -61,10 +61,10 @@
         <!-- League (all leagues from DB, synced from API-Football) -->
         <div class="form-group" style="margin:0;">
           <label class="form-label">League</label>
-          <select class="form-control" id="m-league"><option value="">Loading leagues…</option></select>
+          <select class="form-control" id="m-league"><option value="">Loading leaguesâ€¦</option></select>
         </div>
 
-        <!-- Match Date — min enforced to 2h from now to block past/live games -->
+        <!-- Match Date â€” min enforced to 2h from now to block past/live games -->
         <div class="form-group" style="margin:0;">
           <label class="form-label">Match Date &amp; Time</label>
           <input type="datetime-local" class="form-control" id="m-date">
@@ -74,14 +74,14 @@
           </div>
         </div>
 
-        <!-- Home Team — datalist combo: pick from fixture list OR type freely -->
+        <!-- Home Team â€” datalist combo: pick from fixture list OR type freely -->
         <div class="form-group" style="margin:0;">
           <label class="form-label">Home Team</label>
           <input type="text" class="form-control" id="m-home" list="home-teams-list" placeholder="Select or type team name" autocomplete="off">
           <datalist id="home-teams-list"></datalist>
         </div>
 
-        <!-- Away Team — datalist combo -->
+        <!-- Away Team â€” datalist combo -->
         <div class="form-group" style="margin:0;">
           <label class="form-label">Away Team <span style="font-weight:400;color:var(--muted);font-size:0.72rem;">(auto-fills from fixture)</span></label>
           <input type="text" class="form-control" id="m-away" list="away-teams-list" placeholder="Select or type team name" autocomplete="off">
@@ -97,11 +97,11 @@
           </select>
         </div>
 
-        <!-- Tip — dynamic select based on market, with free-text fallback -->
+        <!-- Tip â€” dynamic select based on market, with free-text fallback -->
         <div class="form-group" style="margin:0;">
           <label class="form-label">Tip</label>
           <select class="form-control" id="m-tip-select"></select>
-          <input type="text" class="form-control" id="m-tip-text" placeholder="Enter tip…" style="display:none;margin-top:6px;">
+          <input type="text" class="form-control" id="m-tip-text" placeholder="Enter tipâ€¦" style="display:none;margin-top:6px;">
           <input type="hidden" id="m-tip">
         </div>
 
@@ -137,11 +137,11 @@
             <option value="BTTS">BTTS</option>
             <option value="Double Chance">Double Chance</option>
             <option value="Acca Tips">Acca Tips</option>
-            <option value="Banker of the Day">Banker of the Day ⭐ (VIP)</option>
+            <option value="Banker of the Day">Banker of the Day â­ (VIP)</option>
           </select>
         </div>
 
-        <!-- Result — with live API status badge when fixture_id present -->
+        <!-- Result â€” with live API status badge when fixture_id present -->
         <div class="form-group" style="margin:0;">
           <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
             Result
@@ -159,7 +159,7 @@
         <!-- Expert Analysis (full-width, auto-filled from API research) -->
         <div class="form-group" style="margin:0;grid-column:1/-1;">
           <label class="form-label">Expert Analysis <span style="font-weight:400;color:var(--muted);font-size:0.72rem;">(auto-filled from research)</span></label>
-          <textarea class="form-control" id="m-analysis" rows="3" placeholder="Auto-fills from Research, or enter manually…"></textarea>
+          <textarea class="form-control" id="m-analysis" rows="3" placeholder="Auto-fills from Research, or enter manuallyâ€¦"></textarea>
         </div>
 
         <!-- Home Form (auto-filled from API) -->
@@ -174,7 +174,7 @@
           <input type="text" class="form-control" id="m-aform" placeholder="e.g. LWWWD">
         </div>
 
-        <!-- Publish immediately — checked by default -->
+        <!-- Publish immediately â€” checked by default -->
         <div class="form-group" style="margin:0;grid-column:1/-1;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-user-select:text;user-select:text;">
             <input type="checkbox" id="m-published" checked> <span class="form-label" style="margin:0;">Publish immediately</span>
@@ -201,7 +201,7 @@
       <div id="research-loading" style="text-align:center;padding:40px;">
         <span class="material-icons-round" style="font-size:2.5rem;color:var(--border);display:block;margin-bottom:8px;animation:spin 1s linear infinite;">refresh</span>
         <p style="color:var(--muted);">Fetching live data from API-Football...</p>
-        <p style="color:var(--muted);font-size:0.78rem;margin-top:6px;">Form, H2H, standings, stats — may take 5-10 seconds</p>
+        <p style="color:var(--muted);font-size:0.78rem;margin-top:6px;">Form, H2H, standings, stats â€” may take 5-10 seconds</p>
       </div>
       <div id="research-content" style="display:none;"></div>
     </div>
@@ -222,7 +222,7 @@
     <div class="admin-modal-body" style="max-height:78vh;overflow-y:auto;">
       <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;">
         Assign published predictions to categories, or auto-predict new ones directly into a category.
-        Showing all published predictions — use the dropdowns to reassign.
+        Showing all published predictions â€” use the dropdowns to reassign.
       </p>
 
       <!-- Per-category auto-predict row -->
@@ -252,10 +252,10 @@
 
       <!-- Today's predictions with category dropdowns -->
       <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">
-        Reassign Categories — Today &amp; Tomorrow's Predictions
+        Reassign Categories â€” Today &amp; Tomorrow's Predictions
       </div>
       <div id="cat-pred-list">
-        <div style="text-align:center;padding:32px;color:var(--muted);">Loading…</div>
+        <div style="text-align:center;padding:32px;color:var(--muted);">Loadingâ€¦</div>
       </div>
     </div>
     <div class="admin-modal-footer">
@@ -301,10 +301,10 @@ async function loadPredictions(page) {
   document.getElementById('pred-tbody').innerHTML = d.predictions.map(p => `
     <tr>
       <td><div style="font-weight:600;font-size:0.85rem;">${p.home_team} vs ${p.away_team}</div></td>
-      <td style="font-size:0.8rem;color:var(--muted);">${p.league_name||'—'}</td>
+      <td style="font-size:0.8rem;color:var(--muted);">${p.league_name||'â€”'}</td>
       <td style="font-weight:600;color:var(--red);font-size:0.85rem;">${p.tip||'TBD'}</td>
       <td style="font-size:0.8rem;">${p.market}</td>
-      <td>${p.confidence_score ? p.confidence_score+'%' : '—'}</td>
+      <td>${p.confidence_score ? p.confidence_score+'%' : 'â€”'}</td>
       <td>${Admin.badge(p.visibility)}</td>
       <td>${Admin.badge(p.result)}</td>
       <td style="font-size:0.78rem;color:var(--muted);">${Admin.fmtDate(p.match_date)}</td>
@@ -325,7 +325,7 @@ async function loadPredictions(page) {
   }
 }
 
-// ── Tip options per market ────────────────────────────────────────────────────
+// â”€â”€ Tip options per market â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const TIP_OPTIONS = {
   '1X2':          ['Home Win', 'Away Win', 'Draw'],
   'Over/Under':   ['Over 2.5', 'Under 2.5', 'Over 1.5', 'Under 1.5', 'Over 3.5', 'Under 3.5', 'Over 0.5', 'Over 4.5'],
@@ -393,7 +393,7 @@ function openNewModal() {
   Admin.showModal('pred-modal');
 }
 
-// ── Market-specific odds fields ────────────────────────────────────────────
+// â”€â”€ Market-specific odds fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ODDS_FIELDS = {
   '1X2':          [['home','Home'], ['draw','Draw'], ['away','Away']],
   'BTTS':         [['yes','Yes'],   ['no','No']],
@@ -439,7 +439,7 @@ function collectOdds(market, tip) {
   return { odds_data: data, odds: primary };
 }
 
-// ── New Prediction form: league dropdown + fixture-driven team datalists ──────
+// â”€â”€ New Prediction form: league dropdown + fixture-driven team datalists â”€â”€â”€â”€â”€â”€
 let formFixtures = [];
 
 async function loadFormLeagues() {
@@ -452,8 +452,8 @@ async function loadFormLeagues() {
       if (b.is_popular !== a.is_popular) return b.is_popular - a.is_popular;
       return (a.name || '').localeCompare(b.name || '');
     });
-    sel.innerHTML = '<option value="">Select a league…</option>' +
-      sorted.map(l => `<option value="${l.id}" data-api-id="${l.api_league_id||''}">${l.name}${l.country?' · '+l.country:''}</option>`).join('');
+    sel.innerHTML = '<option value="">Select a leagueâ€¦</option>' +
+      sorted.map(l => `<option value="${l.id}" data-api-id="${l.api_league_id||''}">${l.name}${l.country?' Â· '+l.country:''}</option>`).join('');
   } catch (e) {}
 }
 
@@ -532,12 +532,12 @@ async function editPred(id) {
   document.getElementById('m-aform').value    = p.away_form||'';
   document.getElementById('m-published').checked = !!p.published_at;
 
-  // Category — stored in visibility column; derive from tip/market if not set
+  // Category â€” stored in visibility column; derive from tip/market if not set
   const cat = p.category || deriveCategoryFromTip(p.tip, p.market, p.visibility);
   const catSel = document.getElementById('m-category');
   catSel.value = [...catSel.options].some(o => o.value === cat) ? cat : 'Free Pick';
 
-  // Tip field — render per-market select or free-text
+  // Tip field â€” render per-market select or free-text
   renderTipField(p.market||'1X2', p.tip||'');
 
   // Live status + score display
@@ -547,7 +547,7 @@ async function editPred(id) {
     statusEl.textContent = p.status_short + (p.elapsed ? ' ' + p.elapsed + "'" : '');
     statusEl.style.display = 'inline-block';
     if (p.home_score != null && p.away_score != null) {
-      scoreEl.textContent = `${p.home_team||'Home'} ${p.home_score} – ${p.away_score} ${p.away_team||'Away'}`;
+      scoreEl.textContent = `${p.home_team||'Home'} ${p.home_score} â€“ ${p.away_score} ${p.away_team||'Away'}`;
       scoreEl.style.display = 'block';
     }
   } else {
@@ -637,7 +637,7 @@ async function researchPred(fixtureId, matchName) {
       <tbody>${rows.map(r => {
         const rc = {W:'var(--green)',D:'var(--yellow)',L:'var(--red)'}[r.result]||'var(--muted)';
         return `<tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:5px 6px;color:var(--muted);">${r.date||'—'}</td>
+          <td style="padding:5px 6px;color:var(--muted);">${r.date||'â€”'}</td>
           <td style="padding:5px 6px;">${r.home} vs ${r.away}</td>
           <td style="padding:5px 6px;text-align:center;font-weight:700;">${r.score}</td>
           <td style="padding:5px 6px;text-align:center;color:${rc};font-weight:700;">${r.result}</td>
@@ -654,11 +654,11 @@ async function researchPred(fixtureId, matchName) {
       <div>
         <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Algorithm Suggestion</div>
         <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--red);">${d.suggestion.tip}</div>
-        <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${d.suggestion.market} — ${d.suggestion.reason}</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${d.suggestion.market} â€” ${d.suggestion.reason}</div>
       </div>
       <div style="text-align:right;">
         ${d.h2h_summary ? `<div style="font-size:0.78rem;color:var(--muted);">H2H: <strong style="color:var(--text);">${d.h2h_summary}</strong></div>` : ''}
-        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">Home form: <strong>${d.home_form||'—'}</strong> &nbsp;|&nbsp; Away form: <strong>${d.away_form||'—'}</strong></div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">Home form: <strong>${d.home_form||'â€”'}</strong> &nbsp;|&nbsp; Away form: <strong>${d.away_form||'â€”'}</strong></div>
       </div>
     </div>
 
@@ -678,25 +678,25 @@ async function researchPred(fixtureId, matchName) {
       <div style="background:var(--surface);border-radius:8px;padding:14px;border:1px solid var(--border);">
         <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;">${d.fixture.home.name}</div>
         <div style="margin-bottom:8px;">${formBadges(d.home_form)}</div>
-        ${hst ? `<div style="font-size:0.78rem;color:var(--muted);">Rank <strong style="color:var(--text);">#${hst.rank}</strong> · ${hst.points} pts · ${hst.played} played · GD ${hst.gd>0?'+':''}${hst.gd}</div>` : ''}
-        ${hs ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:6px;">Goals for: <strong>${hs.goals_for_avg}</strong>/game · Against: <strong>${hs.goals_against_avg}</strong>/game</div>` : ''}
+        ${hst ? `<div style="font-size:0.78rem;color:var(--muted);">Rank <strong style="color:var(--text);">#${hst.rank}</strong> Â· ${hst.points} pts Â· ${hst.played} played Â· GD ${hst.gd>0?'+':''}${hst.gd}</div>` : ''}
+        ${hs ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:6px;">Goals for: <strong>${hs.goals_for_avg}</strong>/game Â· Against: <strong>${hs.goals_against_avg}</strong>/game</div>` : ''}
       </div>
       <div style="background:var(--surface);border-radius:8px;padding:14px;border:1px solid var(--border);">
         <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;">${d.fixture.away.name}</div>
         <div style="margin-bottom:8px;">${formBadges(d.away_form)}</div>
-        ${ast ? `<div style="font-size:0.78rem;color:var(--muted);">Rank <strong style="color:var(--text);">#${ast.rank}</strong> · ${ast.points} pts · ${ast.played} played · GD ${ast.gd>0?'+':''}${ast.gd}</div>` : ''}
-        ${as_ ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:6px;">Goals for: <strong>${as_.goals_for_avg}</strong>/game · Against: <strong>${as_.goals_against_avg}</strong>/game</div>` : ''}
+        ${ast ? `<div style="font-size:0.78rem;color:var(--muted);">Rank <strong style="color:var(--text);">#${ast.rank}</strong> Â· ${ast.points} pts Â· ${ast.played} played Â· GD ${ast.gd>0?'+':''}${ast.gd}</div>` : ''}
+        ${as_ ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:6px;">Goals for: <strong>${as_.goals_for_avg}</strong>/game Â· Against: <strong>${as_.goals_against_avg}</strong>/game</div>` : ''}
       </div>
     </div>
 
     <!-- Recent form detail -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
       <div>
-        <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">${d.fixture.home.name} — Last 5</div>
+        <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">${d.fixture.home.name} â€” Last 5</div>
         ${recentTable(d.home_recent)}
       </div>
       <div>
-        <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">${d.fixture.away.name} — Last 5</div>
+        <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">${d.fixture.away.name} â€” Last 5</div>
         ${recentTable(d.away_recent)}
       </div>
     </div>
@@ -704,7 +704,7 @@ async function researchPred(fixtureId, matchName) {
     <!-- H2H -->
     ${d.h2h_recent && d.h2h_recent.length ? `
     <div>
-      <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Head to Head — Last 5 Meetings</div>
+      <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Head to Head â€” Last 5 Meetings</div>
       ${recentTable(d.h2h_recent)}
     </div>` : ''}
   `;
@@ -714,9 +714,9 @@ async function researchPred(fixtureId, matchName) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  Admin.buildSidebar();
   const user = await Admin.requireAdmin();
   if (!user) return;
+  Admin.buildSidebar(user);
   loadPredictions(1);
   document.getElementById('new-pred-btn').addEventListener('click', openNewModal);
 
@@ -750,10 +750,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     setDateMin();
     validateDate();
     Admin.showModal('pred-modal');
-    Admin.toast('Suggestion applied — review and publish');
+    Admin.toast('Suggestion applied â€” review and publish');
     await loadLeagueFixtures(d.fixture.home.name || '', d.fixture.away.name || '');
   });
-  // ── Category Manager ──────────────────────────────────────────────────────
+  // â”€â”€ Category Manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const ALL_CATEGORIES = [
     'Free Pick','1.5 Goals','2.5 Goals','3.5 Goals',
     'Home Win','Away Win','BTTS','Double Chance','Acca Tips','Banker of the Day',
@@ -762,7 +762,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function openCatManager() {
     Admin.showModal('cat-modal');
     document.getElementById('cat-ap-log').style.display = 'none';
-    document.getElementById('cat-pred-list').innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);">Loading…</div>';
+    document.getElementById('cat-pred-list').innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);">Loadingâ€¦</div>';
     const today = new Date().toISOString().split('T')[0];
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
     const [r1, r2] = await Promise.all([
@@ -792,7 +792,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <tr style="border-bottom:1px solid var(--border);" id="cat-row-${p.id}">
               <td style="padding:10px;font-weight:600;">${p.home_team} vs ${p.away_team}</td>
               <td style="padding:10px;color:var(--red);font-weight:600;">${p.tip || 'TBD'}</td>
-              <td style="padding:10px;color:var(--muted);font-size:0.78rem;">${p.match_date ? p.match_date.slice(0,10) : '—'}</td>
+              <td style="padding:10px;color:var(--muted);font-size:0.78rem;">${p.match_date ? p.match_date.slice(0,10) : 'â€”'}</td>
               <td style="padding:10px;">
                 <select class="form-control" id="cat-sel-${p.id}" style="padding:5px 8px;font-size:0.82rem;">
                   ${ALL_CATEGORIES.map(c => `<option value="${c}"${c === (p.category || 'Free Pick') ? ' selected' : ''}>${c}</option>`).join('')}
@@ -834,7 +834,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const logEl    = document.getElementById('cat-ap-log');
 
     btn.disabled = true;
-    btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite;font-size:0.9rem;">refresh</span>Running…';
+    btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite;font-size:0.9rem;">refresh</span>Runningâ€¦';
     logEl.style.display = 'none';
 
     const json = await Admin.api('POST', '/api/sync/auto-predict', {
@@ -856,10 +856,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const published = log.filter(l => l.published).length;
     const drafted   = log.filter(l => !l.published && !l.error).length;
     logEl.style.display = 'block';
-    logEl.innerHTML = `<strong style="color:var(--green);">✓ ${published} published · ${drafted} drafted · ${log.filter(l=>l.error).length} errors</strong><br>` +
+    logEl.innerHTML = `<strong style="color:var(--green);">âœ“ ${published} published Â· ${drafted} drafted Â· ${log.filter(l=>l.error).length} errors</strong><br>` +
       log.map(l => l.error
-        ? `<span style="color:var(--red);">✗ ${l.match}: ${l.error}</span>`
-        : `<span style="color:${l.published?'var(--green)':'var(--muted)'};">${l.published?'✓ Published':'○ Draft'} — ${l.match} → <strong>${l.tip}</strong> (${l.confidence}%)</span>`
+        ? `<span style="color:var(--red);">âœ— ${l.match}: ${l.error}</span>`
+        : `<span style="color:${l.published?'var(--green)':'var(--muted)'};">${l.published?'âœ“ Published':'â—‹ Draft'} â€” ${l.match} â†’ <strong>${l.tip}</strong> (${l.confidence}%)</span>`
       ).join('<br>');
     // Reload the prediction list in background
     loadPredictions(predPage);
@@ -936,7 +936,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const json = await res.json();
       if (json.success) {
         document.getElementById('m-conf').value = json.data.score;
-        Admin.toast(`Score: ${json.data.score} — ${describeScore(json.data.score)}`);
+        Admin.toast(`Score: ${json.data.score} â€” ${describeScore(json.data.score)}`);
       } else {
         Admin.toast(json.message || 'Score failed', 'error');
       }
@@ -948,7 +948,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.disabled = false;
     if (json.success) {
       document.getElementById('m-conf').value = json.data.score;
-      Admin.toast(`Score: ${json.data.score} — ${describeScore(json.data.score)}`);
+      Admin.toast(`Score: ${json.data.score} â€” ${describeScore(json.data.score)}`);
     } else {
       Admin.toast(json.message || 'Scoring failed', 'error');
     }
@@ -978,7 +978,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tip      = (tipSel.style.display !== 'none' ? tipSel.value : tipTxt.value).trim();
     tipEl.value    = tip;
 
-    // Date validation — only enforce the future-only rule on new predictions,
+    // Date validation â€” only enforce the future-only rule on new predictions,
     // not when editing an existing one (match may already be in play or past).
     if (!editingId && !validateDate()) {
       Admin.toast('Match date must be at least 2 hours in the future', 'error'); return;
@@ -986,7 +986,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const { odds_data, odds } = collectOdds(market, tip);
 
-    // Category → visibility mapping
+    // Category â†’ visibility mapping
     const category   = document.getElementById('m-category').value;
     const visibility = category === 'Banker of the Day' ? 'vip' : 'free';
 
@@ -1020,3 +1020,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 </script>
 </body></html>
+

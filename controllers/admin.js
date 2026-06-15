@@ -2,10 +2,30 @@
 // Rooted Predictions — Admin controller
 'use strict';
 
+const bcrypt     = require('bcryptjs');
 const db         = require('../config/db');
 const slugify    = require('slugify');
 const confidence = require('../services/confidence');
 const { sanitiseText, generatePredictionSlug } = require('../utils/helpers');
+
+// ── Audit log helper (fire-and-forget — never throws into the response chain)
+async function writeAudit(req, action, entityType, entityId, entityLabel, details) {
+  try {
+    const u    = req.user;
+    const name = u.username || u.name || u.email;
+    const role = u.admin_role || 'superadmin';
+    const ip   = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || null);
+    await db.query(
+      `INSERT INTO admin_audit_log
+         (admin_id, admin_name, admin_role, action, entity_type, entity_id, entity_label, details, ip_address)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+      [u.id, name, role, action, entityType || null, entityId || null,
+       entityLabel || null, details ? JSON.stringify(details) : null, ip]
+    );
+  } catch (e) {
+    console.warn('[AUDIT] write failed:', e.message);
+  }
+}
 
 // ── Dashboard stats
 async function getStats(req, res) {
@@ -99,12 +119,12 @@ async function createPrediction(req, res) {
     const [ins] = await db.query(
       `INSERT INTO predictions (fixture_id,league_id,home_team,away_team,home_team_logo,away_team_logo,
         match_date,tip,market,odds,odds_data,confidence_score,visibility,category,analysis,home_form,away_form,
-        h2h_summary,slug,result,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?)`,
+        h2h_summary,slug,result,published_at,created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?,?)`,
       [fixtureIdVal,leagueIdVal,sanitiseText(home_team),sanitiseText(away_team),home_team_logo||null,
        away_team_logo||null,match_date,sanitiseText(tip),sanitiseText(market),
        odds||null,oddsJson,confidence_score||null,derivedVis,category||null,analysis||null,
        home_form||null,away_form||null,h2h_summary||null,slug,
-       published ? new Date() : null]
+       published ? new Date() : null, req.user.id]
     );
     // Auto-score if no manual confidence was provided
     let finalScore = confidence_score || null;
@@ -114,6 +134,9 @@ async function createPrediction(req, res) {
         finalScore = score;
       } catch(_) { /* non-fatal — score can be set manually */ }
     }
+    writeAudit(req, 'create', 'prediction', ins.insertId,
+      `${sanitiseText(home_team)} vs ${sanitiseText(away_team)}`,
+      { tip, market, category, match_date });
     res.status(201).json({ success:true, data:{ id:ins.insertId, slug, confidence_score: finalScore }, message:'Prediction created' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
@@ -152,8 +175,11 @@ async function updatePrediction(req, res) {
     if (published===true) { updates.push('published_at=COALESCE(published_at,NOW())'); }
     if (published===false){ updates.push('published_at=NULL'); }
     if (!updates.length)  return res.status(400).json({ success:false, message:'Nothing to update' });
+    updates.push('updated_by=?'); args.push(req.user.id);
     updates.push('updated_at=NOW()'); args.push(id);
     await db.query(`UPDATE predictions SET ${updates.join(',')} WHERE id=?`, args);
+    writeAudit(req, 'update', 'prediction', parseInt(id), null,
+      { fields: updates.filter(u => !u.includes('NOW') && !u.includes('updated_by')).map(u => u.split('=')[0]) });
     res.json({ success:true, message:'Prediction updated' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
@@ -161,7 +187,10 @@ async function updatePrediction(req, res) {
 // ── Delete prediction
 async function deletePrediction(req, res) {
   try {
+    const [rows] = await db.query('SELECT home_team, away_team, match_date FROM predictions WHERE id=?', [req.params.id]);
+    const label = rows.length ? `${rows[0].home_team} vs ${rows[0].away_team} (${String(rows[0].match_date).split('T')[0]})` : null;
     await db.query('DELETE FROM predictions WHERE id=?',[req.params.id]);
+    writeAudit(req, 'delete', 'prediction', parseInt(req.params.id), label, null);
     res.json({ success:true, message:'Prediction deleted' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
@@ -217,6 +246,7 @@ async function updateUser(req, res) {
     if (!updates.length) return res.status(400).json({ success:false, message:'Nothing to update' });
     updates.push('updated_at=NOW()'); args.push(req.params.id);
     await db.query(`UPDATE users SET ${updates.join(',')} WHERE id=?`,args);
+    writeAudit(req, 'update', 'user', parseInt(req.params.id), null, req.body);
     res.json({ success:true, message:'User updated' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
@@ -281,6 +311,7 @@ async function createBlogPost(req, res) {
        meta_title||null,meta_description||null,keywords||null,req.user.id,
        published?1:0, published?new Date():null]
     );
+    writeAudit(req, 'create', 'blog_post', ins.insertId, sanitiseText(title), { category, published });
     res.status(201).json({ success:true, data:{ id:ins.insertId, slug }, message:'Post created' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
@@ -302,13 +333,18 @@ async function updateBlogPost(req, res) {
     if (!updates.length)  return res.status(400).json({ success:false, message:'Nothing to update' });
     updates.push('updated_at=NOW()'); args.push(req.params.id);
     await db.query(`UPDATE blog_posts SET ${updates.join(',')} WHERE id=?`,args);
+    writeAudit(req, 'update', 'blog_post', parseInt(req.params.id), title || null,
+      { fields: updates.filter(u => !u.includes('NOW')).map(u => u.split('=')[0]) });
     res.json({ success:true, message:'Post updated' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 
 async function deleteBlogPost(req, res) {
   try {
+    const [rows] = await db.query('SELECT title FROM blog_posts WHERE id=?', [req.params.id]);
+    const label = rows.length ? rows[0].title : null;
     await db.query('DELETE FROM blog_posts WHERE id=?',[req.params.id]);
+    writeAudit(req, 'delete', 'blog_post', parseInt(req.params.id), label, null);
     res.json({ success:true, message:'Post deleted' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
@@ -427,6 +463,184 @@ async function updateSiteStats(req, res) {
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 }
 
+// ── Audit log ──────────────────────────────────────────────────
+async function getAuditLog(req, res) {
+  try {
+    const { page = 1, limit = 50, action, entity_type, admin_id, date_from, date_to } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    let sql = 'SELECT * FROM admin_audit_log WHERE 1=1';
+    const args = [];
+    if (action)      { sql += ' AND action=?';      args.push(action); }
+    if (entity_type) { sql += ' AND entity_type=?'; args.push(entity_type); }
+    if (admin_id)    { sql += ' AND admin_id=?';    args.push(parseInt(admin_id)); }
+    if (date_from)   { sql += ' AND DATE(created_at)>=?'; args.push(date_from); }
+    if (date_to)     { sql += ' AND DATE(created_at)<=?'; args.push(date_to); }
+    const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
+    const [[{ total }]] = await db.query(countSql, args);
+    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    const [rows] = await db.query(sql, [...args, parseInt(limit), offset]);
+    res.json({ success: true, data: { logs: rows, total: parseInt(total), page: parseInt(page) } });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
+// ── Admin profile (self) ───────────────────────────────────────
+async function getProfile(req, res) {
+  try {
+    const [rows] = await db.query(
+      'SELECT id, name, username, email, role, admin_role, created_at FROM users WHERE id=?',
+      [req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Not found' });
+    // Recent activity for this admin
+    let recentActivity = [];
+    try {
+      const [logs] = await db.query(
+        'SELECT action, entity_type, entity_label, created_at FROM admin_audit_log WHERE admin_id=? ORDER BY created_at DESC LIMIT 10',
+        [req.user.id]
+      );
+      recentActivity = logs;
+    } catch (_) {}
+    res.json({ success: true, data: { ...rows[0], recent_activity: recentActivity } });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
+async function updateProfile(req, res) {
+  try {
+    const { name, username } = req.body;
+    const updates = []; const args = [];
+    if (name)     { updates.push('name=?');     args.push(sanitiseText(name).slice(0, 100)); }
+    if (username) {
+      // Validate username: alphanumeric + underscores only
+      if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+        return res.status(400).json({ success: false, message: 'Username must be 3–30 characters: letters, numbers, underscores only.' });
+      }
+      updates.push('username=?'); args.push(username.toLowerCase());
+    }
+    if (!updates.length) return res.status(400).json({ success: false, message: 'Nothing to update' });
+    updates.push('updated_at=NOW()'); args.push(req.user.id);
+    await db.query(`UPDATE users SET ${updates.join(',')} WHERE id=?`, args);
+    res.json({ success: true, message: 'Profile updated' });
+  } catch (e) {
+    if (e.code === 'ER_DUP_ENTRY') return res.status(409).json({ success: false, message: 'That username is already taken.' });
+    res.status(500).json({ success: false, message: e.message });
+  }
+}
+
+async function changePassword(req, res) {
+  try {
+    const { current_password, new_password } = req.body;
+    if (!current_password || !new_password) {
+      return res.status(400).json({ success: false, message: 'current_password and new_password are required.' });
+    }
+    if (new_password.length < 8) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 8 characters.' });
+    }
+    const [rows] = await db.query('SELECT password_hash FROM users WHERE id=?', [req.user.id]);
+    if (!rows.length) return res.status(404).json({ success: false, message: 'User not found.' });
+    const valid = await bcrypt.compare(current_password, rows[0].password_hash);
+    if (!valid) return res.status(400).json({ success: false, message: 'Current password is incorrect.' });
+    const newHash = await bcrypt.hash(new_password, 12);
+    await db.query('UPDATE users SET password_hash=?, updated_at=NOW() WHERE id=?', [newHash, req.user.id]);
+    writeAudit(req, 'password_change', 'admin_account', req.user.id, req.user.username || req.user.name, null);
+    res.json({ success: true, message: 'Password changed successfully.' });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
+// ── Admin account management (superadmin only) ─────────────────
+async function getAdmins(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT id, name, username, email, admin_role, created_at,
+              (SELECT created_at FROM admin_audit_log WHERE admin_id=u.id ORDER BY created_at DESC LIMIT 1) as last_active
+       FROM users u WHERE role='admin' ORDER BY created_at ASC`
+    );
+    res.json({ success: true, data: rows });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
+async function createAdminAccount(req, res) {
+  try {
+    const { name, username, email, password, admin_role = 'editor' } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'name, email, and password are required.' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
+    }
+    if (!['superadmin', 'editor', 'viewer'].includes(admin_role)) {
+      return res.status(400).json({ success: false, message: 'Invalid admin_role.' });
+    }
+    if (username && !/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+      return res.status(400).json({ success: false, message: 'Username must be 3–30 characters: letters, numbers, underscores only.' });
+    }
+    const [existing] = await db.query('SELECT id FROM users WHERE email=?', [email.toLowerCase()]);
+    if (existing.length) return res.status(409).json({ success: false, message: 'An account with that email already exists.' });
+    const hash = await bcrypt.hash(password, 12);
+    const [ins] = await db.query(
+      `INSERT INTO users (name, username, email, password_hash, role, admin_role) VALUES (?,?,?,?,?,?)`,
+      [sanitiseText(name).slice(0, 100), username ? username.toLowerCase() : null,
+       email.toLowerCase(), hash, 'admin', admin_role]
+    );
+    writeAudit(req, 'create', 'admin_account', ins.insertId, username || name, { admin_role });
+    res.status(201).json({ success: true, data: { id: ins.insertId }, message: 'Admin account created.' });
+  } catch (e) {
+    if (e.code === 'ER_DUP_ENTRY') return res.status(409).json({ success: false, message: 'Email or username already in use.' });
+    res.status(500).json({ success: false, message: e.message });
+  }
+}
+
+async function updateAdminAccount(req, res) {
+  try {
+    const { id } = req.params;
+    if (parseInt(id) === req.user.id) {
+      return res.status(400).json({ success: false, message: 'Use My Profile to update your own account.' });
+    }
+    const { name, username, admin_role, password } = req.body;
+    const updates = []; const args = [];
+    if (name)       { updates.push('name=?');       args.push(sanitiseText(name).slice(0, 100)); }
+    if (username)   {
+      if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+        return res.status(400).json({ success: false, message: 'Invalid username format.' });
+      }
+      updates.push('username=?'); args.push(username.toLowerCase());
+    }
+    if (admin_role) {
+      if (!['superadmin', 'editor', 'viewer'].includes(admin_role)) {
+        return res.status(400).json({ success: false, message: 'Invalid admin_role.' });
+      }
+      updates.push('admin_role=?'); args.push(admin_role);
+    }
+    if (password) {
+      if (password.length < 8) return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
+      const hash = await bcrypt.hash(password, 12);
+      updates.push('password_hash=?'); args.push(hash);
+    }
+    if (!updates.length) return res.status(400).json({ success: false, message: 'Nothing to update.' });
+    updates.push('updated_at=NOW()'); args.push(id);
+    await db.query(`UPDATE users SET ${updates.join(',')} WHERE id=? AND role='admin'`, args);
+    writeAudit(req, 'update', 'admin_account', parseInt(id), username || name || null,
+      { fields: updates.filter(u => !u.includes('NOW') && !u.includes('password')).map(u => u.split('=')[0]) });
+    res.json({ success: true, message: 'Admin account updated.' });
+  } catch (e) {
+    if (e.code === 'ER_DUP_ENTRY') return res.status(409).json({ success: false, message: 'Username already taken.' });
+    res.status(500).json({ success: false, message: e.message });
+  }
+}
+
+async function deleteAdminAccount(req, res) {
+  try {
+    const { id } = req.params;
+    if (parseInt(id) === req.user.id) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account.' });
+    }
+    const [rows] = await db.query("SELECT name, username FROM users WHERE id=? AND role='admin'", [id]);
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Admin not found.' });
+    await db.query("DELETE FROM users WHERE id=? AND role='admin'", [id]);
+    writeAudit(req, 'delete', 'admin_account', parseInt(id), rows[0].username || rows[0].name, null);
+    res.json({ success: true, message: 'Admin account deleted.' });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
 module.exports = {
   getStats, getPredictions, getPrediction, createPrediction, updatePrediction, deletePrediction,
   scorePrediction, scoreAllPredictions, previewScore,
@@ -435,4 +649,7 @@ module.exports = {
   getSeoSettings, updateSeoSettings,
   getSiteStats, updateSiteStats,
   getFormLeagues, getLeagueFixtures, getFixtureOdds,
+  getAuditLog,
+  getProfile, updateProfile, changePassword,
+  getAdmins, createAdminAccount, updateAdminAccount, deleteAdminAccount,
 };

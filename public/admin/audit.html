@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Log | Rooted Predictions Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .audit-table { width:100%; border-collapse:collapse; font-size:0.83rem; }
+    .audit-table th { padding:10px 14px; text-align:left; font-size:0.7rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); border-bottom:2px solid var(--border); white-space:nowrap; }
+    .audit-table td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    .audit-table tr:hover td { background:var(--surface); }
+    .action-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:50px; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; }
+    .action-create  { background:rgba(22,163,74,0.12); color:#16a34a; }
+    .action-update  { background:rgba(59,130,246,0.12); color:#3b82f6; }
+    .action-delete  { background:rgba(233,69,96,0.12);  color:var(--red); }
+    .action-password_change { background:rgba(245,158,11,0.12); color:#f59e0b; }
+    .action-login   { background:rgba(100,100,100,0.1); color:var(--muted); }
+    .entity-chip { font-size:0.7rem; padding:2px 8px; border-radius:4px; background:var(--surface); color:var(--text-soft); }
+    .filter-bar { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; padding:14px 20px; border-bottom:1px solid var(--border); }
+    .filter-bar select, .filter-bar input { padding:7px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:0.82rem; }
+    .pagination { display:flex; align-items:center; gap:8px; padding:14px 20px; border-top:1px solid var(--border); font-size:0.82rem; color:var(--muted); }
+  </style>
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar">
+  <span class="admin-topbar-title">Audit Log</span>
+  <span style="font-size:0.82rem;color:var(--muted);" id="admin-user-name"></span>
+</div>
+<main class="admin-main">
+
+  <!-- Summary chips -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;" id="summary-chips">
+    <div class="admin-stat-card" style="flex:1;min-width:130px;padding:14px 18px;">
+      <div class="admin-stat-value" id="s-total" style="font-size:1.4rem;">—</div>
+      <div class="admin-stat-label">Total Actions</div>
+    </div>
+    <div class="admin-stat-card" style="flex:1;min-width:130px;padding:14px 18px;">
+      <div class="admin-stat-value" id="s-creates" style="font-size:1.4rem;color:var(--green);">—</div>
+      <div class="admin-stat-label">Created</div>
+    </div>
+    <div class="admin-stat-card" style="flex:1;min-width:130px;padding:14px 18px;">
+      <div class="admin-stat-value" id="s-updates" style="font-size:1.4rem;color:#3b82f6;">—</div>
+      <div class="admin-stat-label">Updated</div>
+    </div>
+    <div class="admin-stat-card" style="flex:1;min-width:130px;padding:14px 18px;">
+      <div class="admin-stat-value" id="s-deletes" style="font-size:1.4rem;color:var(--red);">—</div>
+      <div class="admin-stat-label">Deleted</div>
+    </div>
+    <div class="admin-stat-card" style="flex:1;min-width:130px;padding:14px 18px;">
+      <div class="admin-stat-value" id="s-admins" style="font-size:1.4rem;">—</div>
+      <div class="admin-stat-label">Admins Active</div>
+    </div>
+  </div>
+
+  <div class="card" style="overflow:hidden;">
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;">Action</div>
+        <select id="f-action">
+          <option value="">All Actions</option>
+          <option value="create">Create</option>
+          <option value="update">Update</option>
+          <option value="delete">Delete</option>
+          <option value="password_change">Password Change</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;">Entity</div>
+        <select id="f-entity">
+          <option value="">All Types</option>
+          <option value="prediction">Prediction</option>
+          <option value="blog_post">Blog Post</option>
+          <option value="user">User</option>
+          <option value="admin_account">Admin Account</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;">Admin</div>
+        <select id="f-admin">
+          <option value="">All Admins</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;">From</div>
+        <input type="date" id="f-from">
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;">To</div>
+        <input type="date" id="f-to">
+      </div>
+      <button class="btn btn-primary btn-sm" id="apply-btn"><span class="material-icons-round" style="font-size:0.9rem;">filter_list</span>Apply</button>
+      <button class="btn btn-outline btn-sm" id="reset-btn"><span class="material-icons-round" style="font-size:0.9rem;">refresh</span>Reset</button>
+    </div>
+
+    <!-- Table -->
+    <div style="overflow-x:auto;">
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Admin</th>
+            <th>Role</th>
+            <th>Action</th>
+            <th>Entity</th>
+            <th>Detail</th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody id="audit-tbody">
+          <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <button class="btn btn-outline btn-sm" id="pg-prev" disabled><span class="material-icons-round" style="font-size:0.85rem;">chevron_left</span></button>
+      <span id="pg-label">—</span>
+      <button class="btn btn-outline btn-sm" id="pg-next" disabled><span class="material-icons-round" style="font-size:0.85rem;">chevron_right</span></button>
+      <span style="margin-left:auto;color:var(--muted);" id="pg-total"></span>
+    </div>
+
+  </div>
+</main>
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+const theme = localStorage.getItem('afro_theme') || 'dark';
+document.documentElement.setAttribute('data-theme', theme);
+
+const ACTION_ICONS = {
+  create:          'add_circle',
+  update:          'edit',
+  delete:          'delete',
+  password_change: 'lock_reset',
+  login:           'login',
+};
+
+let currentPage = 1;
+const LIMIT = 50;
+
+function chipClass(action) {
+  return 'action-chip action-' + (action || 'login');
+}
+
+function buildParams(page) {
+  const p = new URLSearchParams({ page, limit: LIMIT });
+  const action = document.getElementById('f-action').value;
+  const entity = document.getElementById('f-entity').value;
+  const admin  = document.getElementById('f-admin').value;
+  const from   = document.getElementById('f-from').value;
+  const to     = document.getElementById('f-to').value;
+  if (action) p.set('action', action);
+  if (entity) p.set('entity_type', entity);
+  if (admin)  p.set('admin_id', admin);
+  if (from)   p.set('date_from', from);
+  if (to)     p.set('date_to', to);
+  return p.toString();
+}
+
+async function loadLogs(page) {
+  currentPage = page || 1;
+  const tbody = document.getElementById('audit-tbody');
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--muted);">Loading…</td></tr>`;
+
+  const res = await Admin.api('GET', `/api/admin/audit?${buildParams(currentPage)}`);
+  if (!res.success) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--red);">${res.message||'Failed to load.'}</td></tr>`;
+    return;
+  }
+
+  const { logs, total } = res.data;
+  const totalPages = Math.ceil(total / LIMIT);
+
+  if (!logs.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--muted);">No audit entries found for this filter.</td></tr>`;
+  } else {
+    tbody.innerHTML = logs.map(l => `
+      <tr>
+        <td style="white-space:nowrap;color:var(--text-soft);">${Admin.fmtDateTime(l.created_at)}</td>
+        <td>
+          <div style="font-weight:600;color:var(--text);">${l.admin_name}</div>
+        </td>
+        <td>${Admin.badge(l.admin_role || 'superadmin')}</td>
+        <td>
+          <span class="${chipClass(l.action)}">
+            <span class="material-icons-round" style="font-size:0.75rem;">${ACTION_ICONS[l.action]||'history'}</span>
+            ${l.action.replace('_',' ')}
+          </span>
+        </td>
+        <td>${l.entity_type ? `<span class="entity-chip">${l.entity_type.replace('_',' ')}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
+        <td style="max-width:260px;">
+          ${l.entity_label ? `<span style="color:var(--text);">${l.entity_label}</span>` : ''}
+          ${l.details ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${summariseDetails(l.details)}</div>` : ''}
+        </td>
+        <td style="font-size:0.75rem;color:var(--muted);">${l.ip_address || '—'}</td>
+      </tr>`).join('');
+  }
+
+  // Pagination controls
+  document.getElementById('pg-label').textContent  = `Page ${currentPage} of ${totalPages || 1}`;
+  document.getElementById('pg-total').textContent  = `${total} total entries`;
+  document.getElementById('pg-prev').disabled = currentPage <= 1;
+  document.getElementById('pg-next').disabled = currentPage >= totalPages;
+}
+
+function summariseDetails(rawDetails) {
+  if (!rawDetails) return '';
+  try {
+    const d = typeof rawDetails === 'string' ? JSON.parse(rawDetails) : rawDetails;
+    if (d.fields && Array.isArray(d.fields)) return 'Fields: ' + d.fields.join(', ');
+    const keys = Object.keys(d).filter(k => d[k] != null && k !== 'fields');
+    if (!keys.length) return '';
+    return keys.slice(0,4).map(k => `${k}: ${String(d[k]).slice(0,20)}`).join(' · ');
+  } catch (_) { return ''; }
+}
+
+async function loadSummary() {
+  // Counts per action (no filter)
+  const res = await Admin.api('GET', '/api/admin/audit?limit=1000&page=1');
+  if (!res.success) return;
+  const logs = res.data.logs || [];
+  document.getElementById('s-total').textContent   = res.data.total;
+  document.getElementById('s-creates').textContent = logs.filter(l => l.action === 'create').length;
+  document.getElementById('s-updates').textContent = logs.filter(l => l.action === 'update').length;
+  document.getElementById('s-deletes').textContent = logs.filter(l => l.action === 'delete').length;
+  const uniqueAdmins = new Set(logs.map(l => l.admin_id)).size;
+  document.getElementById('s-admins').textContent  = uniqueAdmins;
+
+  // Populate admin filter dropdown
+  const sel = document.getElementById('f-admin');
+  const admins = [];
+  logs.forEach(l => { if (!admins.find(a => a.id === l.admin_id)) admins.push({ id: l.admin_id, name: l.admin_name }); });
+  admins.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id; opt.textContent = a.name;
+    sel.appendChild(opt);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = await Admin.requireAdmin();
+  if (!user) return;
+  Admin.buildSidebar(user);
+  document.getElementById('admin-user-name').textContent = user.username || user.name;
+
+  loadLogs(1);
+  loadSummary();
+
+  document.getElementById('apply-btn').addEventListener('click', () => loadLogs(1));
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    ['f-action','f-entity','f-admin'].forEach(id => document.getElementById(id).value = '');
+    ['f-from','f-to'].forEach(id => document.getElementById(id).value = '');
+    loadLogs(1);
+  });
+  document.getElementById('pg-prev').addEventListener('click', () => loadLogs(currentPage - 1));
+  document.getElementById('pg-next').addEventListener('click', () => loadLogs(currentPage + 1));
+});
+</script>
+</body>
+</html>

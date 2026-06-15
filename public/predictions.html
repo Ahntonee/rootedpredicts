@@ -880,10 +880,11 @@
     currentOffset = null; // custom date mode
     const el = document.getElementById('picks-date-label');
     if (el) el.textContent = new Date(chosen + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-    const params = new URLSearchParams({ date: chosen, limit: '20' });
+    const params = new URLSearchParams({ date: chosen, limit: '40' });
     const cat = currentCategory;
-    if (cat && cat !== 'free') params.set('category', cat);
-    if (cat === 'banker') { params.delete('category'); params.set('sort','confidence_score'); params.set('order','DESC'); }
+    if (cat && cat !== 'free' && cat !== 'all') {
+      params.set('category', cat);
+    }
     const list = document.getElementById('picks-list');
     list.innerHTML = `<div class="pick-skeleton"><div class="skel" style="height:16px;width:60%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:80%;"></div></div>`;
     fetch(`/api/predictions?${params.toString()}`, { credentials: 'include' })
@@ -960,10 +961,11 @@
   // ── Build API URL for current state
   function buildApiUrl() {
     const date = isoDate(getDateFor(currentOffset));
-    const params = new URLSearchParams({ date, limit: '20' });
+    const params = new URLSearchParams({ date, limit: '40' });
     const cat = currentCategory;
-    if (cat && cat !== 'free') params.set('category', cat);
-    if (cat === 'banker') { params.delete('category'); params.set('sort', 'confidence_score'); params.set('order', 'DESC'); }
+    if (cat && cat !== 'free' && cat !== 'all') {
+      params.set('category', cat);
+    }
     return `/api/predictions?${params.toString()}`;
   }
 

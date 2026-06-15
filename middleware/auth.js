@@ -29,7 +29,7 @@ async function authenticate(req, res, next) {
 
     // Fetch fresh user from DB — catches banned/deleted accounts mid-session
     const [rows] = await db.query(
-      'SELECT id, name, email, role, country, timezone, telegram_invited, is_banned FROM users WHERE id = ?',
+      'SELECT id, name, username, email, role, admin_role, country, timezone, telegram_invited, is_banned FROM users WHERE id = ?',
       [decoded.id]
     );
 
@@ -74,7 +74,7 @@ async function optionalAuth(req, res, next) {
     }
 
     const [rows] = await db.query(
-      'SELECT id, name, email, role, country, timezone, telegram_invited, is_banned FROM users WHERE id = ?',
+      'SELECT id, name, username, email, role, admin_role, country, timezone, telegram_invited, is_banned FROM users WHERE id = ?',
       [decoded.id]
     );
 
@@ -137,6 +137,25 @@ function requireAdmin(req, res, next) {
 }
 
 /**
+ * requireAdminRole — restrict an admin route to specific admin sub-roles.
+ * Admins with admin_role = NULL are treated as superadmin (backward compat).
+ *
+ * Usage: router.delete('/x/:id', authenticate, requireAdmin, requireAdminRole('superadmin','editor'), handler)
+ *
+ * @param {...string} roles - Allowed admin_role values
+ */
+function requireAdminRole(...roles) {
+  return (req, res, next) => {
+    if (!req.user) return errorResponse(res, 'Authentication required.', 401);
+    const effectiveRole = req.user.admin_role || 'superadmin'; // null = legacy = superadmin
+    if (!roles.includes(effectiveRole)) {
+      return errorResponse(res, `This action requires one of these admin roles: ${roles.join(', ')}.`, 403);
+    }
+    next();
+  };
+}
+
+/**
  * requireVip — shorthand middleware for VIP-only routes
  */
 function requireVip(req, res, next) {
@@ -158,5 +177,6 @@ module.exports = {
   optionalAuth,
   requireRole,
   requireAdmin,
+  requireAdminRole,
   requireVip,
 };

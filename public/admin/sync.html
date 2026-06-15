@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -73,7 +73,7 @@
             <option value="today-tomorrow">Today + Tomorrow</option>
             <option value="today">Today only</option>
             <option value="tomorrow">Tomorrow only</option>
-            <option value="specific">Specific date…</option>
+            <option value="specific">Specific dateâ€¦</option>
           </select>
         </div>
         <div id="ap-specific-date-wrap" style="display:none;">
@@ -225,21 +225,21 @@ document.getElementById('auto-predict-btn').addEventListener('click', async () =
     if (json.success) {
       const d = json.data;
       document.getElementById('ap-summary').innerHTML =
-        `<span style="color:var(--green);">✓ ${d.enriched} predictions generated</span> &nbsp;·&nbsp; ` +
-        `${d.skipped} skipped &nbsp;·&nbsp; ` +
-        `<span style="color:${d.errors>0?'var(--red)':'var(--muted)'};">${d.errors} errors</span> &nbsp;·&nbsp; ` +
+        `<span style="color:var(--green);">âœ“ ${d.enriched} predictions generated</span> &nbsp;Â·&nbsp; ` +
+        `${d.skipped} skipped &nbsp;Â·&nbsp; ` +
+        `<span style="color:${d.errors>0?'var(--red)':'var(--muted)'};">${d.errors} errors</span> &nbsp;Â·&nbsp; ` +
         `${d.total} total processed`;
 
       document.getElementById('ap-log').innerHTML = (d.log||[]).map(entry =>
         entry.error
-          ? `<div style="color:var(--red);">✗ ${entry.match}: ${entry.error}</div>`
-          : `<div style="color:${entry.published?'var(--green)':'var(--text-soft)'};">${entry.published?'✓ Published':'◎ Draft'} — ${entry.match} → <strong>${entry.tip}</strong> (${entry.confidence}%)</div>`
+          ? `<div style="color:var(--red);">âœ— ${entry.match}: ${entry.error}</div>`
+          : `<div style="color:${entry.published?'var(--green)':'var(--text-soft)'};">${entry.published?'âœ“ Published':'â—Ž Draft'} â€” ${entry.match} â†’ <strong>${entry.tip}</strong> (${entry.confidence}%)</div>`
       ).join('');
 
       log(`Auto-predict done: ${d.enriched} generated, ${d.errors} errors`, d.errors > 0 ? 'error' : 'success');
       Admin.toast(`Auto-predict: ${d.enriched} predictions generated`);
     } else {
-      document.getElementById('ap-summary').innerHTML = `<span style="color:var(--red);">✗ ${json.message}</span>`;
+      document.getElementById('ap-summary').innerHTML = `<span style="color:var(--red);">âœ— ${json.message}</span>`;
       log('Auto-predict error: ' + json.message, 'error');
       Admin.toast(json.message || 'Auto-predict failed', 'error');
     }
@@ -253,9 +253,11 @@ document.getElementById('auto-predict-btn').addEventListener('click', async () =
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
-  Admin.buildSidebar();
   const user = await Admin.requireAdmin();
+  if (!user) return;
+  Admin.buildSidebar(user);
   if (user) { loadApiStatus(); document.getElementById('sync-date').value = new Date().toISOString().split('T')[0]; document.getElementById('results-date').value = new Date().toISOString().split('T')[0]; }
 });
 </script>
 </body></html>
+

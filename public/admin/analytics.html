@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
   <style>
-    /* ── Intelligence-specific styles ── */
+    /* â”€â”€ Intelligence-specific styles â”€â”€ */
     .intel-tabs { display:flex; gap:4px; margin-bottom:20px; border-bottom:2px solid var(--border); padding-bottom:0; }
     .intel-tab  { padding:10px 20px; font-size:0.875rem; font-weight:600; color:var(--muted);
                   background:none; border:none; cursor:pointer; border-bottom:3px solid transparent;
@@ -151,9 +151,9 @@
     </button>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════
-       TAB 1 — LEAGUE OVERVIEW
-  ═══════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       TAB 1 â€” LEAGUE OVERVIEW
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="tab-overview" class="tab-content active">
     <div id="overview-loading" class="loading-spinner">
       <span class="material-icons-round">insights</span>
@@ -205,9 +205,9 @@
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════
-       TAB 2 — STANDINGS
-  ═══════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       TAB 2 â€” STANDINGS
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="tab-standings" class="tab-content">
     <div id="standings-loading" class="loading-spinner">
       <span class="material-icons-round">emoji_events</span>
@@ -243,7 +243,7 @@
         </div>
       </div>
       <p style="font-size:0.75rem;color:var(--muted);margin-top:8px;text-align:right;">
-        Click a team row to view full stats →
+        Click a team row to view full stats â†’
       </p>
     </div>
 
@@ -269,9 +269,9 @@
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════
-       TAB 3 — MATCH INTEL
-  ═══════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       TAB 3 â€” MATCH INTEL
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="tab-intel" class="tab-content">
 
     <!-- Controls -->
@@ -298,7 +298,7 @@
       </div>
     </div>
 
-    <!-- Match Intel Panel — shown after a fixture is selected -->
+    <!-- Match Intel Panel â€” shown after a fixture is selected -->
     <div id="intel-panel" style="display:none;">
       <div class="intel-panel">
 
@@ -356,15 +356,15 @@
                 <div class="section-title"><span class="material-icons-round">history</span>H2H Record</div>
                 <div class="h2h-grid">
                   <div class="h2h-box" style="background:rgba(26,138,68,.08);border:1px solid rgba(26,138,68,.2);">
-                    <div class="n" style="color:var(--green);" id="ip-h2h-home-wins">—</div>
+                    <div class="n" style="color:var(--green);" id="ip-h2h-home-wins">â€”</div>
                     <div class="lbl" id="ip-h2h-home-label">Home Wins</div>
                   </div>
                   <div class="h2h-box" style="background:var(--surface);border:1px solid var(--border);">
-                    <div class="n" style="color:var(--muted);" id="ip-h2h-draws">—</div>
+                    <div class="n" style="color:var(--muted);" id="ip-h2h-draws">â€”</div>
                     <div class="lbl">Draws</div>
                   </div>
                   <div class="h2h-box" style="background:rgba(231,76,60,.06);border:1px solid rgba(231,76,60,.2);">
-                    <div class="n" style="color:var(--red);" id="ip-h2h-away-wins">—</div>
+                    <div class="n" style="color:var(--red);" id="ip-h2h-away-wins">â€”</div>
                     <div class="lbl" id="ip-h2h-away-label">Away Wins</div>
                   </div>
                 </div>
@@ -405,14 +405,14 @@
               <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
                 <div>
                   <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--green);font-weight:700;margin-bottom:4px;">
-                    🤖 Algorithm Suggestion
+                    ðŸ¤– Algorithm Suggestion
                   </div>
-                  <div class="suggestion-tip" id="ip-sug-tip">—</div>
+                  <div class="suggestion-tip" id="ip-sug-tip">â€”</div>
                   <div class="suggestion-reason" id="ip-sug-reason"></div>
                 </div>
                 <div style="text-align:right;">
                   <div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px;">Market</div>
-                  <div style="font-weight:700;" id="ip-sug-market">—</div>
+                  <div style="font-weight:700;" id="ip-sug-market">â€”</div>
                 </div>
               </div>
               <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
@@ -431,9 +431,9 @@
     </div><!-- /#intel-panel -->
   </div><!-- /tab-intel -->
 
-  <!-- ═══════════════════════════════════════════════════
-       TAB 4 — ACCURACY TRACKER
-  ═══════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       TAB 4 â€” ACCURACY TRACKER
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="tab-accuracy" class="tab-content">
 
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
@@ -451,19 +451,19 @@
     <!-- Overall stats cards -->
     <div class="metric-grid" id="acc-summary-cards">
       <div class="metric-card">
-        <div class="m-val" id="acc-total">—</div>
+        <div class="m-val" id="acc-total">â€”</div>
         <div class="m-label">Total Resolved</div>
       </div>
       <div class="metric-card green">
-        <div class="m-val" id="acc-won">—</div>
+        <div class="m-val" id="acc-won">â€”</div>
         <div class="m-label">Won</div>
       </div>
       <div class="metric-card red">
-        <div class="m-val" id="acc-lost">—</div>
+        <div class="m-val" id="acc-lost">â€”</div>
         <div class="m-label">Lost</div>
       </div>
       <div class="metric-card yellow">
-        <div class="m-val" id="acc-pct">—</div>
+        <div class="m-val" id="acc-pct">â€”</div>
         <div class="m-label">Accuracy</div>
       </div>
     </div>
@@ -500,7 +500,7 @@
 
 </main>
 
-<!-- ── Create Prediction Modal ──────────────────────────────── -->
+<!-- â”€â”€ Create Prediction Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
 <div id="create-pred-modal" class="admin-modal-overlay" style="display:none;">
   <div class="admin-modal" style="max-width:560px;">
     <div class="admin-modal-header">
@@ -535,7 +535,7 @@
         </div>
         <div class="form-group" style="margin:0;">
           <label class="form-label">Confidence</label>
-          <input type="number" class="form-control" id="cp-confidence" min="1" max="100" placeholder="55–95">
+          <input type="number" class="form-control" id="cp-confidence" min="1" max="100" placeholder="55â€“95">
         </div>
         <div class="form-group" style="margin:0;grid-column:1/-1;">
           <label class="form-label">Analysis / Reasoning</label>
@@ -568,7 +568,7 @@
 <script>
 'use strict';
 
-// ── State ────────────────────────────────────────────────────
+// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const state = {
   leagues:        [],
   selectedLeague: null,
@@ -578,11 +578,11 @@ const state = {
   fixtureIntel:   null,
 };
 
-// ── Init ─────────────────────────────────────────────────────
+// â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.addEventListener('DOMContentLoaded', async () => {
-  Admin.buildSidebar();
   const user = await Admin.requireAdmin();
   if (!user) return;
+  Admin.buildSidebar(user);
 
   // Set today's date as default in Intel tab
   document.getElementById('intel-date').value = new Date().toISOString().split('T')[0];
@@ -627,14 +627,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// ── Switch Tab ───────────────────────────────────────────────
+// â”€â”€ Switch Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function switchTab(tab) {
   document.querySelectorAll('.intel-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
   if (tab === 'accuracy') loadAccuracyTab();
 }
 
-// ── Load Leagues ─────────────────────────────────────────────
+// â”€â”€ Load Leagues â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadLeagues() {
   try {
     const json = await Admin.api('GET', '/api/admin/analytics/popular-leagues');
@@ -643,7 +643,7 @@ async function loadLeagues() {
 
     const topbarSel  = document.getElementById('topbar-league');
     const intelSel   = document.getElementById('intel-league');
-    topbarSel.innerHTML = '<option value="">— Select League —</option>';
+    topbarSel.innerHTML = '<option value="">â€” Select League â€”</option>';
     intelSel.innerHTML  = '<option value="">All Leagues</option>';
 
     state.leagues.forEach(l => {
@@ -656,7 +656,7 @@ async function loadLeagues() {
   }
 }
 
-// ── Load All Data for selected league ────────────────────────
+// â”€â”€ Load All Data for selected league â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadAllData() {
   const leagueId = document.getElementById('topbar-league').value;
   if (!leagueId) { Admin.toast('Please select a league first', 'error'); return; }
@@ -677,7 +677,7 @@ async function loadAllData() {
   }
 }
 
-// ── OVERVIEW TAB ─────────────────────────────────────────────
+// â”€â”€ OVERVIEW TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadOverviewTab() {
   showEl('overview-loading'); hideEl('overview-content'); hideEl('overview-error');
 
@@ -710,7 +710,7 @@ function renderOverview(d) {
     <div class="metric-card green">
       <div class="m-val" style="color:var(--green);">${d.over_2_5_rate}%</div>
       <div class="m-label">Over 2.5 Rate</div>
-      <div class="m-sub">Over 1.5: ${d.over_1_5_rate}% · Over 3.5: ${d.over_3_5_rate}%</div>
+      <div class="m-sub">Over 1.5: ${d.over_1_5_rate}% Â· Over 3.5: ${d.over_3_5_rate}%</div>
     </div>
     <div class="metric-card yellow">
       <div class="m-val" style="color:var(--yellow);">${d.btts_rate}%</div>
@@ -720,7 +720,7 @@ function renderOverview(d) {
     <div class="metric-card">
       <div class="m-val">${d.home_win_rate}%</div>
       <div class="m-label">Home Win Rate</div>
-      <div class="m-sub">Draw: ${d.draw_rate}% · Away: ${d.away_win_rate}%</div>
+      <div class="m-sub">Draw: ${d.draw_rate}% Â· Away: ${d.away_win_rate}%</div>
     </div>
   `;
 
@@ -794,7 +794,7 @@ function renderOverview(d) {
       </tr>`).join('');
 }
 
-// ── STANDINGS TAB ─────────────────────────────────────────────
+// â”€â”€ STANDINGS TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadStandingsTab() {
   showEl('standings-loading'); hideEl('standings-content');
 
@@ -888,10 +888,10 @@ async function loadTeamStats(teamApiId, teamName, teamLogo) {
           <div class="section-title"><span class="material-icons-round">sports_soccer</span>Goals</div>
           <table class="rank-table">
             <tbody>
-              <tr><td style="color:var(--muted);">Scored (Total)</td><td style="font-weight:700;">${d.goals_scored||'—'}</td></tr>
-              <tr><td style="color:var(--muted);">Avg Scored/Game</td><td style="font-weight:700;color:var(--green);">${d.goals_scored_avg||'—'}</td></tr>
-              <tr><td style="color:var(--muted);">Conceded (Total)</td><td style="font-weight:700;">${d.goals_conceded||'—'}</td></tr>
-              <tr><td style="color:var(--muted);">Avg Conceded/Game</td><td style="font-weight:700;color:var(--red);">${d.goals_conceded_avg||'—'}</td></tr>
+              <tr><td style="color:var(--muted);">Scored (Total)</td><td style="font-weight:700;">${d.goals_scored||'â€”'}</td></tr>
+              <tr><td style="color:var(--muted);">Avg Scored/Game</td><td style="font-weight:700;color:var(--green);">${d.goals_scored_avg||'â€”'}</td></tr>
+              <tr><td style="color:var(--muted);">Conceded (Total)</td><td style="font-weight:700;">${d.goals_conceded||'â€”'}</td></tr>
+              <tr><td style="color:var(--muted);">Avg Conceded/Game</td><td style="font-weight:700;color:var(--red);">${d.goals_conceded_avg||'â€”'}</td></tr>
               <tr><td style="color:var(--muted);">Clean Sheets</td><td style="font-weight:700;color:var(--green);">${d.clean_sheets||0}</td></tr>
               <tr><td style="color:var(--muted);">Failed to Score</td><td style="font-weight:700;color:var(--red);">${d.failed_to_score||0}</td></tr>
             </tbody>
@@ -918,7 +918,7 @@ async function loadTeamStats(teamApiId, teamName, teamLogo) {
         <tbody>
           ${d.recent_results.map(r => `
             <tr>
-              <td style="color:var(--muted);font-size:0.78rem;">${r.date||'—'}</td>
+              <td style="color:var(--muted);font-size:0.78rem;">${r.date||'â€”'}</td>
               <td style="font-weight:600;">${escHtml(r.home)}</td>
               <td style="font-family:var(--font-head);font-size:1rem;font-weight:800;text-align:center;">${r.score}</td>
               <td style="font-weight:600;">${escHtml(r.away)}</td>
@@ -932,7 +932,7 @@ async function loadTeamStats(teamApiId, teamName, teamLogo) {
   }
 }
 
-// ── MATCH INTEL TAB ──────────────────────────────────────────
+// â”€â”€ MATCH INTEL TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function browseFixtures() {
   const date     = document.getElementById('intel-date').value;
   const leagueId = document.getElementById('intel-league').value;
@@ -966,9 +966,9 @@ async function browseFixtures() {
             <span>${escHtml(f.away.name)}</span>
             <img src="${f.away.logo||''}" width="18" height="18" style="object-fit:contain;" alt="" onerror="this.style.display='none'">
           </div>
-          <div class="fixture-league">${escHtml(f.league.name)} · ${f.league.country}</div>
+          <div class="fixture-league">${escHtml(f.league.name)} Â· ${f.league.country}</div>
         </div>
-        <div class="fixture-time">${f.date ? new Date(f.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—'}</div>
+        <div class="fixture-time">${f.date ? new Date(f.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : 'â€”'}</div>
         <span class="material-icons-round" style="color:var(--muted);font-size:1rem;">chevron_right</span>
       </div>
     `).join('');
@@ -1029,14 +1029,14 @@ function renderFixtureIntel(d) {
   // Standings
   if (d.home_standing) {
     document.getElementById('ip-home-standing').textContent =
-      `${d.home_standing.rank}th · ${d.home_standing.points}pts`;
+      `${d.home_standing.rank}th Â· ${d.home_standing.points}pts`;
   }
   if (d.away_standing) {
     document.getElementById('ip-away-standing').textContent =
-      `${d.away_standing.rank}th · ${d.away_standing.points}pts`;
+      `${d.away_standing.rank}th Â· ${d.away_standing.points}pts`;
   }
 
-  // Form pips — show venue-specific form in brackets when available
+  // Form pips â€” show venue-specific form in brackets when available
   document.getElementById('ip-home-form-label').textContent = d.fixture.home.name +
     (d.home_form_venue ? ' (home)' : '');
   document.getElementById('ip-away-form-label').textContent = d.fixture.away.name +
@@ -1050,7 +1050,7 @@ function renderFixtureIntel(d) {
     (d.away_form_venue && d.away_form_venue !== d.away_form
       ? `<span style="font-size:0.65rem;color:var(--muted);margin-left:4px;">(overall: ${d.away_form})</span>` : '');
 
-  // H2H — handle recent|older pipe format
+  // H2H â€” handle recent|older pipe format
   const h2hSummary = d.h2h_summary || 'H0-A0-D0';
   // Extract first block (recent, or full if no pipe)
   const h2hFirst = h2hSummary.split('|')[0];
@@ -1114,14 +1114,14 @@ function renderFixtureIntel(d) {
   fillRecentTable('ip-home-recent-table', d.home_recent || []);
   fillRecentTable('ip-away-recent-table', d.away_recent || []);
   document.getElementById('ip-home-recent-title').innerHTML =
-    `<span class="material-icons-round">access_time</span>${escHtml(d.fixture.home.name)} — Last 5`;
+    `<span class="material-icons-round">access_time</span>${escHtml(d.fixture.home.name)} â€” Last 5`;
   document.getElementById('ip-away-recent-title').innerHTML =
-    `<span class="material-icons-round">access_time</span>${escHtml(d.fixture.away.name)} — Last 5`;
+    `<span class="material-icons-round">access_time</span>${escHtml(d.fixture.away.name)} â€” Last 5`;
 
   // Suggestion
   const sug = d.suggestion || {};
-  document.getElementById('ip-sug-tip').textContent    = sug.tip    || '—';
-  document.getElementById('ip-sug-market').textContent = sug.market || '—';
+  document.getElementById('ip-sug-tip').textContent    = sug.tip    || 'â€”';
+  document.getElementById('ip-sug-market').textContent = sug.market || 'â€”';
   document.getElementById('ip-sug-reason').textContent = sug.reason || '';
 
   hideEl('ip-loading');
@@ -1140,9 +1140,9 @@ function statRow(label, homeVal, awayVal, type) {
     else if (a < h) { awayStyle = 'color:var(--green);font-weight:700;'; }
   }
   return `<tr>
-    <td style="text-align:right;${homeStyle}">${h || '—'}</td>
+    <td style="text-align:right;${homeStyle}">${h || 'â€”'}</td>
     <td style="text-align:center;color:var(--muted);font-size:0.78rem;">${label}</td>
-    <td style="${awayStyle}">${a || '—'}</td>
+    <td style="${awayStyle}">${a || 'â€”'}</td>
   </tr>`;
 }
 
@@ -1151,7 +1151,7 @@ function fillRecentTable(tableId, results) {
   tbody.innerHTML = results.length
     ? results.map(r => `
         <tr>
-          <td style="font-size:0.75rem;color:var(--muted);">${r.date||'—'}</td>
+          <td style="font-size:0.75rem;color:var(--muted);">${r.date||'â€”'}</td>
           <td style="font-size:0.78rem;">${escHtml(r.home)} vs ${escHtml(r.away)}</td>
           <td style="font-family:var(--font-head);font-weight:800;text-align:center;">${r.score}</td>
           <td><span class="form-pip form-${r.result}">${r.result}</span></td>
@@ -1159,7 +1159,7 @@ function fillRecentTable(tableId, results) {
     : '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px;">No data</td></tr>';
 }
 
-// ── Create Prediction Modal ───────────────────────────────────
+// â”€â”€ Create Prediction Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function openCreateModal(allowEdit) {
   if (!state.selectedFixture || !state.fixtureIntel) {
     Admin.toast('Please research a fixture first', 'error'); return;
@@ -1237,7 +1237,7 @@ async function savePrediction() {
     if (!json.success) throw new Error(json.message || 'Failed to save');
 
     Admin.hideModal('create-pred-modal');
-    Admin.toast('✅ Prediction created!', 'success');
+    Admin.toast('âœ… Prediction created!', 'success');
 
     // Offer to go to predictions page
     setTimeout(() => {
@@ -1253,7 +1253,7 @@ async function savePrediction() {
   }
 }
 
-// ── Accuracy Tab ──────────────────────────────────────────────
+// â”€â”€ Accuracy Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadAccuracyTab() {
   try {
     const [sumJson, calJson] = await Promise.all([
@@ -1269,7 +1269,7 @@ async function loadAccuracyTab() {
       const lost = (ov.total || 0) - (ov.won || 0);
       document.getElementById('acc-lost').textContent  = lost >= 0 ? lost : 0;
       document.getElementById('acc-pct').textContent   =
-        ov.total > 0 ? (ov.accuracy_pct || 0) + '%' : '—';
+        ov.total > 0 ? (ov.accuracy_pct || 0) + '%' : 'â€”';
 
       // By market
       const bm = s.by_market || [];
@@ -1291,7 +1291,7 @@ async function loadAccuracyTab() {
         ? `<table class="rank-table">
              <thead><tr><th>Confidence Band</th><th>Total</th><th>Won</th><th>Accuracy</th></tr></thead>
              <tbody>${bc.map(r => `<tr>
-               <td><span style="font-family:var(--font-head);font-weight:700;">${r.confidence_band}–${r.confidence_band+4}%</span></td>
+               <td><span style="font-family:var(--font-head);font-weight:700;">${r.confidence_band}â€“${r.confidence_band+4}%</span></td>
                <td>${r.total}</td>
                <td style="color:var(--green);font-weight:600;">${r.won}</td>
                <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
@@ -1310,11 +1310,11 @@ async function loadAccuracyTab() {
              </tr></thead>
              <tbody>${rows.map(r => `<tr>
                <td>${r.market}</td>
-               <td><span style="font-family:var(--font-head);font-weight:700;">${r.confidence_band}–${r.confidence_band+4}%</span></td>
+               <td><span style="font-family:var(--font-head);font-weight:700;">${r.confidence_band}â€“${r.confidence_band+4}%</span></td>
                <td>${r.total_predictions}</td>
                <td style="color:var(--green);font-weight:600;">${r.correct_predictions}</td>
                <td>${accBadge(r.accuracy_pct)}<strong>${r.accuracy_pct}%</strong></td>
-               <td style="font-size:0.75rem;color:var(--muted);">${r.last_updated ? r.last_updated.split('T')[0] : '—'}</td>
+               <td style="font-size:0.75rem;color:var(--muted);">${r.last_updated ? r.last_updated.split('T')[0] : 'â€”'}</td>
              </tr>`).join('')}</tbody>
            </table>`
         : '<p style="color:var(--muted);font-size:0.85rem;">Not enough data yet. Needs 10+ resolved predictions per band.</p>';
@@ -1330,7 +1330,7 @@ function accBadge(pct) {
   return `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle;"></span>`;
 }
 
-// ── Poisson chip for match intel panel ────────────────────────
+// â”€â”€ Poisson chip for match intel panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function poissonChip(label, value, color) {
   const bg = color === 'green' ? 'rgba(26,138,68,.1)' :
              color === 'yellow' ? 'rgba(212,160,23,.1)' :
@@ -1350,7 +1350,7 @@ function poissonChip(label, value, color) {
   </div>`;
 }
 
-// ── Utilities ─────────────────────────────────────────────────
+// â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showEl(id) { const el = document.getElementById(id); if (el) el.style.display = ''; }
 function hideEl(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 function escHtml(s) { return (s||'').replace(/[&<>"']/g, c =>
@@ -1363,3 +1363,4 @@ function renderFormPips(formStr) {
 </script>
 </body>
 </html>
+

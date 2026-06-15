@@ -712,9 +712,10 @@
       <div class="pick-skeleton"><div class="skel" style="height:16px;width:55%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:75%;"></div></div>`;
 
     const date = isoDate(getDateFor(currentOffset));
-    const params = new URLSearchParams({ date, limit: '20' });
-    if (currentCategory && currentCategory !== 'free') params.set('category', currentCategory);
-    if (currentCategory === 'banker') { params.delete('category'); params.set('sort', 'confidence_score'); params.set('order', 'DESC'); }
+    const params = new URLSearchParams({ date, limit: '40' });
+    if (currentCategory && currentCategory !== 'free' && currentCategory !== 'all') {
+      params.set('category', currentCategory);
+    }
     fetch(`/api/predictions?${params.toString()}`, { credentials: 'include' })
       .then(r => r.json())
       .then(j => {

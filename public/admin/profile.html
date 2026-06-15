@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile | Rooted Predictions Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar">
+  <span class="admin-topbar-title">My Profile</span>
+  <span style="font-size:0.82rem;color:var(--muted);" id="admin-user-name"></span>
+</div>
+<main class="admin-main">
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+
+    <!-- ── Profile info card -->
+    <div class="card" style="padding:24px;">
+      <h3 style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-bottom:18px;display:flex;align-items:center;gap:8px;">
+        <span class="material-icons-round" style="font-size:1.1rem;color:var(--green);">person</span>Account Info
+      </h3>
+      <div id="profile-info" style="font-size:0.85rem;color:var(--muted);">Loading…</div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+
+      <h3 style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+        <span class="material-icons-round" style="font-size:1.1rem;color:var(--green);">edit</span>Update Display Info
+      </h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Display Name</label>
+          <input type="text" id="upd-name" class="form-control" placeholder="Your full name">
+        </div>
+        <div>
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Username <span style="color:var(--muted);font-weight:400;">(3–30 chars, letters/numbers/_)</span></label>
+          <input type="text" id="upd-username" class="form-control" placeholder="e.g. john_doe">
+        </div>
+        <button class="btn btn-primary btn-sm" id="save-profile-btn" style="align-self:flex-start;">
+          <span class="material-icons-round" style="font-size:0.9rem;">save</span>Save Changes
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Change password card -->
+    <div class="card" style="padding:24px;">
+      <h3 style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-bottom:18px;display:flex;align-items:center;gap:8px;">
+        <span class="material-icons-round" style="font-size:1.1rem;color:var(--red);">lock</span>Change Password
+      </h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Current Password</label>
+          <div style="position:relative;">
+            <input type="password" id="cur-pw" class="form-control" placeholder="Enter current password" style="padding-right:40px;">
+            <button onclick="togglePw('cur-pw',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);">
+              <span class="material-icons-round" style="font-size:1rem;">visibility</span>
+            </button>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">New Password <span style="color:var(--muted);font-weight:400;">(min 8 chars)</span></label>
+          <div style="position:relative;">
+            <input type="password" id="new-pw" class="form-control" placeholder="New password" style="padding-right:40px;">
+            <button onclick="togglePw('new-pw',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);">
+              <span class="material-icons-round" style="font-size:1rem;">visibility</span>
+            </button>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Confirm New Password</label>
+          <input type="password" id="conf-pw" class="form-control" placeholder="Repeat new password">
+        </div>
+        <div id="pw-strength" style="font-size:0.78rem;color:var(--muted);min-height:18px;"></div>
+        <button class="btn btn-sm" id="change-pw-btn" style="background:var(--red);color:#fff;align-self:flex-start;">
+          <span class="material-icons-round" style="font-size:0.9rem;">lock_reset</span>Change Password
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Recent activity -->
+  <div class="card" style="overflow:hidden;margin-top:24px;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
+      <span style="font-family:var(--font-head);font-weight:700;font-size:1rem;">My Recent Activity</span>
+    </div>
+    <div id="activity-list" style="padding:8px 0;"></div>
+  </div>
+
+</main>
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+const theme = localStorage.getItem('afro_theme') || 'dark';
+document.documentElement.setAttribute('data-theme', theme);
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const showing = inp.type === 'text';
+  inp.type = showing ? 'password' : 'text';
+  btn.querySelector('.material-icons-round').textContent = showing ? 'visibility' : 'visibility_off';
+}
+
+function pwStrength(pw) {
+  if (!pw) return '';
+  if (pw.length < 8) return '<span style="color:var(--red);">Too short — needs 8+ characters</span>';
+  let score = 0;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const labels = ['Weak','Fair','Strong','Very Strong'];
+  const colors = ['var(--red)','#f59e0b','var(--green)','var(--green)'];
+  return `<span style="color:${colors[score]};">Strength: ${labels[score]}</span>`;
+}
+document.getElementById('new-pw').addEventListener('input', function () {
+  document.getElementById('pw-strength').innerHTML = pwStrength(this.value);
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = await Admin.requireAdmin();
+  if (!user) return;
+  Admin.buildSidebar(user);
+  document.getElementById('admin-user-name').textContent = user.username || user.name;
+
+  // Load profile
+  const res = await Admin.api('GET', '/api/admin/profile');
+  if (res.success) {
+    const d = res.data;
+    const roleLabel = { superadmin: 'Super Admin', editor: 'Editor', viewer: 'Viewer' };
+    document.getElementById('profile-info').innerHTML = `
+      <div style="display:grid;gap:10px;">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--muted);">Name</span>
+          <span style="font-weight:600;color:var(--text);">${d.name}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--muted);">Username</span>
+          <span style="font-weight:600;color:var(--text);">${d.username || '<em style="color:var(--muted);font-weight:400;">not set</em>'}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--muted);">Email</span>
+          <span style="font-weight:600;color:var(--text);">${d.email}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--muted);">Admin Role</span>
+          ${Admin.badge(d.admin_role || 'superadmin')}
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;">
+          <span style="color:var(--muted);">Account Created</span>
+          <span style="color:var(--text-soft);">${Admin.fmtDate(d.created_at)}</span>
+        </div>
+      </div>`;
+    document.getElementById('upd-name').value     = d.name || '';
+    document.getElementById('upd-username').value = d.username || '';
+
+    // Recent activity
+    const acts = d.recent_activity || [];
+    const ACTION_ICONS = { create:'add_circle', update:'edit', delete:'delete', password_change:'lock_reset', login:'login' };
+    document.getElementById('activity-list').innerHTML = acts.length
+      ? acts.map(a => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border);">
+            <span class="material-icons-round" style="font-size:1rem;color:var(--muted);">${ACTION_ICONS[a.action]||'history'}</span>
+            <div style="flex:1;">
+              <span style="font-size:0.85rem;font-weight:600;color:var(--text);text-transform:capitalize;">${a.action.replace('_',' ')}</span>
+              ${a.entity_type ? `<span style="font-size:0.78rem;color:var(--muted);margin-left:6px;">${a.entity_type.replace('_',' ')}</span>` : ''}
+              ${a.entity_label ? `<span style="font-size:0.78rem;color:var(--text-soft);margin-left:4px;">— ${a.entity_label}</span>` : ''}
+            </div>
+            <span style="font-size:0.75rem;color:var(--muted);white-space:nowrap;">${Admin.fmtDateTime(a.created_at)}</span>
+          </div>`).join('')
+      : '<div style="padding:24px;text-align:center;color:var(--muted);font-size:0.85rem;">No activity recorded yet.</div>';
+  }
+
+  // Save display info
+  document.getElementById('save-profile-btn').addEventListener('click', async function () {
+    const btn = this; btn.disabled = true;
+    const payload = {};
+    const name = document.getElementById('upd-name').value.trim();
+    const uname = document.getElementById('upd-username').value.trim();
+    if (name)  payload.name = name;
+    if (uname) payload.username = uname;
+    if (!Object.keys(payload).length) { Admin.toast('Nothing to save','info'); btn.disabled=false; return; }
+    const r = await Admin.api('PUT', '/api/admin/profile', payload);
+    Admin.toast(r.success ? 'Profile updated' : (r.message || 'Failed'), r.success ? 'success' : 'error');
+    if (r.success) setTimeout(() => location.reload(), 800);
+    btn.disabled = false;
+  });
+
+  // Change password
+  document.getElementById('change-pw-btn').addEventListener('click', async function () {
+    const btn = this;
+    const cur  = document.getElementById('cur-pw').value;
+    const npw  = document.getElementById('new-pw').value;
+    const conf = document.getElementById('conf-pw').value;
+    if (!cur || !npw || !conf) { Admin.toast('All password fields are required.','error'); return; }
+    if (npw !== conf)          { Admin.toast('New passwords do not match.','error'); return; }
+    if (npw.length < 8)        { Admin.toast('New password must be at least 8 characters.','error'); return; }
+    btn.disabled = true;
+    const r = await Admin.api('PUT', '/api/admin/profile/password', { current_password: cur, new_password: npw });
+    Admin.toast(r.success ? 'Password changed successfully!' : (r.message || 'Failed'), r.success ? 'success' : 'error');
+    if (r.success) { ['cur-pw','new-pw','conf-pw'].forEach(id => document.getElementById(id).value = ''); }
+    btn.disabled = false;
+  });
+});
+</script>
+</body>
+</html>

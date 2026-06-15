@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -50,6 +50,7 @@ async function toggleLeague(id,field,current){
   if(json.success){Admin.toast('League updated');loadLeagues();}
   else Admin.toast(json.message||'Failed','error');
 }
-document.addEventListener('DOMContentLoaded',async()=>{Admin.buildSidebar();const u=await Admin.requireAdmin();if(u)loadLeagues();});
+document.addEventListener('DOMContentLoaded',async()=>{const u=await Admin.requireAdmin();if(!u)return;Admin.buildSidebar(u);if(u)loadLeagues();});
 </script>
 </body></html>
+

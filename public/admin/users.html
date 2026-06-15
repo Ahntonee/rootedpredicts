@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -92,7 +92,7 @@ async function loadUsers(page) {
       <td><div style="font-weight:600;font-size:0.875rem;">${u.name}</div></td>
       <td style="font-size:0.82rem;color:var(--muted);">${u.email}</td>
       <td>${Admin.badge(u.role)}</td>
-      <td style="font-size:0.82rem;">${u.country||'—'}</td>
+      <td style="font-size:0.82rem;">${u.country||'â€”'}</td>
       <td style="font-size:0.78rem;color:var(--muted);">${Admin.fmtDate(u.created_at)}</td>
       <td>${u.is_banned?'<span class="badge badge-lost">BANNED</span>':'<span class="badge badge-won">Active</span>'}</td>
       <td><button onclick="editUser(${u.id},'${u.name}','${u.role}',${u.is_banned})" class="btn btn-outline btn-sm" style="padding:4px 8px;"><span class="material-icons-round" style="font-size:0.9rem;">edit</span></button></td>
@@ -115,9 +115,9 @@ function editUser(id,name,role,banned) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  Admin.buildSidebar();
   const user = await Admin.requireAdmin();
   if (!user) return;
+  Admin.buildSidebar(user);
   loadUsers(1);
   document.getElementById('apply-filters').addEventListener('click',()=>loadUsers(1));
   document.getElementById('u-prev').addEventListener('click',()=>loadUsers(--userPage));
@@ -132,3 +132,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 </script>
 </body></html>
+

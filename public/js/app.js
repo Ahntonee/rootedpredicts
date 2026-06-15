@@ -96,7 +96,6 @@
           <nav class="main-nav" id="main-nav">
             <a href="/index.html"           class="nav-link ${active('/index.html')}">Home</a>
             <a href="/predictions.html"     class="nav-link ${active('/predictions.html')}">Predictions</a>
-            <a href="/leagues.html"         class="nav-link ${active('/leagues.html')}">Leagues</a>
             <a href="/blog.html"            class="nav-link ${active('/blog.html')}">Blog</a>
           </nav>
           <div class="header-actions">
@@ -173,7 +172,6 @@
               <li><a href="/about.html">About Rooted Predictions</a></li>
               <li><a href="/blog.html">Blog</a></li>
               <li><a href="/contact.html">Contact Us</a></li>
-              <li><a href="/leagues.html">All Leagues</a></li>
               <li><a href="https://t.me/rootedpredict" target="_blank" rel="noopener">Telegram Channel</a></li>
             </ul>
           </div>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,6 +46,7 @@ async function saveSeo(page){
   if(json.success)Admin.toast('SEO saved for /'+page);
   else Admin.toast(json.message||'Save failed','error');
 }
-document.addEventListener('DOMContentLoaded',async()=>{Admin.buildSidebar();const u=await Admin.requireAdmin();if(u)loadSeo();});
+document.addEventListener('DOMContentLoaded',async()=>{const u=await Admin.requireAdmin();if(!u)return;Admin.buildSidebar(u);if(u)loadSeo();});
 </script>
 </body></html>
+

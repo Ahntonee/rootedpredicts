@@ -82,10 +82,10 @@
 const theme = localStorage.getItem('afro_theme')||'dark';
 document.documentElement.setAttribute('data-theme', theme);
 document.addEventListener('DOMContentLoaded', async () => {
-  Admin.buildSidebar();
   const user = await Admin.requireAdmin();
   if (!user) return;
-  document.getElementById('admin-user-name').textContent = user.name;
+  Admin.buildSidebar(user);
+  document.getElementById('admin-user-name').textContent = user.username || user.name;
   const ti = document.getElementById('theme-icon');
   ti.textContent = theme==='dark'?'light_mode':'dark_mode';
   document.getElementById('theme-toggle').addEventListener('click', () => {
