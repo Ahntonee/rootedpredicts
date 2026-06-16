@@ -97,6 +97,8 @@
             <a href="/index.html"           class="nav-link ${active('/index.html')}">Home</a>
             <a href="/predictions.html"     class="nav-link ${active('/predictions.html')}">Predictions</a>
             <a href="/blog.html"            class="nav-link ${active('/blog.html')}">Blog</a>
+            <a href="/pricing.html"         class="nav-link ${active('/pricing.html')}">Subscription</a>
+            <a href="/about.html"           class="nav-link ${active('/about.html')}">About</a>
           </nav>
           <div class="header-actions">
             <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
@@ -180,8 +182,8 @@
             <ul class="footer-links">
               <li><a href="/privacy.html">Privacy Policy</a></li>
               <li><a href="/terms.html">Terms of Service</a></li>
-              <li><a href="/register.html">Create Account</a></li>
-              <li><a href="/login.html">Login</a></li>
+              <li><a href="/register.html" id="footer-register-link">Create Account</a></li>
+              <li><a href="/login.html" id="footer-login-link">Login</a></li>
             </ul>
           </div>
         </div>

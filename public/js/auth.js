@@ -45,6 +45,21 @@
       vipBtn.style.display = 'none';
     }
 
+    // Swap footer login/register links for logout
+    const footerLogin    = document.getElementById('footer-login-link');
+    const footerRegister = document.getElementById('footer-register-link');
+    if (footerLogin) {
+      footerLogin.textContent = 'Logout';
+      footerLogin.href = '#';
+      footerLogin.style.color = 'var(--red)';
+      footerLogin.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+        window.location.replace('/index.html');
+      });
+    }
+    if (footerRegister) footerRegister.style.display = 'none';
+
     // Insert user avatar dropdown
     const existing = document.getElementById('user-menu-wrap');
     if (existing) existing.remove();
@@ -53,7 +68,10 @@
     wrap.id    = 'user-menu-wrap';
     wrap.style.cssText = 'position:relative;display:flex;align-items:center;gap:8px;';
     wrap.innerHTML = `
-      ${isVip ? `<span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;color:var(--red);background:rgba(233,69,96,0.12);border:1px solid rgba(233,69,96,0.25);border-radius:4px;padding:2px 7px;text-transform:uppercase;">VIP</span>` : ''}
+      ${isVip
+        ? `<span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;color:var(--red);background:rgba(233,69,96,0.12);border:1px solid rgba(233,69,96,0.25);border-radius:4px;padding:2px 7px;text-transform:uppercase;">VIP</span>`
+        : `<span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;color:#22c55e;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);border-radius:4px;padding:2px 7px;text-transform:uppercase;">FREE</span>`
+      }
       <button id="user-avatar-btn" style="width:36px;height:36px;border-radius:50%;background:var(--red);border:none;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;flex-shrink:0;">
         ${initials}
       </button>
