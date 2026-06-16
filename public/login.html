@@ -69,7 +69,7 @@
 
   // If already logged in, redirect based on role
   fetch('/api/auth/me', { credentials: 'include' }).then(r => r.json()).then(j => {
-    if (j.success) window.location.href = roleHome(j.data.role);
+    if (j.success) window.location.replace(roleHome(j.data.role));
   }).catch(() => {});
 
   document.getElementById('login-form').addEventListener('submit', async function(e) {
@@ -100,7 +100,7 @@
         const params   = new URLSearchParams(window.location.search);
         const role     = (json.data && json.data.user) ? json.data.user.role : 'user';
         const redirect = params.get('redirect') || roleHome(role);
-        window.location.href = redirect;
+        window.location.replace(redirect);
       } else {
         errMsg.textContent = json.message || 'Invalid email or password.';
         errBox.style.display = 'flex';
