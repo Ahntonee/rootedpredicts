@@ -1,19 +1,12 @@
 User-agent: *
 Allow: /
 
-# Block private/auth pages
 Disallow: /admin/
 Disallow: /dashboard.html
-Disallow: /profile.html
-Disallow: /bookmarks.html
 Disallow: /bet-history.html
-Disallow: /login.html
-Disallow: /register.html
-Disallow: /forgot-password.html
+Disallow: /bookmarks.html
+Disallow: /profile.html
 Disallow: /reset-password.html
+Disallow: /forgot-password.html
 
-# Block API endpoints
-Disallow: /api/
-
-# Sitemap location
 Sitemap: https://www.rootedpredict.com/sitemap.xml
