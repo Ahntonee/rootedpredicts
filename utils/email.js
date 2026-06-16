@@ -1,38 +1,43 @@
 // utils/email.js
-// Rooted Predictions — Email sending utility via Nodemailer
-// Used for: welcome emails, password reset, VIP confirmation
+// Rooted Predictions — Email sending utility via Resend HTTP API
+// Replaces Nodemailer/SMTP with direct HTTP calls — no SMTP ports needed
 
 'use strict';
 
-const nodemailer = require('nodemailer');
-
-// Create transporter once — reused across all email calls
-const transporter = nodemailer.createTransport({
-  host:   process.env.SMTP_HOST   || 'smtp.gmail.com',
-  port:   parseInt(process.env.SMTP_PORT) || 587,
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const RESEND_API_KEY = process.env.SMTP_PASS; // reuses existing env var
+const FROM_ADDRESS   = process.env.EMAIL_FROM || 'Rooted Predictions <noreply@rootedpredict.com>';
+const RESEND_API_URL = 'https://api.resend.com/emails';
 
 /**
- * Send a generic email
+ * Send a generic email via Resend HTTP API
  */
 async function sendEmail({ to, subject, html, text }) {
-  const mailOptions = {
-    from:    process.env.EMAIL_FROM || 'Rooted Predictions <noreply@rootedpredict.com>',
-    to,
-    subject,
-    html,
-    text: text || html.replace(/<[^>]*>/g, ''), // Fallback plain text
-  };
-
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[EMAIL] Sent to ${to}: ${subject} (ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const response = await fetch(RESEND_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({
+        from:    FROM_ADDRESS,
+        to:      [to],
+        subject,
+        html,
+        text: text || html.replace(/<[^>]*>/g, ''),
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error(`[EMAIL] Resend API error for ${to}:`, data);
+      return { success: false, error: data.message || 'Unknown error' };
+    }
+
+    console.log(`[EMAIL] Sent to ${to}: ${subject} (ID: ${data.id})`);
+    return { success: true, messageId: data.id };
+
   } catch (error) {
     console.error(`[EMAIL] Failed to send to ${to}:`, error.message);
     return { success: false, error: error.message };
