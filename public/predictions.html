@@ -62,9 +62,10 @@
     .pick-odds-box { text-align: center; border: 1.5px solid var(--border); border-radius: 50px; padding: 6px 16px; min-width: 72px; }
     .pick-odds-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .pick-odds-val { font-size: 1rem; font-weight: 700; color: var(--text); }
-    .pick-tip-box { text-align: center; background: rgba(234,179,8,0.08); border: 1.5px solid rgba(234,179,8,0.3); border-radius: 50px; padding: 6px 16px; min-width: 100px; }
+    .pick-tip-box { text-align: center; background: rgba(234,179,8,0.08); border: 1.5px solid rgba(234,179,8,0.3); border-radius: 10px; padding: 6px 16px; min-width: 100px; }
     .pick-tip-label { font-size: 0.65rem; color: rgba(234,179,8,0.8); text-transform: uppercase; letter-spacing: 0.04em; }
     .pick-tip-val { font-size: 0.88rem; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: center; gap: 4px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* skeleton */
     .pick-skeleton { padding: 16px 20px; border-top: 1px solid var(--border); }
@@ -105,13 +106,6 @@
       <div>
         <h1 id="page-h1" style="font-family:var(--font-head);font-size:1.9rem;font-weight:900;color:#fff;margin-bottom:4px;">Free Football Predictions Today</h1>
         <p id="page-sub" style="font-size:0.88rem;color:rgba(255,255,255,0.55);">Free predictions across top leagues — updated daily</p>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <a href="/pricing.html" class="btn btn-primary btn-sm"><span class="material-icons-round" style="font-size:0.9rem;">workspace_premium</span>Join VIP</a>
-        <a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="btn-telegram btn-sm">
-          <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;flex-shrink:0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
-          Join us on Telegram
-        </a>
       </div>
     </div>
     <!-- Category tabs -->
@@ -949,7 +943,12 @@
           </div>
           <div class="pick-tip-box">
             <div class="pick-tip-label">TIPS</div>
-            <div class="pick-tip-val"><span style="color:#f97316;">🔥</span>${esc(tip)}</div>
+            <div class="pick-tip-val">${
+              p.result === 'won'  ? `<span class="material-icons-round" style="color:#22c55e;font-size:1rem;">check_circle</span>` :
+              p.result === 'lost' ? `<span class="material-icons-round" style="color:#eab308;font-size:1rem;">close</span>` :
+              p.result === 'pending' ? `<span class="material-icons-round" style="color:var(--muted);font-size:1rem;animation:spin 1.2s linear infinite;">hourglass_empty</span>` :
+              `<span style="color:#f97316;">🔥</span>`
+            }${esc(tip)}</div>
           </div>
         </div>`;
       }).join('');

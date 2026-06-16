@@ -36,9 +36,11 @@
 
     // Find and replace login/vip buttons
     const loginBtn = actions.querySelector('.btn-login');
+    const joinBtn  = actions.querySelector('.btn-join');
     const vipBtn   = actions.querySelector('.btn-vip');
 
     if (loginBtn) loginBtn.style.display = 'none';
+    if (joinBtn)  joinBtn.style.display  = 'none';
     if (vipBtn && !isVip) {
       vipBtn.style.display = 'none';
     }
