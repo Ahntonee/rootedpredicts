@@ -79,7 +79,10 @@
     if (!el) return;
 
     const path = window.location.pathname;
-    const active = href => path === href || path.startsWith(href.replace('.html','')) ? 'active' : '';
+    const active = href => {
+      if (href === '/') return (path === '/' || path === '/index.html') ? 'active' : '';
+      return path === href || path.startsWith(href.replace('.html','')) ? 'active' : '';
+    };
 
     el.innerHTML = `
       <div class="ticker-wrap" id="ticker-wrap" style="display:none;">
