@@ -583,7 +583,7 @@
     const suffix = ['th','st','nd','rd'];
     const v = d.getDate() % 100;
     const s = suffix[(v - 20) % 10] || suffix[v] || suffix[0];
-    return `${days[d.getDay()]}${s} ${dd} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    return `${days[d.getDay()]} ${dd}${s} ${months[d.getMonth()]} ${d.getFullYear()}`;
   }
 
   let currentOffset = 0; // 0=today, -1=yesterday, 1=tomorrow

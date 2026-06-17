@@ -20,6 +20,13 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .dash-stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+    @media (max-width:640px) {
+      .dash-stats-grid { grid-template-columns:repeat(2,1fr); }
+      .dash-stats-grid .card { text-align:center; }
+    }
+  </style>
 </head>
 <body>
 <header class="site-header" id="site-header"></header>
@@ -34,7 +41,7 @@
     </div>
 
     <!-- Stats row -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;">
+    <div class="dash-stats-grid">
       <div class="card" style="padding:20px;text-align:center;">
         <div style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--text);" id="stat-bookmarks">0</div>
         <div style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;">Bookmarks</div>

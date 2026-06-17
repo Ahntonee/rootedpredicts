@@ -815,7 +815,7 @@
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     const v = d.getDate() % 100;
     const s = [,'st','nd','rd'][v] || 'th';
-    return `${days[d.getDay()]}${s} ${String(d.getDate()).padStart(2,'0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    return `${days[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}${s} ${months[d.getMonth()]} ${d.getFullYear()}`;
   }
 
   let currentOffset = 0;
