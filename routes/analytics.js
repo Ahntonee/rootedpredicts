@@ -274,4 +274,83 @@ router.post('/accuracy-refresh', asyncHandler(async (req, res) => {
   return successResponse(res, { logged, message: `${logged} new outcomes logged and stats updated` });
 }));
 
+// ── GET /api/admin/analytics/frequency
+// How often each market/tip is used — across ALL predictions (not just resolved).
+// Optional: ?league_api_id=39  ?team=Arsenal
+router.get('/frequency', asyncHandler(async (req, res) => {
+  const { league_api_id, team } = req.query;
+
+  const conditions = [`p.tip IS NOT NULL`, `p.tip != ''`, `p.tip != 'TBD'`, `p.market IS NOT NULL`];
+  const params     = [];
+
+  if (league_api_id) {
+    conditions.push(`l.api_league_id = ?`);
+    params.push(parseInt(league_api_id));
+  }
+  if (team) {
+    conditions.push(`(p.home_team = ? OR p.away_team = ?)`);
+    params.push(team, team);
+  }
+
+  const where = `WHERE ${conditions.join(' AND ')}`;
+
+  const [rows] = await db.query(`
+    SELECT
+      l.id            AS league_db_id,
+      l.name          AS league_name,
+      l.country,
+      l.api_league_id,
+      p.market,
+      p.tip,
+      COUNT(*)                               AS total,
+      SUM(p.result = 'won')                  AS won,
+      SUM(p.result = 'lost')                 AS lost,
+      SUM(p.result IN ('won', 'lost'))       AS resolved
+    FROM predictions p
+    JOIN leagues l ON l.id = p.league_id
+    ${where}
+    GROUP BY l.id, p.market, p.tip
+    ORDER BY l.name ASC, total DESC
+  `, params);
+
+  // % share within each league
+  const leagueTotals = {};
+  rows.forEach(r => { leagueTotals[r.league_db_id] = (leagueTotals[r.league_db_id] || 0) + Number(r.total); });
+
+  const data = rows.map(r => ({
+    league_name:   r.league_name,
+    country:       r.country,
+    api_league_id: r.api_league_id,
+    market:        r.market,
+    tip:           r.tip,
+    total:         Number(r.total),
+    won:           Number(r.won),
+    lost:          Number(r.lost),
+    resolved:      Number(r.resolved),
+    pct_of_league: leagueTotals[r.league_db_id] > 0
+      ? +((Number(r.total) / leagueTotals[r.league_db_id]) * 100).toFixed(1)
+      : 0,
+    league_total:  leagueTotals[r.league_db_id] || 0,
+  }));
+
+  // Unique teams for the selected league (to populate team dropdown)
+  let teams = [];
+  if (league_api_id) {
+    const [teamRows] = await db.query(
+      `SELECT DISTINCT p.home_team AS team FROM predictions p
+         JOIN leagues l ON l.id = p.league_id
+         WHERE l.api_league_id = ? AND p.home_team IS NOT NULL AND p.home_team != ''
+       UNION
+       SELECT DISTINCT p.away_team FROM predictions p
+         JOIN leagues l ON l.id = p.league_id
+         WHERE l.api_league_id = ? AND p.away_team IS NOT NULL AND p.away_team != ''
+       ORDER BY team ASC`,
+      [parseInt(league_api_id), parseInt(league_api_id)]
+    );
+    teams = teamRows.map(r => r.team).filter(Boolean);
+  }
+
+  return successResponse(res, { rows: data, teams });
+}));
+
 module.exports = router;

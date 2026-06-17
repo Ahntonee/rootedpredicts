@@ -32,12 +32,18 @@
     .metric-card.red    { border-color:rgba(231,76,60,.25);  background:rgba(231,76,60,.05);  }
     .metric-card.blue   { border-color:rgba(38,165,228,.3);  background:rgba(38,165,228,.05); }
 
-    .rank-table  { width:100%; border-collapse:collapse; font-size:0.85rem; }
-    .rank-table th { padding:8px 12px; text-align:left; font-size:0.72rem; text-transform:uppercase;
-                     letter-spacing:.05em; color:var(--muted); border-bottom:2px solid var(--border); }
-    .rank-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    .rank-table  { width:100%; border-collapse:collapse; font-size:0.85rem; table-layout:auto; }
+    .rank-table th { padding:8px 16px; text-align:left; font-size:0.72rem; text-transform:uppercase;
+                     letter-spacing:.05em; color:var(--muted); border-bottom:2px solid var(--border);
+                     white-space:nowrap; }
+    .rank-table td { padding:10px 16px; border-bottom:1px solid var(--border); vertical-align:middle;
+                     white-space:nowrap; }
     .rank-table tr:last-child td { border-bottom:none; }
     .rank-table tr:hover td { background:rgba(26,138,68,.04); }
+    .rank-table td.text-cell { white-space:normal; }
+    .rank-group-hdr td { background:var(--surface) !important; font-weight:700; font-size:0.78rem;
+                         color:var(--muted); text-transform:uppercase; letter-spacing:.06em;
+                         padding:6px 16px !important; }
 
     .bar-wrap    { width:100%; background:var(--border); border-radius:4px; height:6px; overflow:hidden; }
     .bar-fill    { height:100%; border-radius:4px; transition:width .4s ease; }
@@ -508,6 +514,25 @@
       </div>
     </div>
 
+    <!-- Prediction Frequency -->
+    <div class="card" style="padding:16px 20px;margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div class="section-title" style="margin:0;"><span class="material-icons-round">bar_chart</span>Prediction Frequency</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <select class="form-control" id="freq-league-sel" style="max-width:220px;font-size:0.82rem;">
+            <option value="">All Leagues</option>
+          </select>
+          <select class="form-control" id="freq-team-sel" style="max-width:180px;font-size:0.82rem;">
+            <option value="">All Teams</option>
+          </select>
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;">How often each market/tip is used — across all predictions (pending + resolved).</p>
+      <div id="freq-wrap">
+        <p style="color:var(--muted);font-size:0.85rem;">Loading...</p>
+      </div>
+    </div>
+
     <!-- Calibration table -->
     <div class="card" style="padding:16px 20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
@@ -632,6 +657,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('ip-edit-create-btn').addEventListener('click', () => openCreateModal(true));
   document.getElementById('cp-save-btn').addEventListener('click', savePrediction);
 
+  // Frequency filters
+  document.getElementById('freq-league-sel').addEventListener('change', loadFrequency);
+  document.getElementById('freq-team-sel').addEventListener('change', loadFrequency);
+
   // Accuracy tab refresh button
   document.getElementById('acc-refresh-btn').addEventListener('click', async () => {
     const btn = document.getElementById('acc-refresh-btn');
@@ -698,6 +727,7 @@ async function loadLeagues() {
 
     topbarSel.innerHTML = buildGroups('– Select League –');
     intelSel.innerHTML  = buildGroups('All Leagues');
+    document.getElementById('freq-league-sel').innerHTML = buildGroups('All Leagues');
   } catch(e) {
     console.error('Failed to load leagues', e);
   }
@@ -1340,6 +1370,7 @@ async function loadAccuracyTab() {
       Admin.api('GET', '/api/admin/analytics/accuracy-summary'),
       Admin.api('GET', '/api/admin/analytics/accuracy-calibration'),
     ]);
+    loadFrequency();
 
     if (sumJson.success) {
       const s = sumJson.data;
@@ -1379,21 +1410,20 @@ async function loadAccuracyTab() {
            </table>`
         : '<p style=”color:var(--muted);font-size:0.85rem;”>No data yet.</p>';
 
-      // By sub-market (tip) — grouped with market as a header row
+      // By sub-market (tip) — market shown as group header, data rows have 4 cols only
       const bt = s.by_tip || [];
       if (bt.length) {
         let tipHtml = `<table class=”rank-table”><thead><tr>
-          <th>Market</th><th>Tip</th><th>Total</th><th>Won</th><th>Accuracy</th>
+          <th style=”width:45%;”>Tip</th><th>Total</th><th>Won</th><th>Accuracy</th>
         </tr></thead><tbody>`;
         let lastMarket = null;
         bt.forEach(r => {
           if (r.market !== lastMarket) {
-            tipHtml += `<tr style=”background:var(--surface);”><td colspan=”5” style=”font-weight:700;font-size:0.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px;”>${escHtml(r.market)}</td></tr>`;
+            tipHtml += `<tr class=”rank-group-hdr”><td colspan=”4”>${escHtml(r.market)}</td></tr>`;
             lastMarket = r.market;
           }
           tipHtml += `<tr>
-            <td style=”color:var(--muted);font-size:0.78rem;”></td>
-            <td style=”font-weight:600;”>${escHtml(r.tip)}</td>
+            <td style=”font-weight:600;padding-left:24px;”>${escHtml(r.tip)}</td>
             <td>${r.total}</td>
             <td style=”color:var(--green);font-weight:600;”>${r.won}</td>
             <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
@@ -1406,23 +1436,22 @@ async function loadAccuracyTab() {
           '<p style=”color:var(--muted);font-size:0.85rem;”>No resolved predictions yet.</p>';
       }
 
-      // League × Sub-Market breakdown
+      // League × Sub-Market — market+tip shown as group header, data rows have 5 cols only
       const blt = s.by_league_tip || [];
       if (blt.length) {
         let ltHtml = `<table class=”rank-table”><thead><tr>
-          <th>Market</th><th>Tip</th><th>League</th><th>Country</th><th>Total</th><th>Won</th><th>Accuracy</th>
+          <th style=”width:35%;”>League</th><th>Country</th><th>Total</th><th>Won</th><th>Accuracy</th>
         </tr></thead><tbody>`;
         let lastKey = null;
         blt.forEach(r => {
           const key = r.market + '|' + r.tip;
           if (key !== lastKey) {
-            ltHtml += `<tr style=”background:var(--surface);”><td colspan=”7” style=”font-weight:700;font-size:0.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px;”>${escHtml(r.market)} › ${escHtml(r.tip)}</td></tr>`;
+            ltHtml += `<tr class=”rank-group-hdr”><td colspan=”5”>${escHtml(r.market)} › ${escHtml(r.tip)}</td></tr>`;
             lastKey = key;
           }
           ltHtml += `<tr>
-            <td></td><td></td>
-            <td style=”font-weight:600;”>${escHtml(r.league_name)}</td>
-            <td style=”font-size:0.78rem;color:var(--muted);”>${escHtml(r.country)}</td>
+            <td style=”font-weight:600;” class=”text-cell”>${escHtml(r.league_name)}</td>
+            <td style=”color:var(--muted);”>${escHtml(r.country)}</td>
             <td>${r.total}</td>
             <td style=”color:var(--green);font-weight:600;”>${r.won}</td>
             <td>${accBadge(r.accuracy_pct)}<strong>${r.accuracy_pct}%</strong></td>
@@ -1465,6 +1494,85 @@ function accBadge(pct) {
   const p = parseFloat(pct) || 0;
   const color = p >= 65 ? 'var(--green)' : p >= 50 ? 'var(--yellow)' : 'var(--red)';
   return `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle;"></span>`;
+}
+
+// -- Prediction Frequency -----------------------------------------------
+async function loadFrequency() {
+  const leagueId = document.getElementById('freq-league-sel').value;
+  const team      = document.getElementById('freq-team-sel').value;
+  const wrap      = document.getElementById('freq-wrap');
+
+  wrap.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;">Loading...</p>';
+
+  try {
+    let qs = '';
+    if (leagueId) qs += `league_api_id=${leagueId}`;
+    if (team)     qs += `${qs ? '&' : ''}team=${encodeURIComponent(team)}`;
+
+    const json = await Admin.api('GET', `/api/admin/analytics/frequency${qs ? '?' + qs : ''}`);
+    if (!json.success) throw new Error(json.message);
+
+    const rows = json.data.rows || [];
+    if (!rows.length) {
+      wrap.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;">No prediction data found.</p>';
+      return;
+    }
+
+    // Populate team dropdown from unique home/away teams in results (only when a league is filtered)
+    if (leagueId && json.data.teams && json.data.teams.length) {
+      const teamSel   = document.getElementById('freq-team-sel');
+      const curTeam   = teamSel.value;
+      teamSel.innerHTML = '<option value="">All Teams</option>' +
+        json.data.teams.map(t => `<option value="${escHtml(t)}"${t===curTeam?' selected':''}>${escHtml(t)}</option>`).join('');
+    } else if (!leagueId) {
+      document.getElementById('freq-team-sel').innerHTML = '<option value="">All Teams</option>';
+    }
+
+    // Group rows by league
+    const byLeague = {};
+    rows.forEach(r => {
+      const key = r.api_league_id + '|' + r.league_name;
+      if (!byLeague[key]) byLeague[key] = { name: r.league_name, country: r.country, total: 0, tips: [] };
+      byLeague[key].tips.push(r);
+      byLeague[key].total += r.total;
+    });
+
+    let html = `<table class="rank-table">
+      <thead><tr>
+        <th style="width:30%;">League</th>
+        <th style="width:18%;">Market</th>
+        <th style="width:22%;">Tip</th>
+        <th>Count</th>
+        <th>Share</th>
+        <th>Resolved</th>
+      </tr></thead><tbody>`;
+
+    Object.values(byLeague).forEach(lg => {
+      // Group header for league
+      html += `<tr class="rank-group-hdr"><td colspan="6">${escHtml(lg.name)} <span style="font-weight:400;color:var(--muted);margin-left:6px;">${escHtml(lg.country)} — ${lg.total} total predictions</span></td></tr>`;
+      lg.tips.forEach(r => {
+        const barW = Math.min(100, r.pct_of_league);
+        html += `<tr>
+          <td></td>
+          <td style="color:var(--muted);font-size:0.82rem;">${escHtml(r.market)}</td>
+          <td style="font-weight:600;">${escHtml(r.tip)}</td>
+          <td style="font-family:var(--font-head);font-weight:700;">${r.total}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:36px;font-size:0.82rem;">${r.pct_of_league}%</span>
+              <div class="bar-wrap" style="width:80px;"><div class="bar-fill bar-green" style="width:${barW}%;"></div></div>
+            </div>
+          </td>
+          <td style="font-size:0.82rem;color:var(--muted);">${r.resolved} <span style="font-size:0.75rem;">(${r.resolved > 0 ? Math.round(r.won/r.resolved*100) : 0}% acc)</span></td>
+        </tr>`;
+      });
+    });
+
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  } catch(e) {
+    wrap.innerHTML = `<p style="color:var(--red);font-size:0.85rem;">Error: ${escHtml(e.message)}</p>`;
+  }
 }
 
 // â”€â”€ Poisson chip for match intel panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
