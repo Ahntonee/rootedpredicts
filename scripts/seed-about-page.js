@@ -79,7 +79,7 @@ const last_updated = '2026-06-17';
   try {
     const [result] = await db.query(
       `UPDATE static_pages
-         SET page_title=?, meta_description=?, hero_title=?, hero_subtitle=?, last_updated=?, content=?
+         SET page_title=?, meta_description=?, hero_title=?, hero_subtitle=?, last_updated=?, content=?, extra=NULL
        WHERE slug=?`,
       [page_title, meta_desc, hero_title, hero_sub, last_updated, content.trim(), slug]
     );
