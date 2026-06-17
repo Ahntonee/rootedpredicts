@@ -151,15 +151,20 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const args = [];
 
   // Date filter
+  // Predictions for games that kicked off more than 24 hours ago are never
+  // surfaced on the public tab — pass all_dates=1 (admin only) to bypass.
+  const allow_all_dates = req.query.all_dates || (result && result !== 'all' && result !== 'pending');
   if (date) {
     sql += ' AND DATE(p.match_date) = ?';
     args.push(date);
+    if (!allow_all_dates) {
+      sql += ' AND p.match_date >= NOW() - INTERVAL 24 HOUR';
+    }
   } else if (req.query.upcoming) {
     // today onwards — keeps the homepage populated even when today is empty
     sql += ' AND DATE(p.match_date) >= CURDATE()';
-  } else if (req.query.all_dates || (result && result !== 'all' && result !== 'pending')) {
-    // No date restriction when browsing settled results (won/lost/void) or
-    // when caller explicitly passes all_dates=1
+  } else if (allow_all_dates) {
+    // No date restriction when browsing settled results or admin passes all_dates=1
   } else {
     sql += ' AND DATE(p.match_date) = CURDATE()';
   }

@@ -149,6 +149,13 @@ async function syncFixtures(date, leagueId = null) {
     const [existing] = await db.query('SELECT id FROM predictions WHERE fixture_id=?', [fixture.id]);
     if (existing.length) { skipped++; continue; }
 
+    // Skip finished or games that kicked off more than 2 hours ago
+    const _fStatus    = fixture.fixture?.status?.short;
+    const _kickoff    = fixture.date ? new Date(fixture.date) : null;
+    const _cutoff     = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const _finished   = ['FT','AET','PEN','CANC','ABD','WO','AWD'];
+    if (_finished.includes(_fStatus) || (_kickoff && _kickoff < _cutoff)) { skipped++; continue; }
+
     // Build unique slug
     const matchDate = fixture.date ? fixture.date.split('T')[0] : date;
     const rawSlug   = `${league.name} ${teams.home.name} vs ${teams.away.name} ${matchDate}`;
@@ -936,7 +943,17 @@ async function syncLeagueSeasonFixtures(leagueId, season) {
       continue;
     }
 
-    // New fixture — insert as a prediction stub
+    // New fixture — skip if already finished or kicked off more than 2 hours ago
+    const fixtureStatus = fixture.status?.short;
+    const finishedStatuses = ['FT','AET','PEN','CANC','ABD','WO','AWD'];
+    const kickoff = fixture.date ? new Date(fixture.date) : null;
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    if (finishedStatuses.includes(fixtureStatus) || (kickoff && kickoff < twoHoursAgo)) {
+      skipped++;
+      continue;
+    }
+
+    // Insert as a prediction stub
     const matchDate = fixture.date?.split('T')[0] || '';
     const rawSlug   = `${league.name} ${teams.home.name} vs ${teams.away.name} ${matchDate}`;
     let   slug      = slugify(rawSlug, { lower: true, strict: true });
