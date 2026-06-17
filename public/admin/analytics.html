@@ -32,11 +32,11 @@
     .metric-card.red    { border-color:rgba(231,76,60,.25);  background:rgba(231,76,60,.05);  }
     .metric-card.blue   { border-color:rgba(38,165,228,.3);  background:rgba(38,165,228,.05); }
 
-    .rank-table  { width:100%; border-collapse:collapse; font-size:0.85rem; table-layout:auto; }
-    .rank-table th { padding:8px 16px; text-align:left; font-size:0.72rem; text-transform:uppercase;
+    .rank-table  { width:100%; border-collapse:collapse; font-size:0.85rem; table-layout:fixed; }
+    .rank-table th { padding:8px 16px !important; text-align:left; font-size:0.72rem; text-transform:uppercase;
                      letter-spacing:.05em; color:var(--muted); border-bottom:2px solid var(--border);
                      white-space:nowrap; }
-    .rank-table td { padding:10px 16px; border-bottom:1px solid var(--border); vertical-align:middle;
+    .rank-table td { padding:10px 16px !important; border-bottom:1px solid var(--border); vertical-align:middle;
                      white-space:nowrap; }
     .rank-table tr:last-child td { border-bottom:none; }
     .rank-table tr:hover td { background:rgba(26,138,68,.04); }
@@ -1423,10 +1423,10 @@ async function loadAccuracyTab() {
             lastMarket = r.market;
           }
           tipHtml += `<tr>
-            <td style=”font-weight:600;padding-left:24px;”>${escHtml(r.tip)}</td>
-            <td>${r.total}</td>
-            <td style=”color:var(--green);font-weight:600;”>${r.won}</td>
-            <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
+            <td style=”font-weight:600;padding:10px 16px 10px 24px !important;”>${escHtml(r.tip)}</td>
+            <td style=”padding:10px 16px;”>${r.total}</td>
+            <td style=”padding:10px 16px;color:var(--green);font-weight:600;”>${r.won}</td>
+            <td style=”padding:10px 16px;”>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
           </tr>`;
         });
         tipHtml += '</tbody></table>';
@@ -1450,11 +1450,11 @@ async function loadAccuracyTab() {
             lastKey = key;
           }
           ltHtml += `<tr>
-            <td style=”font-weight:600;” class=”text-cell”>${escHtml(r.league_name)}</td>
-            <td style=”color:var(--muted);”>${escHtml(r.country)}</td>
-            <td>${r.total}</td>
-            <td style=”color:var(--green);font-weight:600;”>${r.won}</td>
-            <td>${accBadge(r.accuracy_pct)}<strong>${r.accuracy_pct}%</strong></td>
+            <td style=”padding:10px 16px;font-weight:600;” class=”text-cell”>${escHtml(r.league_name)}</td>
+            <td style=”padding:10px 16px;color:var(--muted);”>${escHtml(r.country)}</td>
+            <td style=”padding:10px 16px;”>${r.total}</td>
+            <td style=”padding:10px 16px;color:var(--green);font-weight:600;”>${r.won}</td>
+            <td style=”padding:10px 16px;”>${accBadge(r.accuracy_pct)}<strong>${r.accuracy_pct}%</strong></td>
           </tr>`;
         });
         ltHtml += '</tbody></table>';
