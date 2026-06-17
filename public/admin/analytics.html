@@ -285,7 +285,11 @@
         <button class="btn btn-outline btn-sm" id="browse-fixtures-btn">
           <span class="material-icons-round">search</span>Browse
         </button>
+        <button class="btn btn-outline btn-sm" id="sync-season-btn" title="Sync all fixtures for selected league + season into local DB" style="margin-left:4px;">
+          <span class="material-icons-round">cloud_download</span>Sync Season
+        </button>
       </div>
+      <div id="sync-season-status" style="display:none;font-size:0.8rem;margin-top:8px;color:var(--muted);"></div>
       <div id="fixtures-list-wrap" style="display:none;">
         <p style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;" id="fixtures-count"></p>
         <div id="fixtures-list" style="max-height:360px;overflow-y:auto;"></div>
@@ -619,6 +623,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Match Intel: browse fixtures
   document.getElementById('browse-fixtures-btn').addEventListener('click', browseFixtures);
+
+  // Match Intel: sync all fixtures for selected league + season into local DB
+  document.getElementById('sync-season-btn').addEventListener('click', syncSeasonFixtures);
 
   // Create prediction buttons
   document.getElementById('ip-create-btn').addEventListener('click', () => openCreateModal(false));
@@ -1017,6 +1024,39 @@ async function browseFixtures() {
   } catch(e) {
     hideEl('fixtures-loading');
     Admin.toast('Error: ' + e.message, 'error');
+  }
+}
+
+async function syncSeasonFixtures() {
+  const leagueId = document.getElementById('intel-league').value;
+  const date     = document.getElementById('intel-date').value;
+
+  if (!leagueId) { Admin.toast('Select a league first', 'error'); return; }
+  if (!date)     { Admin.toast('Select a date first', 'error'); return; }
+
+  const season = parseInt(date.split('-')[0]);
+  const btn    = document.getElementById('sync-season-btn');
+  const status = document.getElementById('sync-season-status');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite;">refresh</span>Syncing...';
+  status.textContent = `Fetching all fixtures for league ${leagueId}, season ${season}...`;
+  status.style.display = 'block';
+
+  try {
+    const json = await Admin.api('POST', '/api/sync/league-season', { league_id: parseInt(leagueId), season });
+    if (!json.success) throw new Error(json.message);
+    const d = json.data;
+    status.textContent = `Sync done: ${d.created} new, ${d.updated} updated, ${d.skipped} skipped (${d.total} total fixtures).`;
+    status.style.color = 'var(--green)';
+    Admin.toast(`Season synced: ${d.created} fixtures added`, 'success');
+  } catch(e) {
+    status.textContent = 'Sync failed: ' + e.message;
+    status.style.color = 'var(--red)';
+    Admin.toast('Sync error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round">cloud_download</span>Sync Season';
   }
 }
 

@@ -873,16 +873,96 @@ async function fetchLeagueFixtures(leagueId, season = CURRENT_SEASON, opts = {})
 }
 
 // ── Fetch fixtures by date (optionally filtered by league)
-// No season filter — lets API return any season's fixtures for that date
-// so future tournaments like World Cup 2026 appear correctly.
-async function fetchFixturesByDate(date, leagueId = null) {
+// When a league is specified API-Football requires season; we derive it
+// from the year portion of the date (correct for single-year tournaments
+// like the World Cup, and for club seasons in their primary half-year).
+async function fetchFixturesByDate(date, leagueId = null, season = null) {
   const params = { date, timezone: 'UTC' };
-  if (leagueId) params.league = leagueId;
+  if (leagueId) {
+    params.league = leagueId;
+    params.season = season || parseInt(date.split('-')[0]);
+  }
   return request('/fixtures', params);
 }
 
+// ── Bulk-sync ALL fixtures for a league + season into the predictions table
+// Useful for pre-loading tournaments (e.g. World Cup 2026) so admins can
+// browse and create predictions without repeated live API calls.
+async function syncLeagueSeasonFixtures(leagueId, season) {
+  console.log(`[API-Football] Syncing all fixtures: league=${leagueId} season=${season}`);
+  const { data: fixtures } = await request('/fixtures', { league: leagueId, season, timezone: 'UTC' });
+  console.log(`[API-Football] Fetched ${fixtures.length} fixtures`);
+  let created = 0, updated = 0, skipped = 0;
+  const slugify = require('slugify');
+
+  for (const item of fixtures) {
+    const { fixture, league, teams, goals } = item;
+    if (!fixture || !league || !teams) { skipped++; continue; }
+
+    // Ensure league row exists
+    const [lRows] = await db.query('SELECT id FROM leagues WHERE api_league_id=?', [league.id]);
+    let dbLeagueId;
+    if (lRows.length) {
+      dbLeagueId = lRows[0].id;
+    } else {
+      const [ins] = await db.query(
+        `INSERT IGNORE INTO leagues (api_league_id,name,country,continent,logo_url,season)
+         VALUES (?,?,?,?,?,?)`,
+        [league.id, league.name, league.country || 'World',
+         mapCountryToContinent(league.country || ''), league.logo || null, season]
+      );
+      dbLeagueId = ins.insertId || null;
+      if (!dbLeagueId) { skipped++; continue; }
+    }
+
+    const mysqlDate = fixture.date
+      ? fixture.date.replace('T', ' ').replace(/\+\d{2}:\d{2}$/, '').replace('Z', '').slice(0, 19)
+      : fixture.date?.split('T')[0] + ' 00:00:00';
+
+    // If a prediction already exists for this fixture, update scores/status only
+    const [existing] = await db.query('SELECT id FROM predictions WHERE fixture_id=?', [fixture.id]);
+    if (existing.length) {
+      const status = fixture.status?.short;
+      if (['FT','AET','PEN'].includes(status) && goals) {
+        await db.query(
+          `UPDATE predictions SET home_score=?,away_score=?,status_short=?
+           WHERE fixture_id=?`,
+          [goals.home ?? null, goals.away ?? null, status, fixture.id]
+        );
+        updated++;
+      } else {
+        skipped++;
+      }
+      continue;
+    }
+
+    // New fixture — insert as a prediction stub
+    const matchDate = fixture.date?.split('T')[0] || '';
+    const rawSlug   = `${league.name} ${teams.home.name} vs ${teams.away.name} ${matchDate}`;
+    let   slug      = slugify(rawSlug, { lower: true, strict: true });
+    const [slugCheck] = await db.query('SELECT id FROM predictions WHERE slug=?', [slug]);
+    if (slugCheck.length) slug = `${slug}-${fixture.id}`;
+
+    try {
+      await db.query(
+        `INSERT INTO predictions
+           (fixture_id,league_id,home_team,away_team,home_team_logo,away_team_logo,
+            match_date,tip,market,visibility,result,slug,published_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NULL)`,
+        [fixture.id, dbLeagueId, teams.home.name, teams.away.name,
+         teams.home.logo || null, teams.away.logo || null, mysqlDate,
+         'TBD', '1X2', 'free', 'pending', slug]
+      );
+      created++;
+    } catch(e) { console.error(`Fixture insert failed ${fixture.id}:`, e.message); skipped++; }
+  }
+
+  console.log(`[API-Football] Sync done: ${created} created, ${updated} updated, ${skipped} skipped`);
+  return { created, updated, skipped, total: fixtures.length };
+}
+
 module.exports = {
-  syncLeagues, syncTeams, syncFixtures, syncResults, syncScores, syncLive,
+  syncLeagues, syncTeams, syncFixtures, syncLeagueSeasonFixtures, syncResults, syncScores, syncLive,
   FINISHED_STATUSES, LIVE_STATUSES,
   fetchH2H, fetchTeamForm, fetchStandings, fetchTeamStats,
   fetchLeagueFixtures, fetchFixturesByDate,

@@ -36,6 +36,19 @@ router.post('/leagues', asyncHandler(async (req, res) => {
   return successResponse(res, result, `League sync complete: ${result.synced} synced`);
 }));
 
+// ── POST /api/sync/league-season
+// Body: { league_id: number, season: number }
+// Bulk-syncs ALL fixtures for a league + season (e.g. World Cup 2026)
+router.post('/league-season', asyncHandler(async (req, res) => {
+  const { league_id, season } = req.body;
+  if (!league_id || !season) {
+    return errorResponse(res, 'league_id and season are required', 400);
+  }
+  const result = await apiSvc.syncLeagueSeasonFixtures(parseInt(league_id), parseInt(season));
+  return successResponse(res, result,
+    `Sync complete: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped`);
+}));
+
 // ── POST /api/sync/fixtures
 // Body: { date: 'YYYY-MM-DD', league_id?: number }
 router.post('/fixtures', asyncHandler(async (req, res) => {
