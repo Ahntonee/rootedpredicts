@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Rooted Predictions Admin — Shared Utilities
  */
 (function () {
@@ -204,7 +204,7 @@
       </nav>
 
       <div class="admin-nav-bottom">
-        <a href="/index.html" class="admin-nav-link"><span class="material-icons-round">open_in_new</span>View Site</a>
+        <a href="/" class="admin-nav-link"><span class="material-icons-round">open_in_new</span>View Site</a>
         <button id="admin-logout" class="admin-nav-link" style="width:100%;background:none;border:none;cursor:pointer;text-align:left;">
           <span class="material-icons-round">logout</span>Log Out
         </button>

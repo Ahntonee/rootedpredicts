@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Rooted Predictions — Main Frontend Application
  * Handles: header, footer, dark mode, league filter dropdown (live API data),
  * prediction card rendering, market tabs, date navigation
@@ -90,11 +90,11 @@
       </div>
       <div class="container">
         <div class="header-inner">
-          <a href="/index.html" class="site-logo">
+          <a href="/" class="site-logo">
             <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img">
           </a>
           <nav class="main-nav" id="main-nav">
-            <a href="/index.html"           class="nav-link ${active('/index.html')}">Home</a>
+            <a href="/"           class="nav-link ${active('/index.html')}">Home</a>
             <a href="/predictions.html"     class="nav-link ${active('/predictions.html')}">Predictions</a>
             <a href="/blog.html"            class="nav-link ${active('/blog.html')}">Blog</a>
             <a href="/pricing.html"         class="nav-link ${active('/pricing.html')}">Subscription</a>
@@ -153,7 +153,7 @@
         </div>
         <div class="footer-top">
           <div class="footer-brand">
-            <a href="/index.html" class="site-logo" style="margin-bottom:0;">
+            <a href="/" class="site-logo" style="margin-bottom:0;">
               <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img">
             </a>
             <p>Precision football predictions powered by data. Free daily tips for the Premier League, La Liga, and Champions League. Bet smarter. Every single day.</p>
