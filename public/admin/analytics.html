@@ -32,7 +32,7 @@
     .metric-card.red    { border-color:rgba(231,76,60,.25);  background:rgba(231,76,60,.05);  }
     .metric-card.blue   { border-color:rgba(38,165,228,.3);  background:rgba(38,165,228,.05); }
 
-    .rank-table  { width:100%; border-collapse:collapse; font-size:0.85rem; table-layout:fixed; }
+    .rank-table  { width:100%; border-collapse:collapse; font-size:0.85rem; table-layout:auto; }
     .rank-table th { padding:8px 16px !important; text-align:left; font-size:0.72rem; text-transform:uppercase;
                      letter-spacing:.05em; color:var(--muted); border-bottom:2px solid var(--border);
                      white-space:nowrap; }
@@ -1400,12 +1400,17 @@ async function loadAccuracyTab() {
       const bc = s.by_confidence || [];
       document.getElementById('acc-by-conf-wrap').innerHTML = bc.length
         ? `<table class=”rank-table”>
-             <thead><tr><th>Confidence Band</th><th>Total</th><th>Won</th><th>Accuracy</th></tr></thead>
+             <thead><tr>
+               <th style=”padding:8px 16px !important;width:45%;”>Confidence Band</th>
+               <th style=”padding:8px 16px !important;”>Total</th>
+               <th style=”padding:8px 16px !important;”>Won</th>
+               <th style=”padding:8px 16px !important;”>Accuracy</th>
+             </tr></thead>
              <tbody>${bc.map(r => `<tr>
-               <td><span style=”font-family:var(--font-head);font-weight:700;”>${r.confidence_band}–${r.confidence_band+4}%</span></td>
-               <td>${r.total}</td>
-               <td style=”color:var(--green);font-weight:600;”>${r.won}</td>
-               <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
+               <td style=”padding:10px 16px !important;”><span style=”font-family:var(--font-head);font-weight:700;”>${r.confidence_band}–${r.confidence_band+4}%</span></td>
+               <td style=”padding:10px 16px !important;”>${r.total}</td>
+               <td style=”padding:10px 16px !important;color:var(--green);font-weight:600;”>${r.won}</td>
+               <td style=”padding:10px 16px !important;”>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
              </tr>`).join('')}</tbody>
            </table>`
         : '<p style=”color:var(--muted);font-size:0.85rem;”>No data yet.</p>';
