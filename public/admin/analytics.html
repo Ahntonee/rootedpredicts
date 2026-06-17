@@ -656,20 +656,41 @@ function switchTab(tab) {
 // â”€â”€ Load Leagues â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadLeagues() {
   try {
-    const json = await Admin.api('GET', '/api/admin/analytics/popular-leagues');
+    const json = await Admin.api('GET', '/api/admin/analytics/all-leagues');
     if (!json.success) return;
     state.leagues = json.data;
 
-    const topbarSel  = document.getElementById('topbar-league');
-    const intelSel   = document.getElementById('intel-league');
-    topbarSel.innerHTML = '<option value="">– Select League –</option>';
-    intelSel.innerHTML  = '<option value="">All Leagues</option>';
+    const topbarSel = document.getElementById('topbar-league');
+    const intelSel  = document.getElementById('intel-league');
 
-    state.leagues.forEach(l => {
-      const opt = `<option value="${l.api_league_id}">${l.name} (${l.country})</option>`;
-      topbarSel.insertAdjacentHTML('beforeend', opt);
-      intelSel.insertAdjacentHTML('beforeend', opt);
+    // Group: featured (is_popular) first, then by continent
+    const featured   = state.leagues.filter(l => l.is_popular);
+    const byContinent = {};
+    state.leagues.filter(l => !l.is_popular).forEach(l => {
+      const c = l.continent || 'World';
+      if (!byContinent[c]) byContinent[c] = [];
+      byContinent[c].push(l);
     });
+
+    function buildGroups(blankLabel) {
+      let html = `<option value="">${blankLabel}</option>`;
+      if (featured.length) {
+        html += `<optgroup label="Featured">`;
+        featured.forEach(l => { html += `<option value="${l.api_league_id}">${l.name} (${l.country})</option>`; });
+        html += `</optgroup>`;
+      }
+      ['Europe','Americas','Africa','Asia','Oceania','World'].forEach(c => {
+        const group = byContinent[c];
+        if (!group || !group.length) return;
+        html += `<optgroup label="${c}">`;
+        group.forEach(l => { html += `<option value="${l.api_league_id}">${l.name} (${l.country})</option>`; });
+        html += `</optgroup>`;
+      });
+      return html;
+    }
+
+    topbarSel.innerHTML = buildGroups('– Select League –');
+    intelSel.innerHTML  = buildGroups('All Leagues');
   } catch(e) {
     console.error('Failed to load leagues', e);
   }

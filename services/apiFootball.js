@@ -873,8 +873,10 @@ async function fetchLeagueFixtures(leagueId, season = CURRENT_SEASON, opts = {})
 }
 
 // ── Fetch fixtures by date (optionally filtered by league)
-async function fetchFixturesByDate(date, leagueId = null, season = CURRENT_SEASON) {
-  const params = { date, season, timezone: 'UTC' };
+// No season filter — lets API return any season's fixtures for that date
+// so future tournaments like World Cup 2026 appear correctly.
+async function fetchFixturesByDate(date, leagueId = null) {
+  const params = { date, timezone: 'UTC' };
   if (leagueId) params.league = leagueId;
   return request('/fixtures', params);
 }

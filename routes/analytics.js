@@ -15,13 +15,26 @@ const { asyncHandler, successResponse, errorResponse } = require('../utils/helpe
 router.use(authenticate, requireAdmin);
 
 // ── GET /api/admin/analytics/popular-leagues
-// Returns our seeded popular leagues with API IDs for the league selector
+// Returns popular leagues only (kept for backward compatibility)
 router.get('/popular-leagues', asyncHandler(async (req, res) => {
   const [leagues] = await db.query(
-    `SELECT id, api_league_id, name, country, logo_url, continent
+    `SELECT id, api_league_id, name, country, logo_url, continent, is_popular
      FROM leagues
      WHERE is_popular = 1 AND is_active = 1
      ORDER BY continent, name ASC`
+  );
+  return successResponse(res, leagues);
+}));
+
+// ── GET /api/admin/analytics/all-leagues
+// Returns ALL active leagues grouped by continent; popular ones flagged so
+// the frontend can put them in a Featured group at the top.
+router.get('/all-leagues', asyncHandler(async (req, res) => {
+  const [leagues] = await db.query(
+    `SELECT id, api_league_id, name, country, logo_url, continent, is_popular
+     FROM leagues
+     WHERE is_active = 1
+     ORDER BY is_popular DESC, continent ASC, name ASC`
   );
   return successResponse(res, leagues);
 }));
