@@ -727,6 +727,39 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `,
   },
+
+  // ----------------------------------------------------------
+  // 20. Add tip dimension to accuracy_stats
+  //     Allows per-sub-market tracking (Over 2.5, BTTS Yes, etc.)
+  //     Drops old 3-column unique key; adds 4-column key with tip.
+  //     Truncates aggregated data so it is recalculated fresh.
+  // ----------------------------------------------------------
+  {
+    name: 'Add tip column to accuracy_stats',
+    fn: async (conn) => {
+      const [cols] = await conn.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'accuracy_stats' AND COLUMN_NAME = 'tip'`,
+        [DB_NAME]
+      );
+      if (cols.length > 0) {
+        console.log('[MIGRATE] ↷ accuracy_stats.tip already exists');
+        return;
+      }
+      try { await conn.query(`ALTER TABLE accuracy_stats DROP KEY uniq_band`); } catch (_) {}
+      try { await conn.query(`ALTER TABLE accuracy_stats DROP KEY uniq_band_tip`); } catch (_) {}
+      await conn.query(
+        `ALTER TABLE accuracy_stats
+         ADD COLUMN tip VARCHAR(100) NOT NULL DEFAULT '' AFTER market`
+      );
+      await conn.query(
+        `ALTER TABLE accuracy_stats
+         ADD UNIQUE KEY uniq_band_tip (market, tip, confidence_band, league_id)`
+      );
+      await conn.query(`TRUNCATE TABLE accuracy_stats`);
+      console.log('[MIGRATE] ✓ accuracy_stats.tip added; old data cleared for fresh recalculation');
+    },
+  },
 ];
 
 // ============================================================
