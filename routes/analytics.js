@@ -47,27 +47,10 @@ router.get('/league-metrics', asyncHandler(async (req, res) => {
 
   const useSeason = parseInt(season || api.CURRENT_SEASON);
 
-  // Free plan doesn't support 'last' — use from/to date range instead.
-  // For a finished season use the last 4 months of it; for current use a 4-month lookback.
-  const today      = new Date();
-  const seasonEnd  = new Date(`${useSeason + 1}-07-31`);
-  let fromDate, toDate;
-  if (today > seasonEnd) {
-    // Season already finished — use Mar→Jul of the following calendar year
-    fromDate = `${useSeason + 1}-03-01`;
-    toDate   = `${useSeason + 1}-07-31`;
-  } else {
-    // Season ongoing — last 4 months up to today
-    const from = new Date(today);
-    from.setMonth(today.getMonth() - 4);
-    fromDate = from.toISOString().split('T')[0];
-    toDate   = today.toISOString().split('T')[0];
-  }
-
+  // Paid plan supports 'last' parameter directly — fetch last 50 finished fixtures
   const { data: fixtures } = await api.fetchLeagueFixtures(league_api_id, useSeason, {
     status: 'FT',
-    from:   fromDate,
-    to:     toDate,
+    last:   50,
   });
 
   if (!fixtures || !fixtures.length) {
