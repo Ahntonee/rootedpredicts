@@ -1401,13 +1401,13 @@ async function loadAccuracyTab() {
       document.getElementById('acc-by-conf-wrap').innerHTML = bc.length
         ? `<table class=”rank-table”>
              <thead><tr>
-               <th style=”width:45%;”>Confidence Band</th>
+               <th>Confidence Band</th>
                <th>Total</th>
                <th>Won</th>
                <th>Accuracy</th>
              </tr></thead>
              <tbody>${bc.map(r => `<tr>
-               <td><span style=”font-family:var(--font-head);font-weight:700;”>${r.confidence_band}–${r.confidence_band+4}%</span></td>
+               <td>${r.confidence_band}–${r.confidence_band+4}%</td>
                <td>${r.total}</td>
                <td style=”color:var(--green);font-weight:600;”>${r.won}</td>
                <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
@@ -1419,7 +1419,7 @@ async function loadAccuracyTab() {
       const bt = s.by_tip || [];
       if (bt.length) {
         let tipHtml = `<table class=”rank-table”><thead><tr>
-          <th style=”width:45%;”>Tip</th><th>Total</th><th>Won</th><th>Accuracy</th>
+          <th>Tip</th><th>Total</th><th>Won</th><th>Accuracy</th>
         </tr></thead><tbody>`;
         let lastMarket = null;
         bt.forEach(r => {
@@ -1428,10 +1428,10 @@ async function loadAccuracyTab() {
             lastMarket = r.market;
           }
           tipHtml += `<tr>
-            <td style=”font-weight:600;padding:10px 16px 10px 24px !important;”>${escHtml(r.tip)}</td>
-            <td style=”padding:10px 16px;”>${r.total}</td>
-            <td style=”padding:10px 16px;color:var(--green);font-weight:600;”>${r.won}</td>
-            <td style=”padding:10px 16px;”>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
+            <td>${escHtml(r.tip)}</td>
+            <td>${r.total}</td>
+            <td style=”color:var(--green);font-weight:600;”>${r.won}</td>
+            <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
           </tr>`;
         });
         tipHtml += '</tbody></table>';
@@ -1445,7 +1445,7 @@ async function loadAccuracyTab() {
       const blt = s.by_league_tip || [];
       if (blt.length) {
         let ltHtml = `<table class=”rank-table”><thead><tr>
-          <th style=”width:35%;”>League</th><th>Country</th><th>Total</th><th>Won</th><th>Accuracy</th>
+          <th>League</th><th>Country</th><th>Total</th><th>Won</th><th>Accuracy</th>
         </tr></thead><tbody>`;
         let lastKey = null;
         blt.forEach(r => {
@@ -1455,11 +1455,11 @@ async function loadAccuracyTab() {
             lastKey = key;
           }
           ltHtml += `<tr>
-            <td style=”padding:10px 16px;font-weight:600;” class=”text-cell”>${escHtml(r.league_name)}</td>
-            <td style=”padding:10px 16px;color:var(--muted);”>${escHtml(r.country)}</td>
-            <td style=”padding:10px 16px;”>${r.total}</td>
-            <td style=”padding:10px 16px;color:var(--green);font-weight:600;”>${r.won}</td>
-            <td style=”padding:10px 16px;”>${accBadge(r.accuracy_pct)}<strong>${r.accuracy_pct}%</strong></td>
+            <td class=”text-cell”>${escHtml(r.league_name)}</td>
+            <td>${escHtml(r.country)}</td>
+            <td>${r.total}</td>
+            <td style=”color:var(--green);font-weight:600;”>${r.won}</td>
+            <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
           </tr>`;
         });
         ltHtml += '</tbody></table>';
@@ -1480,12 +1480,12 @@ async function loadAccuracyTab() {
              </tr></thead>
              <tbody>${rows.map(r => `<tr>
                <td>${escHtml(r.market)}</td>
-               <td style=”font-weight:600;”>${escHtml(r.tip || '–')}</td>
-               <td><span style=”font-family:var(--font-head);font-weight:700;”>${r.confidence_band}–${r.confidence_band+4}%</span></td>
+               <td>${escHtml(r.tip || '–')}</td>
+               <td>${r.confidence_band}–${r.confidence_band+4}%</td>
                <td>${r.total_predictions}</td>
                <td style=”color:var(--green);font-weight:600;”>${r.correct_predictions}</td>
-               <td>${accBadge(r.accuracy_pct)}<strong>${r.accuracy_pct}%</strong></td>
-               <td style=”font-size:0.75rem;color:var(--muted);”>${r.last_updated ? r.last_updated.split('T')[0] : '–'}</td>
+               <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
+               <td>${r.last_updated ? r.last_updated.split('T')[0] : '–'}</td>
              </tr>`).join('')}</tbody>
            </table>`
         : '<p style=”color:var(--muted);font-size:0.85rem;”>Not enough data yet. Needs 10+ resolved predictions per band.</p>';
