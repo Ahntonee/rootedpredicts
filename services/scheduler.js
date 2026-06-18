@@ -8,8 +8,7 @@ const apiSvc     = require('./apiFootball');
 const confidence = require('./confidence');
 const accuracy   = require('./accuracy');
 
-const SYNC_SCHEDULE    = process.env.SYNC_CRON_SCHEDULE || '0 6 * * *';
-const DAILY_SYNC_LEAGUES = [39, 140, 135, 78, 61, 2, 3, 253, 71, 6, 323];
+const SYNC_SCHEDULE = process.env.SYNC_CRON_SCHEDULE || '0 6 * * *';
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -21,25 +20,26 @@ async function runDailySync() {
   const today    = new Date().toISOString().split('T')[0];
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
   let totalCreated = 0, errors = 0;
-  for (const leagueId of DAILY_SYNC_LEAGUES) {
-    try {
-      const r1 = await apiSvc.syncFixtures(today, leagueId);
-      totalCreated += r1.created; await sleep(300);
-      const r2 = await apiSvc.syncFixtures(tomorrow, leagueId);
-      totalCreated += r2.created; await sleep(300);
-    } catch(e) { console.error(`[SCHEDULER] Sync failed league ${leagueId}:`, e.message); errors++; }
-  }
+  try {
+    // Sync all leagues for today and tomorrow in two API calls (no leagueId filter)
+    const r1 = await apiSvc.syncFixtures(today);
+    totalCreated += r1.created;
+    console.log(`[SCHEDULER] Today sync: ${r1.created} new, ${r1.skipped} skipped`);
+    await sleep(500);
+    const r2 = await apiSvc.syncFixtures(tomorrow);
+    totalCreated += r2.created;
+    console.log(`[SCHEDULER] Tomorrow sync: ${r2.created} new, ${r2.skipped} skipped`);
+  } catch(e) { console.error('[SCHEDULER] Fixture sync failed:', e.message); errors++; }
+
   console.log(`[SCHEDULER] Daily sync done: ${totalCreated} new fixtures, ${errors} errors`);
 
-  // Auto-generate predictions from enriched data (runs after fixtures are in DB)
-  if (totalCreated > 0) {
-    console.log('[SCHEDULER] Running auto-predict on new fixtures...');
-    try {
-      await sleep(2000);
-      const result = await apiSvc.autoPredictFixtures(db, { limit: 30, minConfidence: 65, autoPublish: true });
-      console.log(`[SCHEDULER] Auto-predict: ${result.enriched} enriched, ${result.errors} errors`);
-    } catch(e) { console.error('[SCHEDULER] Auto-predict failed:', e.message); }
-  }
+  // Always run auto-predict — picks up any TBD stubs for today/tomorrow
+  console.log('[SCHEDULER] Running auto-predict...');
+  try {
+    await sleep(2000);
+    const result = await apiSvc.autoPredictFixtures(db, { limit: 100, minConfidence: 65, autoPublish: true });
+    console.log(`[SCHEDULER] Auto-predict: ${result.enriched} enriched, ${result.skipped} skipped, ${result.errors} errors`);
+  } catch(e) { console.error('[SCHEDULER] Auto-predict failed:', e.message); }
 }
 
 async function runResultsSync() {
