@@ -33,13 +33,25 @@ async function runDailySync() {
 
   console.log(`[SCHEDULER] Daily sync done: ${totalCreated} new fixtures, ${errors} errors`);
 
-  // Always run auto-predict — picks up any TBD stubs for today/tomorrow
-  console.log('[SCHEDULER] Running auto-predict...');
-  try {
-    await sleep(2000);
-    const result = await apiSvc.autoPredictFixtures(db, { limit: 100, minConfidence: 65, autoPublish: true });
-    console.log(`[SCHEDULER] Auto-predict: ${result.enriched} enriched, ${result.skipped} skipped, ${result.errors} errors`);
-  } catch(e) { console.error('[SCHEDULER] Auto-predict failed:', e.message); }
+  // Always run auto-predict — picks up any TBD stubs for today/tomorrow.
+  // Limit is derived from the remaining API budget so the day never exceeds 7,400 calls:
+  //   remaining budget  = getRemainingCount() (tracks calls made so far today)
+  //   reserved          = calls still needed for live-sync + scores + results + 200 buffer
+  //   calls per fixture = 8 (fixture info + 2×team form + H2H + 2×team stats + standings + odds)
+  const CALLS_PER_FIXTURE = 8;
+  const DAILY_RESERVED    = 600; // live (480) + scores (72) + results (2) + 46 buffer
+  const remaining         = apiSvc.getRemainingCount();
+  const autoLimit         = Math.max(0, Math.floor((remaining - DAILY_RESERVED) / CALLS_PER_FIXTURE));
+  console.log(`[SCHEDULER] Running auto-predict (budget: ${remaining} remaining, limit: ${autoLimit} fixtures)...`);
+  if (autoLimit > 0) {
+    try {
+      await sleep(2000);
+      const result = await apiSvc.autoPredictFixtures(db, { limit: autoLimit, minConfidence: 65, autoPublish: true });
+      console.log(`[SCHEDULER] Auto-predict: ${result.enriched} enriched, ${result.skipped} skipped, ${result.errors} errors`);
+    } catch(e) { console.error('[SCHEDULER] Auto-predict failed:', e.message); }
+  } else {
+    console.log('[SCHEDULER] Auto-predict skipped — daily API budget exhausted');
+  }
 }
 
 async function runResultsSync() {
