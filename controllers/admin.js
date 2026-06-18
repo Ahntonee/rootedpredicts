@@ -104,6 +104,8 @@ async function createPrediction(req, res) {
       return res.status(400).json({ success:false, message:'Missing required fields' });
     }
     const oddsJson = odds_data && Object.keys(odds_data).length ? JSON.stringify(odds_data) : null;
+    // Normalise datetime-local format ('2026-06-18T14:00') to MySQL DATETIME ('2026-06-18 14:00:00')
+    const normalMatch = match_date ? match_date.replace('T', ' ').replace(/(\d{2}:\d{2})$/, '$1:00').slice(0, 19) : match_date;
     // Derive visibility from category if provided
     const derivedVis = category === 'Banker of the Day' ? 'vip' : (visibility || 'free');
     const leagueIdVal  = league_id  ? parseInt(league_id)  : null;
@@ -121,7 +123,7 @@ async function createPrediction(req, res) {
         match_date,tip,market,odds,odds_data,confidence_score,visibility,category,analysis,home_form,away_form,
         h2h_summary,slug,result,published_at,created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?,?)`,
       [fixtureIdVal,leagueIdVal,sanitiseText(home_team),sanitiseText(away_team),home_team_logo||null,
-       away_team_logo||null,match_date,sanitiseText(tip),sanitiseText(market),
+       away_team_logo||null,normalMatch,sanitiseText(tip),sanitiseText(market),
        odds||null,oddsJson,confidence_score||null,derivedVis,category||null,analysis||null,
        home_form||null,away_form||null,h2h_summary||null,slug,
        published ? new Date() : null, req.user.id]
@@ -153,7 +155,7 @@ async function updatePrediction(req, res) {
     if (league_id)        { updates.push('league_id=?');        args.push(league_id); }
     if (home_team)        { updates.push('home_team=?');        args.push(sanitiseText(home_team)); }
     if (away_team)        { updates.push('away_team=?');        args.push(sanitiseText(away_team)); }
-    if (match_date)       { updates.push('match_date=?');       args.push(match_date); }
+    if (match_date)       { updates.push('match_date=?');       args.push(match_date.replace('T', ' ').replace(/(\d{2}:\d{2})$/, '$1:00').slice(0, 19)); }
     if (tip)              { updates.push('tip=?');              args.push(sanitiseText(tip)); }
     if (market)           { updates.push('market=?');           args.push(sanitiseText(market)); }
     if (odds!==undefined) { updates.push('odds=?');             args.push(odds); }

@@ -838,7 +838,7 @@ async function autoPredictFixtures(db, options = {}) {
            h2h_summary      = ?,
            confidence_score = ?,
            analysis         = ?,
-           published_at     = ?,
+           published_at     = COALESCE(?, published_at),
            updated_at       = NOW()
          WHERE id = ?`,
         [
