@@ -1401,16 +1401,16 @@ async function loadAccuracyTab() {
       document.getElementById('acc-by-conf-wrap').innerHTML = bc.length
         ? `<table class=”rank-table”>
              <thead><tr>
-               <th style=”padding:8px 16px !important;width:45%;”>Confidence Band</th>
-               <th style=”padding:8px 16px !important;”>Total</th>
-               <th style=”padding:8px 16px !important;”>Won</th>
-               <th style=”padding:8px 16px !important;”>Accuracy</th>
+               <th style=”width:45%;”>Confidence Band</th>
+               <th>Total</th>
+               <th>Won</th>
+               <th>Accuracy</th>
              </tr></thead>
              <tbody>${bc.map(r => `<tr>
-               <td style=”padding:10px 16px !important;”><span style=”font-family:var(--font-head);font-weight:700;”>${r.confidence_band}–${r.confidence_band+4}%</span></td>
-               <td style=”padding:10px 16px !important;”>${r.total}</td>
-               <td style=”padding:10px 16px !important;color:var(--green);font-weight:600;”>${r.won}</td>
-               <td style=”padding:10px 16px !important;”>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
+               <td><span style=”font-family:var(--font-head);font-weight:700;”>${r.confidence_band}–${r.confidence_band+4}%</span></td>
+               <td>${r.total}</td>
+               <td style=”color:var(--green);font-weight:600;”>${r.won}</td>
+               <td>${accBadge(r.accuracy_pct)}${r.accuracy_pct}%</td>
              </tr>`).join('')}</tbody>
            </table>`
         : '<p style=”color:var(--muted);font-size:0.85rem;”>No data yet.</p>';
