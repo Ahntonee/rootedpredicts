@@ -8,6 +8,16 @@ const db                = require('../config/db');
 const { verifyToken, extractToken } = require('../utils/jwt');
 const { errorResponse } = require('../utils/helpers');
 
+const USER_FIELDS = 'SELECT id, name, username, email, role, admin_role, country, timezone, telegram_invited, is_banned FROM users WHERE id = ?';
+
+async function getUserFromToken(token) {
+  const decoded = verifyToken(token);
+  if (!decoded) return null;
+  const [rows] = await db.query(USER_FIELDS, [decoded.id]);
+  if (!rows.length || rows[0].is_banned) return null;
+  return rows[0];
+}
+
 /**
  * authenticate
  * Verifies the JWT and attaches the full user object to req.user.
@@ -16,34 +26,16 @@ const { errorResponse } = require('../utils/helpers');
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
-
-    if (!token) {
-      return errorResponse(res, 'Authentication required. Please log in.', 401);
-    }
+    if (!token) return errorResponse(res, 'Authentication required. Please log in.', 401);
 
     const decoded = verifyToken(token);
+    if (!decoded) return errorResponse(res, 'Invalid or expired session. Please log in again.', 401);
 
-    if (!decoded) {
-      return errorResponse(res, 'Invalid or expired session. Please log in again.', 401);
-    }
+    const [rows] = await db.query(USER_FIELDS, [decoded.id]);
+    if (!rows.length) return errorResponse(res, 'User account not found.', 401);
+    if (rows[0].is_banned) return errorResponse(res, 'Your account has been suspended. Contact support.', 403);
 
-    // Fetch fresh user from DB — catches banned/deleted accounts mid-session
-    const [rows] = await db.query(
-      'SELECT id, name, username, email, role, admin_role, country, timezone, telegram_invited, is_banned FROM users WHERE id = ?',
-      [decoded.id]
-    );
-
-    if (!rows.length) {
-      return errorResponse(res, 'User account not found.', 401);
-    }
-
-    const user = rows[0];
-
-    if (user.is_banned) {
-      return errorResponse(res, 'Your account has been suspended. Contact support.', 403);
-    }
-
-    req.user = user;
+    req.user = rows[0];
     next();
   } catch (error) {
     console.error('[AUTH] Middleware error:', error.message);
@@ -60,25 +52,7 @@ async function authenticate(req, res, next) {
 async function optionalAuth(req, res, next) {
   try {
     const token = extractToken(req);
-
-    if (!token) {
-      req.user = null;
-      return next();
-    }
-
-    const decoded = verifyToken(token);
-
-    if (!decoded) {
-      req.user = null;
-      return next();
-    }
-
-    const [rows] = await db.query(
-      'SELECT id, name, username, email, role, admin_role, country, timezone, telegram_invited, is_banned FROM users WHERE id = ?',
-      [decoded.id]
-    );
-
-    req.user = rows.length && !rows[0].is_banned ? rows[0] : null;
+    req.user = token ? await getUserFromToken(token) : null;
     next();
   } catch {
     req.user = null;

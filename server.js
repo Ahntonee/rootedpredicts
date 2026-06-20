@@ -13,6 +13,7 @@ const compression  = require('compression');
 const cookieParser = require('cookie-parser');
 const rateLimit    = require('express-rate-limit');
 const path         = require('path');
+const { randomUUID } = require('crypto');
 
 const db        = require('./config/db');
 const { startScheduler } = require('./services/scheduler');
@@ -31,12 +32,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "'unsafe-inline'", 'cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'],
+      scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com'],
       // Allow inline event handlers (onclick="...") used throughout the app.
       // Without this, Helmet defaults script-src-attr to 'none', silently
       // disabling every inline onclick (edit/delete buttons, modal closes, tabs).
       scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc:    ["'self'", "'unsafe-inline'", 'cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'],
+      styleSrc:    ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com'],
       fontSrc:     ["'self'", 'fonts.gstatic.com', 'fonts.googleapis.com'],
       imgSrc:      ["'self'", 'data:', 'https:', 'media.api-sports.io'],
       connectSrc:  ["'self'"],
@@ -68,6 +69,9 @@ const authLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 app.use('/api/auth/login',    authLimiter);
 app.use('/api/auth/register', authLimiter);
+
+// ── Request ID — attach to every request for log correlation
+app.use((req, _res, next) => { req.id = randomUUID(); next(); });
 
 // ── General middleware
 app.use(compression());
@@ -115,8 +119,15 @@ app.get('/api/status', async (req, res) => {
   }
 });
 
-// ── Sitemap (dynamic — includes blog posts + prediction slugs from DB)
+// ── Sitemap cache — regenerated at most once per hour
+let sitemapCache = null; // { xml: string, generatedAt: number }
+const SITEMAP_TTL = 60 * 60 * 1000; // 1 hour
+
 app.get('/sitemap.xml', async (req, res) => {
+  if (sitemapCache && Date.now() - sitemapCache.generatedAt < SITEMAP_TTL) {
+    res.set('Content-Type', 'application/xml');
+    return res.send(sitemapCache.xml);
+  }
   const BASE = process.env.SITE_URL || 'https://www.rootedpredict.com';
   const today = new Date().toISOString().split('T')[0];
 
@@ -165,10 +176,12 @@ app.get('/sitemap.xml', async (req, res) => {
   </url>`),
     ];
 
-    res.set('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urlTags.join('')}
-</urlset>`);
+</urlset>`;
+    sitemapCache = { xml, generatedAt: Date.now() };
+    res.set('Content-Type', 'application/xml');
+    res.send(xml);
   } catch (e) {
     res.status(500).send('Sitemap generation error');
   }

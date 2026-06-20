@@ -2,8 +2,11 @@
 // Rooted Predictions — API-Football integration service
 'use strict';
 
-const axios = require('axios');
-const db    = require('../config/db');
+const axios    = require('axios');
+const slugify  = require('slugify');
+const db       = require('../config/db');
+const counter  = require('./apiCounter');
+const { getContinentFromCountry, generatePredictionSlug } = require('../utils/helpers');
 
 const BASE_URL       = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
 const API_KEY        = process.env.API_FOOTBALL_KEY;
@@ -29,6 +32,7 @@ async function request(endpoint, params = {}) {
   if (dailyRequestCount >= 7400) throw new Error('[API-Football] Daily limit reached');
   try {
     dailyRequestCount++;
+    counter.increment().catch(() => {}); // DB write — fire-and-forget, in-memory is the guard
     console.log(`[API-Football] #${dailyRequestCount} GET ${endpoint}`, params);
     const response = await apiClient.get(endpoint, { params });
     if (response.data.errors && Object.keys(response.data.errors).length > 0) {
@@ -45,29 +49,8 @@ async function request(endpoint, params = {}) {
 const POPULAR_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3, 1, 6, 253, 71, 323];
 function isPopularLeague(id) { return POPULAR_LEAGUE_IDS.includes(Number(id)); }
 
-// ── Continent mapping
-const CONTINENT_MAP = {
-  England:'Europe',Scotland:'Europe',Wales:'Europe','Northern Ireland':'Europe',
-  Spain:'Europe',Germany:'Europe',France:'Europe',Italy:'Europe',Portugal:'Europe',
-  Netherlands:'Europe',Belgium:'Europe',Turkey:'Europe',Russia:'Europe',Greece:'Europe',
-  Switzerland:'Europe',Austria:'Europe',Poland:'Europe',Ukraine:'Europe',Sweden:'Europe',
-  Norway:'Europe',Denmark:'Europe','Czech Republic':'Europe',Croatia:'Europe',Serbia:'Europe',
-  Romania:'Europe',Hungary:'Europe',Finland:'Europe',Ireland:'Europe',
-  Nigeria:'Africa',Ghana:'Africa',Kenya:'Africa','South Africa':'Africa',Egypt:'Africa',
-  Morocco:'Africa',Algeria:'Africa',Tunisia:'Africa',Senegal:'Africa',Cameroon:'Africa',
-  'Ivory Coast':'Africa',Ethiopia:'Africa',Tanzania:'Africa',Uganda:'Africa',Zimbabwe:'Africa',
-  Zambia:'Africa',Angola:'Africa',Mozambique:'Africa',Sudan:'Africa',
-  India:'Asia',China:'Asia',Japan:'Asia','South Korea':'Asia',Indonesia:'Asia',
-  Philippines:'Asia',Thailand:'Asia',Malaysia:'Asia','Saudi Arabia':'Asia',UAE:'Asia',
-  Qatar:'Asia',Iran:'Asia',Iraq:'Asia',Israel:'Asia',Vietnam:'Asia',Pakistan:'Asia',
-  Bangladesh:'Asia',Singapore:'Asia','Hong Kong':'Asia',Jordan:'Asia',Kuwait:'Asia',
-  USA:'Americas',Brazil:'Americas',Mexico:'Americas',Argentina:'Americas',Colombia:'Americas',
-  Chile:'Americas',Peru:'Americas',Uruguay:'Americas',Venezuela:'Americas',Ecuador:'Americas',
-  Bolivia:'Americas',Paraguay:'Americas',Canada:'Americas','Costa Rica':'Americas',
-  Honduras:'Americas',Guatemala:'Americas',Panama:'Americas',Jamaica:'Americas',
-  Australia:'Oceania','New Zealand':'Oceania',World:'World',
-};
-function mapCountryToContinent(country) { return CONTINENT_MAP[country] || 'World'; }
+// ── Continent mapping — canonical map lives in utils/helpers.js
+const mapCountryToContinent = getContinentFromCountry;
 
 // ── Sync leagues
 async function syncLeagues() {
@@ -122,60 +105,85 @@ async function syncFixtures(date, leagueId = null) {
   if (leagueId) params.league = leagueId;
   const { data: fixtures } = await request('/fixtures', params);
   console.log(`[API-Football] Fetched ${fixtures.length} fixtures for ${date}`);
-  let created = 0, skipped = 0;
-  const slugify = require('slugify');
+  if (!fixtures.length) return { created: 0, skipped: 0, total: 0 };
 
-  for (const item of fixtures) {
-    const { fixture, league, teams } = item;
-    if (!fixture || !league || !teams) { skipped++; continue; }
+  // ── 1. Batch-fetch all league DB ids in a single query
+  const apiLeagueIds = [...new Set(fixtures.map(f => f.league?.id).filter(Boolean))];
+  const lPlaceholders = apiLeagueIds.map(() => '?').join(',');
+  const [leagueRows] = apiLeagueIds.length
+    ? await db.query(`SELECT id, api_league_id FROM leagues WHERE api_league_id IN (${lPlaceholders})`, apiLeagueIds)
+    : [[]];
+  const leagueMap = new Map(leagueRows.map(r => [r.api_league_id, r.id]));
 
-    // Find or create league
-    const [lRows] = await db.query('SELECT id FROM leagues WHERE api_league_id=?', [league.id]);
-    let dbLeagueId;
-    if (lRows.length) {
-      dbLeagueId = lRows[0].id;
-    } else {
+  // ── 2. Create any leagues not yet in the DB (rare after first sync)
+  for (const { league } of fixtures) {
+    if (!league?.id || leagueMap.has(league.id)) continue;
+    try {
       const [ins] = await db.query(
         `INSERT IGNORE INTO leagues (api_league_id,name,country,continent,logo_url,season)
          VALUES (?,?,?,?,?,?)`,
-        [league.id, league.name, league.country||'World',
-         mapCountryToContinent(league.country||''), league.logo||null, CURRENT_SEASON]
+        [league.id, league.name, league.country || 'World',
+         mapCountryToContinent(league.country || ''), league.logo || null, CURRENT_SEASON]
       );
-      dbLeagueId = ins.insertId || null;
-      if (!dbLeagueId) continue;
-    }
+      if (ins.insertId) leagueMap.set(league.id, ins.insertId);
+    } catch(e) { console.error(`League insert failed ${league.id}:`, e.message); }
+  }
 
-    // Check existing
-    const [existing] = await db.query('SELECT id FROM predictions WHERE fixture_id=?', [fixture.id]);
-    if (existing.length) { skipped++; continue; }
+  // ── 3. Batch-check which fixture_ids already have predictions
+  const allFixtureIds = fixtures.map(f => f.fixture?.id).filter(Boolean);
+  const fPlaceholders = allFixtureIds.map(() => '?').join(',');
+  const [existingRows] = allFixtureIds.length
+    ? await db.query(`SELECT fixture_id FROM predictions WHERE fixture_id IN (${fPlaceholders})`, allFixtureIds)
+    : [[]];
+  const existingSet = new Set(existingRows.map(r => r.fixture_id));
 
-    // Skip finished or games that kicked off more than 2 hours ago
-    const _fStatus    = fixture.fixture?.status?.short;
-    const _kickoff    = fixture.date ? new Date(fixture.date) : null;
-    const _cutoff     = new Date(Date.now() - 2 * 60 * 60 * 1000);
-    const _finished   = ['FT','AET','PEN','CANC','ABD','WO','AWD'];
-    if (_finished.includes(_fStatus) || (_kickoff && _kickoff < _cutoff)) { skipped++; continue; }
+  // ── 4. Filter to candidates: new, known league, upcoming/live
+  const FINISHED = new Set(['FT','AET','PEN','CANC','ABD','WO','AWD']);
+  const cutoff   = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  const toInsert = fixtures.filter(({ fixture, league, teams }) => {
+    if (!fixture || !league || !teams)           return false;
+    if (existingSet.has(fixture.id))             return false;
+    if (!leagueMap.has(league.id))               return false;
+    if (FINISHED.has(fixture.status?.short))     return false;
+    if (fixture.date && new Date(fixture.date) < cutoff) return false;
+    return true;
+  });
 
-    // Build unique slug
+  let skipped = fixtures.length - toInsert.length;
+
+  if (!toInsert.length) {
+    console.log(`[API-Football] Fixtures for ${date}: 0 created, ${skipped} skipped`);
+    return { created: 0, skipped, total: fixtures.length };
+  }
+
+  // ── 5. Batch-check slug conflicts
+  const candidateSlugs = toInsert.map(({ fixture, league, teams }) => {
     const matchDate = fixture.date ? fixture.date.split('T')[0] : date;
-    const rawSlug   = `${league.name} ${teams.home.name} vs ${teams.away.name} ${matchDate}`;
-    let   slug      = slugify(rawSlug, { lower: true, strict: true });
-    const [slugCheck] = await db.query('SELECT id FROM predictions WHERE slug=?', [slug]);
-    if (slugCheck.length) slug = `${slug}-${fixture.id}`;
+    return generatePredictionSlug(league.name, teams.home.name, teams.away.name, matchDate);
+  });
+  const sPlaceholders = candidateSlugs.map(() => '?').join(',');
+  const [slugRows] = await db.query(
+    `SELECT slug FROM predictions WHERE slug IN (${sPlaceholders})`, candidateSlugs
+  );
+  const usedSlugs = new Set(slugRows.map(r => r.slug));
 
+  // ── 6. Insert new fixtures
+  let created = 0;
+  for (let i = 0; i < toInsert.length; i++) {
+    const { fixture, league, teams } = toInsert[i];
+    let slug = candidateSlugs[i];
+    if (usedSlugs.has(slug)) slug = `${slug}-${fixture.id}`;
+    const mysqlDate = fixture.date
+      ? fixture.date.replace('T', ' ').replace(/[Z+][^\s]*$/, '').slice(0, 19)
+      : `${date} 00:00:00`;
     try {
-      // Convert ISO date to MySQL DATETIME format (strip the Z/offset)
-      const mysqlDate = fixture.date
-        ? fixture.date.replace('T', ' ').replace(/\+\d{2}:\d{2}$/, '').replace('Z', '').slice(0, 19)
-        : date + ' 00:00:00';
-
       await db.query(
         `INSERT INTO predictions
            (fixture_id,league_id,home_team,away_team,home_team_logo,away_team_logo,
             match_date,tip,market,visibility,result,slug,published_at)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NULL)`,
-        [fixture.id, dbLeagueId, teams.home.name, teams.away.name,
-         teams.home.logo||null, teams.away.logo||null, mysqlDate,
+        [fixture.id, leagueMap.get(league.id), teams.home.name, teams.away.name,
+         teams.home.logo || null, teams.away.logo || null, mysqlDate,
          'TBD', '1X2', 'free', 'pending', slug]
       );
       created++;
@@ -899,67 +907,94 @@ async function syncLeagueSeasonFixtures(leagueId, season) {
   console.log(`[API-Football] Syncing all fixtures: league=${leagueId} season=${season}`);
   const { data: fixtures } = await request('/fixtures', { league: leagueId, season, timezone: 'UTC' });
   console.log(`[API-Football] Fetched ${fixtures.length} fixtures`);
-  let created = 0, updated = 0, skipped = 0;
-  const slugify = require('slugify');
+  if (!fixtures.length) return { created: 0, updated: 0, skipped: 0, total: 0 };
 
-  for (const item of fixtures) {
-    const { fixture, league, teams, goals } = item;
-    if (!fixture || !league || !teams) { skipped++; continue; }
-
-    // Ensure league row exists
-    const [lRows] = await db.query('SELECT id FROM leagues WHERE api_league_id=?', [league.id]);
-    let dbLeagueId;
-    if (lRows.length) {
-      dbLeagueId = lRows[0].id;
-    } else {
+  // ── 1. Ensure the league row exists
+  const [lRows] = await db.query('SELECT id FROM leagues WHERE api_league_id=?', [leagueId]);
+  let dbLeagueId = lRows[0]?.id || null;
+  if (!dbLeagueId) {
+    const sample = fixtures.find(f => f.league?.id)?.league;
+    if (sample) {
       const [ins] = await db.query(
         `INSERT IGNORE INTO leagues (api_league_id,name,country,continent,logo_url,season)
          VALUES (?,?,?,?,?,?)`,
-        [league.id, league.name, league.country || 'World',
-         mapCountryToContinent(league.country || ''), league.logo || null, season]
+        [leagueId, sample.name, sample.country || 'World',
+         mapCountryToContinent(sample.country || ''), sample.logo || null, season]
       );
       dbLeagueId = ins.insertId || null;
-      if (!dbLeagueId) { skipped++; continue; }
     }
+    if (!dbLeagueId) {
+      console.error(`[API-Football] Cannot resolve dbLeagueId for league ${leagueId} — aborting`);
+      return { created: 0, updated: 0, skipped: fixtures.length, total: fixtures.length };
+    }
+  }
 
-    const mysqlDate = fixture.date
-      ? fixture.date.replace('T', ' ').replace(/\+\d{2}:\d{2}$/, '').replace('Z', '').slice(0, 19)
-      : fixture.date?.split('T')[0] + ' 00:00:00';
+  // ── 2. Batch-check which fixture_ids already have predictions
+  const allFixtureIds = fixtures.map(f => f.fixture?.id).filter(Boolean);
+  const fPlaceholders = allFixtureIds.map(() => '?').join(',');
+  const [existingRows] = allFixtureIds.length
+    ? await db.query(`SELECT fixture_id FROM predictions WHERE fixture_id IN (${fPlaceholders})`, allFixtureIds)
+    : [[]];
+  const existingMap = new Map(existingRows.map(r => [r.fixture_id, true]));
 
-    // If a prediction already exists for this fixture, update scores/status only
-    const [existing] = await db.query('SELECT id FROM predictions WHERE fixture_id=?', [fixture.id]);
-    if (existing.length) {
-      const status = fixture.status?.short;
-      if (['FT','AET','PEN'].includes(status) && goals) {
-        await db.query(
-          `UPDATE predictions SET home_score=?,away_score=?,status_short=?
-           WHERE fixture_id=?`,
-          [goals.home ?? null, goals.away ?? null, status, fixture.id]
-        );
-        updated++;
-      } else {
+  let created = 0, updated = 0, skipped = 0;
+  const FINISHED = new Set(['FT','AET','PEN','CANC','ABD','WO','AWD']);
+  const cutoff   = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+  // ── 3. Collect new (not-yet-stored) fixtures for slug batch-check
+  const toUpdate = [], toInsert = [];
+  for (const item of fixtures) {
+    const { fixture, league, teams, goals } = item;
+    if (!fixture || !league || !teams) { skipped++; continue; }
+    if (existingMap.has(fixture.id)) {
+      toUpdate.push({ fixture, goals });
+    } else {
+      if (FINISHED.has(fixture.status?.short) || (fixture.date && new Date(fixture.date) < cutoff)) {
         skipped++;
+      } else {
+        toInsert.push(item);
       }
-      continue;
     }
+  }
 
-    // New fixture — skip if already finished or kicked off more than 2 hours ago
-    const fixtureStatus = fixture.status?.short;
-    const finishedStatuses = ['FT','AET','PEN','CANC','ABD','WO','AWD'];
-    const kickoff = fixture.date ? new Date(fixture.date) : null;
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-    if (finishedStatuses.includes(fixtureStatus) || (kickoff && kickoff < twoHoursAgo)) {
+  // ── 4. Batch-update finished scores for already-stored fixtures
+  for (const { fixture, goals } of toUpdate) {
+    const status = fixture.status?.short;
+    if (['FT','AET','PEN'].includes(status) && goals) {
+      await db.query(
+        `UPDATE predictions SET home_score=?,away_score=?,status_short=? WHERE fixture_id=?`,
+        [goals.home ?? null, goals.away ?? null, status, fixture.id]
+      );
+      updated++;
+    } else {
       skipped++;
-      continue;
     }
+  }
 
-    // Insert as a prediction stub
+  if (!toInsert.length) {
+    console.log(`[API-Football] Sync done: ${created} created, ${updated} updated, ${skipped} skipped`);
+    return { created, updated, skipped, total: fixtures.length };
+  }
+
+  // ── 5. Batch-check slug conflicts for new inserts
+  const candidateSlugs = toInsert.map(({ fixture, league, teams }) => {
     const matchDate = fixture.date?.split('T')[0] || '';
-    const rawSlug   = `${league.name} ${teams.home.name} vs ${teams.away.name} ${matchDate}`;
-    let   slug      = slugify(rawSlug, { lower: true, strict: true });
-    const [slugCheck] = await db.query('SELECT id FROM predictions WHERE slug=?', [slug]);
-    if (slugCheck.length) slug = `${slug}-${fixture.id}`;
+    return generatePredictionSlug(league.name, teams.home.name, teams.away.name, matchDate);
+  });
+  const sPlaceholders = candidateSlugs.map(() => '?').join(',');
+  const [slugRows] = await db.query(
+    `SELECT slug FROM predictions WHERE slug IN (${sPlaceholders})`, candidateSlugs
+  );
+  const usedSlugs = new Set(slugRows.map(r => r.slug));
 
+  // ── 6. Insert new stubs
+  for (let i = 0; i < toInsert.length; i++) {
+    const { fixture, teams } = toInsert[i];
+    let slug = candidateSlugs[i];
+    if (usedSlugs.has(slug)) slug = `${slug}-${fixture.id}`;
+    const mysqlDate = fixture.date
+      ? fixture.date.replace('T', ' ').replace(/[Z+][^\s]*$/, '').slice(0, 19)
+      : (fixture.date?.split('T')[0] || '') + ' 00:00:00';
     try {
       await db.query(
         `INSERT INTO predictions

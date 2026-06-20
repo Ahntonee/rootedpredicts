@@ -6,7 +6,7 @@ const bcrypt     = require('bcryptjs');
 const db         = require('../config/db');
 const slugify    = require('slugify');
 const confidence = require('../services/confidence');
-const { sanitiseText, generatePredictionSlug } = require('../utils/helpers');
+const { sanitiseText, generatePredictionSlug, generateBlogSlug } = require('../utils/helpers');
 
 // ── Audit log helper (fire-and-forget — never throws into the response chain)
 async function writeAudit(req, action, entityType, entityId, entityLabel, details) {
@@ -30,16 +30,21 @@ async function writeAudit(req, action, entityType, entityId, entityLabel, detail
 // ── Dashboard stats
 async function getStats(req, res) {
   try {
-    const [[users]]       = await db.query('SELECT COUNT(*) as c FROM users');
-    const [[vips]]        = await db.query("SELECT COUNT(*) as c FROM users WHERE role='vip'");
-    const [[preds]]       = await db.query('SELECT COUNT(*) as c FROM predictions');
-    const [[todayPreds]]  = await db.query("SELECT COUNT(*) as c FROM predictions WHERE DATE(match_date)=CURDATE()");
-    const [[pendingPreds]]= await db.query("SELECT COUNT(*) as c FROM predictions WHERE result='pending'");
-    const [[wonPreds]]    = await db.query("SELECT COUNT(*) as c FROM predictions WHERE result='won'");
-    const [[lostPreds]]   = await db.query("SELECT COUNT(*) as c FROM predictions WHERE result='lost'");
-    const [[subs]]        = await db.query("SELECT COUNT(*) as c FROM subscriptions WHERE status IN ('active','trialing')");
-    const [[blogs]]       = await db.query('SELECT COUNT(*) as c FROM blog_posts WHERE is_published=1');
-    const [[leagues]]     = await db.query('SELECT COUNT(*) as c FROM leagues WHERE is_active=1');
+    const [
+      [[users]], [[vips]], [[preds]], [[todayPreds]], [[pendingPreds]],
+      [[wonPreds]], [[lostPreds]], [[subs]], [[blogs]], [[leagues]],
+    ] = await Promise.all([
+      db.query('SELECT COUNT(*) as c FROM users'),
+      db.query("SELECT COUNT(*) as c FROM users WHERE role='vip'"),
+      db.query('SELECT COUNT(*) as c FROM predictions'),
+      db.query("SELECT COUNT(*) as c FROM predictions WHERE DATE(match_date)=CURDATE()"),
+      db.query("SELECT COUNT(*) as c FROM predictions WHERE result='pending'"),
+      db.query("SELECT COUNT(*) as c FROM predictions WHERE result='won'"),
+      db.query("SELECT COUNT(*) as c FROM predictions WHERE result='lost'"),
+      db.query("SELECT COUNT(*) as c FROM subscriptions WHERE status IN ('active','trialing')"),
+      db.query('SELECT COUNT(*) as c FROM blog_posts WHERE is_published=1'),
+      db.query('SELECT COUNT(*) as c FROM leagues WHERE is_active=1'),
+    ]);
     const total = wonPreds.c + lostPreds.c;
     const accuracy = total > 0 ? Math.round((wonPreds.c / total) * 100) : 0;
     const [recentUsers] = await db.query(
@@ -66,17 +71,22 @@ async function getPredictions(req, res) {
   try {
     const { page=1, limit=20, result, visibility, league, date } = req.query;
     const offset = (parseInt(page)-1) * parseInt(limit);
-    let sql  = `SELECT p.*,COALESCE(p.category,'Free Pick') as category,l.name as league_name,l.logo_url as league_logo
-                FROM predictions p LEFT JOIN leagues l ON p.league_id=l.id WHERE 1=1`;
-    const args = [];
-    if (result)     { sql += ' AND p.result=?';           args.push(result); }
-    if (visibility) { sql += ' AND p.visibility=?';       args.push(visibility); }
-    if (league)     { sql += ' AND p.league_id=?';        args.push(league); }
-    if (date)       { sql += ' AND DATE(p.match_date)=?'; args.push(date); }
-    const [[{total}]] = await db.query(sql.replace('SELECT p.*,l.name as league_name,l.logo_url as league_logo','SELECT COUNT(*) as total'), args);
-    sql += ' ORDER BY p.match_date DESC LIMIT ? OFFSET ?';
-    args.push(parseInt(limit), offset);
-    const [rows] = await db.query(sql, args);
+    const conditions = [], filterArgs = [];
+    if (result)     { conditions.push('p.result=?');           filterArgs.push(result); }
+    if (visibility) { conditions.push('p.visibility=?');       filterArgs.push(visibility); }
+    if (league)     { conditions.push('p.league_id=?');        filterArgs.push(league); }
+    if (date)       { conditions.push('DATE(p.match_date)=?'); filterArgs.push(date); }
+    const WHERE = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
+    const [[{total}]] = await db.query(
+      `SELECT COUNT(*) as total FROM predictions p LEFT JOIN leagues l ON p.league_id=l.id${WHERE}`,
+      filterArgs
+    );
+    const [rows] = await db.query(
+      `SELECT p.*,COALESCE(p.category,'Free Pick') as category,l.name as league_name,l.logo_url as league_logo
+       FROM predictions p LEFT JOIN leagues l ON p.league_id=l.id${WHERE}
+       ORDER BY p.match_date DESC LIMIT ? OFFSET ?`,
+      [...filterArgs, parseInt(limit), offset]
+    );
     res.json({ success:true, data:{ predictions:rows, total:parseInt(total), page:parseInt(page), limit:parseInt(limit) }});
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
@@ -226,14 +236,19 @@ async function getUsers(req, res) {
   try {
     const { page=1, limit=20, role, country, search } = req.query;
     const offset = (parseInt(page)-1)*parseInt(limit);
-    let sql  = 'SELECT id,name,email,role,country,is_banned,created_at FROM users WHERE 1=1';
-    const args=[];
-    if (role)   { sql+=' AND role=?';          args.push(role); }
-    if (country){ sql+=' AND country=?';       args.push(country); }
-    if (search) { sql+=' AND (name LIKE ? OR email LIKE ?)'; args.push(`%${search}%`,`%${search}%`); }
-    const [[{total}]] = await db.query(sql.replace('SELECT id,name,email,role,country,is_banned,created_at','SELECT COUNT(*) as total'), args);
-    sql+=' ORDER BY created_at DESC LIMIT ? OFFSET ?'; args.push(parseInt(limit),offset);
-    const [rows] = await db.query(sql,args);
+    const conditions = [], filterArgs = [];
+    if (role)    { conditions.push('role=?');                            filterArgs.push(role); }
+    if (country) { conditions.push('country=?');                        filterArgs.push(country); }
+    if (search)  { conditions.push('(name LIKE ? OR email LIKE ?)');    filterArgs.push(`%${search}%`, `%${search}%`); }
+    const WHERE = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
+    const [[{total}]] = await db.query(
+      `SELECT COUNT(*) as total FROM users${WHERE}`, filterArgs
+    );
+    const [rows] = await db.query(
+      `SELECT id,name,email,role,country,is_banned,created_at FROM users${WHERE}
+       ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [...filterArgs, parseInt(limit), offset]
+    );
     res.json({ success:true, data:{ users:rows, total:parseInt(total), page:parseInt(page) }});
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
@@ -303,7 +318,7 @@ async function createBlogPost(req, res) {
   try {
     const { title,content,excerpt,category,featured_image,meta_title,meta_description,keywords,published } = req.body;
     if (!title||!content) return res.status(400).json({ success:false, message:'Title and content required' });
-    let slug = slugify(title,{ lower:true, strict:true });
+    let slug = generateBlogSlug(title);
     const [ex] = await db.query('SELECT id FROM blog_posts WHERE slug=?',[slug]);
     if (ex.length) slug = slug+'-'+Date.now();
     const [ins] = await db.query(

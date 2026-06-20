@@ -51,28 +51,32 @@ function calculateProfitLoss(stake, odds, result) {
  */
 const CONTINENT_MAP = {
   // Europe
-  England: 'Europe', Scotland: 'Europe', Wales: 'Europe', Spain: 'Europe',
-  Germany: 'Europe', France: 'Europe', Italy: 'Europe', Portugal: 'Europe',
+  England: 'Europe', Scotland: 'Europe', Wales: 'Europe', 'Northern Ireland': 'Europe',
+  Spain: 'Europe', Germany: 'Europe', France: 'Europe', Italy: 'Europe', Portugal: 'Europe',
   Netherlands: 'Europe', Belgium: 'Europe', Turkey: 'Europe', Russia: 'Europe',
   Greece: 'Europe', Switzerland: 'Europe', Austria: 'Europe', Poland: 'Europe',
   Ukraine: 'Europe', Sweden: 'Europe', Norway: 'Europe', Denmark: 'Europe',
   'Czech Republic': 'Europe', Croatia: 'Europe', Serbia: 'Europe', Romania: 'Europe',
   Hungary: 'Europe', Slovakia: 'Europe', Slovenia: 'Europe', Bulgaria: 'Europe',
+  Finland: 'Europe', Ireland: 'Europe',
   // Africa
   Nigeria: 'Africa', Ghana: 'Africa', Kenya: 'Africa', 'South Africa': 'Africa',
   Egypt: 'Africa', Morocco: 'Africa', Algeria: 'Africa', Tunisia: 'Africa',
-  Senegal: 'Africa', Cameroon: 'Africa', Ivory: 'Africa', Ethiopia: 'Africa',
+  Senegal: 'Africa', Cameroon: 'Africa', 'Ivory Coast': 'Africa', Ethiopia: 'Africa',
   Tanzania: 'Africa', Uganda: 'Africa', Zimbabwe: 'Africa', Zambia: 'Africa',
+  Angola: 'Africa', Mozambique: 'Africa', Sudan: 'Africa',
   // Asia
   India: 'Asia', China: 'Asia', Japan: 'Asia', 'South Korea': 'Asia',
   Indonesia: 'Asia', Philippines: 'Asia', Thailand: 'Asia', Malaysia: 'Asia',
   'Saudi Arabia': 'Asia', UAE: 'Asia', Qatar: 'Asia', Iran: 'Asia',
   Iraq: 'Asia', Israel: 'Asia', Vietnam: 'Asia', Pakistan: 'Asia',
+  Bangladesh: 'Asia', Singapore: 'Asia', 'Hong Kong': 'Asia', Jordan: 'Asia', Kuwait: 'Asia',
   // Americas
   USA: 'Americas', Brazil: 'Americas', Mexico: 'Americas', Argentina: 'Americas',
   Colombia: 'Americas', Chile: 'Americas', Peru: 'Americas', Uruguay: 'Americas',
   Venezuela: 'Americas', Ecuador: 'Americas', Bolivia: 'Americas', Paraguay: 'Americas',
-  Canada: 'Americas', Costa: 'Americas', Honduras: 'Americas', Guatemala: 'Americas',
+  Canada: 'Americas', 'Costa Rica': 'Americas', Honduras: 'Americas', Guatemala: 'Americas',
+  Panama: 'Americas', Jamaica: 'Americas',
   // Oceania
   Australia: 'Oceania', 'New Zealand': 'Oceania',
   // World
