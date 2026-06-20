@@ -1478,6 +1478,23 @@ async function loadAccuracyTab() {
            </table>`
         : '<p style=”color:var(--muted);font-size:0.85rem;”>Not enough data yet. Needs 10+ resolved predictions per band.</p>';
     }
+    // Force-apply th styles via JS — CSS class alone can't guarantee styles
+    // when third-party scripts inject competing stylesheets at runtime.
+    ['acc-by-market-wrap','acc-by-conf-wrap','acc-by-tip-wrap',
+     'acc-league-tip-wrap','acc-calibration-wrap'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.querySelectorAll('th').forEach(th => {
+        th.style.setProperty('text-transform',  'uppercase',              'important');
+        th.style.setProperty('color',           'var(--muted)',           'important');
+        th.style.setProperty('border-bottom',   '2px solid var(--border)','important');
+        th.style.setProperty('font-size',       '0.72rem',                'important');
+        th.style.setProperty('letter-spacing',  '.05em',                  'important');
+        th.style.setProperty('white-space',     'nowrap',                 'important');
+        th.style.setProperty('font-weight',     '600',                    'important');
+        th.style.setProperty('padding',         '8px 16px',               'important');
+      });
+    });
   } catch(e) {
     Admin.toast('Error loading accuracy data: ' + e.message, 'error');
   }
