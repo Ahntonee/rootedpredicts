@@ -3,6 +3,9 @@
 'use strict';
 
 const bcrypt     = require('bcryptjs');
+const fs         = require('fs');
+const path       = require('path');
+const { randomUUID } = require('crypto');
 const db         = require('../config/db');
 const slugify    = require('slugify');
 const confidence = require('../services/confidence');
@@ -669,4 +672,31 @@ module.exports = {
   getAuditLog,
   getProfile, updateProfile, changePassword,
   getAdmins, createAdminAccount, updateAdminAccount, deleteAdminAccount,
+  uploadBlogImage,
 };
+
+// ── Blog image upload — receives base64 data URL, saves as static file
+async function uploadBlogImage(req, res) {
+  try {
+    const { image } = req.body;
+    if (!image || !image.startsWith('data:image/')) {
+      return res.status(400).json({ success: false, message: 'No valid image provided' });
+    }
+    const matches = image.match(/^data:image\/(\w+);base64,(.+)$/s);
+    if (!matches) return res.status(400).json({ success: false, message: 'Invalid image data' });
+
+    const ext    = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+    const buffer = Buffer.from(matches[2], 'base64');
+
+    const uploadDir = path.join(__dirname, '../public/uploads/blog');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+    const filename = `${randomUUID()}.${ext}`;
+    fs.writeFileSync(path.join(uploadDir, filename), buffer);
+
+    return res.json({ success: true, url: `/uploads/blog/${filename}` });
+  } catch (e) {
+    console.error('[ADMIN] Image upload error:', e.message);
+    return res.status(500).json({ success: false, message: e.message });
+  }
+}
