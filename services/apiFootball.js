@@ -597,16 +597,21 @@ async function researchFixture(fixtureId) {
   const awayId   = fix.teams.away.id;
   const leagueId = fix.league.id;
 
-  // Fetch 15 recent fixtures per team (more than 5) so we can compute venue-specific form
-  const [homeFormRaw, awayFormRaw, h2hRaw, homeStatsRaw, awayStatsRaw, standingsRaw, oddsRaw] = await Promise.all([
-    fetchTeamForm(homeId, 15).catch(() => []),
-    fetchTeamForm(awayId, 15).catch(() => []),
-    fetchH2H(homeId, awayId, 10).catch(() => []),
-    fetchTeamStats(homeId, leagueId).catch(() => null),
-    fetchTeamStats(awayId, leagueId).catch(() => null),
-    fetchStandings(leagueId).catch(() => []),
-    fetchFixtureOdds(fixtureId).catch(() => null),
-  ]);
+  // Sequential calls to avoid hitting API-Football rate limit (300 req/min)
+  const _delay = ms => new Promise(r => setTimeout(r, ms));
+  const homeFormRaw  = await fetchTeamForm(homeId, 15).catch(() => []);
+  await _delay(250);
+  const awayFormRaw  = await fetchTeamForm(awayId, 15).catch(() => []);
+  await _delay(250);
+  const h2hRaw       = await fetchH2H(homeId, awayId, 10).catch(() => []);
+  await _delay(250);
+  const homeStatsRaw = await fetchTeamStats(homeId, leagueId).catch(() => null);
+  await _delay(250);
+  const awayStatsRaw = await fetchTeamStats(awayId, leagueId).catch(() => null);
+  await _delay(250);
+  const standingsRaw = await fetchStandings(leagueId).catch(() => []);
+  await _delay(250);
+  const oddsRaw      = await fetchFixtureOdds(fixtureId).catch(() => null);
 
   const homeForm = calculateFormString(homeFormRaw, homeId);
   const awayForm = calculateFormString(awayFormRaw, awayId);

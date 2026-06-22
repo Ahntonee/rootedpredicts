@@ -130,6 +130,11 @@ async function runAccuracyTracking() {
 }
 
 function startScheduler() {
+  const instanceId = process.env.NODE_APP_INSTANCE;
+  if (instanceId !== undefined && instanceId !== '0') {
+    console.log(`[SCHEDULER] Instance ${instanceId} — cron skipped (only instance 0 runs jobs)`);
+    return;
+  }
   if (!cron.validate(SYNC_SCHEDULE)) { console.error(`[SCHEDULER] Invalid cron: ${SYNC_SCHEDULE}`); return; }
   cron.schedule(SYNC_SCHEDULE, runDailySync, { timezone: 'UTC' });
   console.log(`[SCHEDULER] Daily fixture sync: ${SYNC_SCHEDULE} UTC`);
