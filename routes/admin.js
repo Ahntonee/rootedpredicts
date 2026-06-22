@@ -36,9 +36,6 @@ router.put('/users/:id', requireAdminRole('superadmin'), asyncHandler(admin.upda
 router.get('/leagues',       asyncHandler(admin.getLeagues));
 router.put('/leagues/:id',   requireAdminRole('superadmin','editor'), asyncHandler(admin.updateLeague));
 
-// ── Image upload ───────────────────────────────────────────────
-router.post('/upload/image', requireAdminRole('superadmin','editor'), asyncHandler(admin.uploadBlogImage));
-
 // ── Blog ───────────────────────────────────────────────────────
 router.get   ('/blog',       requireAdminRole('superadmin','editor'), asyncHandler(admin.getBlogPosts));
 router.post  ('/blog',       requireAdminRole('superadmin','editor'), asyncHandler(admin.createBlogPost));

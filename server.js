@@ -85,7 +85,6 @@ app.use((req, res, next) => {
   }
   const large = req.originalUrl.startsWith('/api/admin/blog') ||
                 req.originalUrl.startsWith('/api/admin/pages') ||
-                req.originalUrl.startsWith('/api/admin/upload') ||
                 req.originalUrl.startsWith('/api/pages');
   express.json({ limit: large ? '10mb' : '10kb' })(req, res, next);
 });
