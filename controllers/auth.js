@@ -309,7 +309,7 @@ async function logout(req, res) {
 async function me(req, res) {
   try {
     const [rows] = await db.query(
-      `SELECT id, name, email, role, country, timezone, telegram_invited, created_at
+      `SELECT id, name, username, email, role, admin_role, country, timezone, telegram_invited, created_at
        FROM users WHERE id = ?`,
       [req.user.id]
     );
