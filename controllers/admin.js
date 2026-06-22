@@ -316,15 +316,15 @@ async function getBlogPost(req, res) {
 
 async function createBlogPost(req, res) {
   try {
-    const { title,content,excerpt,category,featured_image,meta_title,meta_description,keywords,published } = req.body;
+    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published } = req.body;
     if (!title||!content) return res.status(400).json({ success:false, message:'Title and content required' });
     let slug = generateBlogSlug(title);
     const [ex] = await db.query('SELECT id FROM blog_posts WHERE slug=?',[slug]);
     if (ex.length) slug = slug+'-'+Date.now();
     const [ins] = await db.query(
-      `INSERT INTO blog_posts (title,slug,content,excerpt,category,featured_image,meta_title,meta_description,
-        keywords,author_id,is_published,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [sanitiseText(title),slug,content,excerpt||null,category||null,featured_image||null,
+      `INSERT INTO blog_posts (title,slug,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,
+        keywords,author_id,is_published,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [sanitiseText(title),slug,content,excerpt||null,category||null,featured_image||null,featured_image_alt||null,
        meta_title||null,meta_description||null,keywords||null,req.user.id,
        published?1:0, published?new Date():null]
     );
@@ -335,13 +335,14 @@ async function createBlogPost(req, res) {
 
 async function updateBlogPost(req, res) {
   try {
-    const { title,content,excerpt,category,featured_image,meta_title,meta_description,keywords,published } = req.body;
+    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published } = req.body;
     const updates=[]; const args=[];
     if (title)            { updates.push('title=?');            args.push(sanitiseText(title)); }
     if (content)          { updates.push('content=?');          args.push(content); }
-    if (excerpt!==undefined)        { updates.push('excerpt=?');        args.push(excerpt||null); }
-    if (category!==undefined)       { updates.push('category=?');       args.push(category||null); }
-    if (featured_image!==undefined) { updates.push('featured_image=?'); args.push(featured_image||null); }
+    if (excerpt!==undefined)             { updates.push('excerpt=?');             args.push(excerpt||null); }
+    if (category!==undefined)            { updates.push('category=?');            args.push(category||null); }
+    if (featured_image!==undefined)      { updates.push('featured_image=?');      args.push(featured_image||null); }
+    if (featured_image_alt!==undefined)  { updates.push('featured_image_alt=?');  args.push(featured_image_alt||null); }
     if (meta_title)       { updates.push('meta_title=?');       args.push(meta_title); }
     if (meta_description) { updates.push('meta_description=?'); args.push(meta_description); }
     if (keywords)         { updates.push('keywords=?');         args.push(keywords); }
@@ -354,6 +355,18 @@ async function updateBlogPost(req, res) {
       { fields: updates.filter(u => !u.includes('NOW')).map(u => u.split('=')[0]) });
     res.json({ success:true, message:'Post updated' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+}
+
+async function uploadBlogImage(req, res) {
+  try {
+    const { data } = req.body;
+    if (!data || !data.startsWith('data:image/')) {
+      return res.status(400).json({ success: false, message: 'Valid image data URL required' });
+    }
+    const { uploadImage } = require('../services/imageStorage');
+    const url = await uploadImage(data, 'blog');
+    res.json({ success: true, url });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 }
 
 async function deleteBlogPost(req, res) {
@@ -662,7 +675,7 @@ module.exports = {
   getStats, getPredictions, getPrediction, createPrediction, updatePrediction, deletePrediction,
   scorePrediction, scoreAllPredictions, previewScore,
   getUsers, updateUser, getLeagues, updateLeague,
-  getBlogPosts, getBlogPost, createBlogPost, updateBlogPost, deleteBlogPost,
+  getBlogPosts, getBlogPost, createBlogPost, updateBlogPost, deleteBlogPost, uploadBlogImage,
   getSeoSettings, updateSeoSettings,
   getSiteStats, updateSiteStats,
   getFormLeagues, getLeagueFixtures, getFixtureOdds,
