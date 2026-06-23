@@ -70,7 +70,7 @@
           <input type="datetime-local" class="form-control" id="m-date">
           <div id="m-date-warn" style="display:none;font-size:0.72rem;color:var(--red);margin-top:3px;">
             <span class="material-icons-round" style="font-size:0.8rem;vertical-align:middle;">warning</span>
-            Date must be at least 2 hours in the future
+            Match date cannot be in the past
           </div>
         </div>
 
@@ -360,10 +360,10 @@ function renderTipField(market, currentTip) {
   }
 }
 
-// Min date = now + 2 hours (block past/live games)
+// Min date = now (admins can publish right up to kickoff)
 function setDateMin() {
   const el  = document.getElementById('m-date');
-  const min = new Date(Date.now() + 2 * 60 * 60 * 1000);
+  const min = new Date(Date.now());
   const pad = n => String(n).padStart(2, '0');
   el.min = `${min.getFullYear()}-${pad(min.getMonth()+1)}-${pad(min.getDate())}T${pad(min.getHours())}:${pad(min.getMinutes())}`;
 }
@@ -373,8 +373,7 @@ function validateDate() {
   const warn = document.getElementById('m-date-warn');
   if (!val) { warn.style.display = 'none'; return true; }
   const chosen = new Date(val).getTime();
-  const cutoff = Date.now() + 2 * 60 * 60 * 1000;
-  if (chosen < cutoff) { warn.style.display = 'block'; return false; }
+  if (chosen < Date.now()) { warn.style.display = 'block'; return false; }
   warn.style.display = 'none'; return true;
 }
 
