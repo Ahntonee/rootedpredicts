@@ -11,6 +11,18 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+  <style>
+    .EasyMDEContainer .CodeMirror { background:var(--surface);color:var(--text);border-color:var(--border);border-radius:0 0 var(--radius) var(--radius);font-family:var(--font-body);font-size:0.93rem;min-height:220px; }
+    .EasyMDEContainer .editor-toolbar { background:var(--surface-2);border-color:var(--border);border-radius:var(--radius) var(--radius) 0 0; }
+    .EasyMDEContainer .editor-toolbar button { color:var(--text-soft)!important; }
+    .EasyMDEContainer .editor-toolbar button:hover,.EasyMDEContainer .editor-toolbar button.active { background:var(--surface);color:var(--text)!important; }
+    .EasyMDEContainer .editor-toolbar i.separator { border-color:var(--border); }
+    .EasyMDEContainer .editor-preview { background:var(--surface);color:var(--text-soft);padding:16px; }
+    .EasyMDEContainer .editor-preview h1,.EasyMDEContainer .editor-preview h2,.EasyMDEContainer .editor-preview h3 { color:var(--text);font-family:var(--font-head);margin:1em 0 0.4em; }
+    .EasyMDEContainer .editor-preview p { margin-bottom:0.9em; }
+    .EasyMDEContainer .editor-preview ul,.EasyMDEContainer .editor-preview ol { padding-left:1.4em;margin-bottom:0.9em; }
+  </style>
 </head>
 <body>
 <div id="admin-sidebar" class="admin-sidebar"></div>
@@ -81,10 +93,12 @@
 
 <script src="/js/app.js"></script>
 <script src="/js/admin.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
 <script>
 const theme = localStorage.getItem('afro_theme') || 'dark';
 document.documentElement.setAttribute('data-theme', theme);
 let blogEditId = null;
+let mde; // EasyMDE instance — initialized in DOMContentLoaded
 
 // Resize an uploaded image client-side and return a compact base64 data URL
 function fileToResizedDataURL(file, maxW = 1000, quality = 0.8) {
@@ -135,11 +149,13 @@ async function loadPosts() {
 function openNew() {
   blogEditId = null;
   document.getElementById('blog-modal-title').textContent = 'New Blog Post';
-  ['b-title','b-excerpt','b-content','b-meta-title','b-meta-desc','b-keywords','b-image','b-image-alt'].forEach(id => document.getElementById(id).value = '');
+  ['b-title','b-excerpt','b-meta-title','b-meta-desc','b-keywords','b-image','b-image-alt'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('b-cat').value = '';
   document.getElementById('b-published').checked = false;
   showImagePreview('');
+  mde.value('');
   Admin.showModal('blog-modal');
+  setTimeout(() => mde.codemirror.refresh(), 10);
 }
 
 async function editPost(id) {
@@ -159,7 +175,9 @@ async function editPost(id) {
   document.getElementById('b-image-alt').value   = p.featured_image_alt || '';
   showImagePreview(p.featured_image || '');
   document.getElementById('b-published').checked  = !!p.is_published;
+  mde.value(p.content || '');
   Admin.showModal('blog-modal');
+  setTimeout(() => mde.codemirror.refresh(), 10);
 }
 
 async function deletePost(id) {
@@ -174,7 +192,7 @@ async function savePost() {
   const btn = document.getElementById('save-blog-btn');
   const body = {
     title:            document.getElementById('b-title').value.trim(),
-    content:          document.getElementById('b-content').value.trim(),
+    content:          mde.value().trim(),
     excerpt:          document.getElementById('b-excerpt').value.trim(),
     category:         document.getElementById('b-cat').value.trim(),
     featured_image:     document.getElementById('b-image').value.trim(),
@@ -204,6 +222,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!u) return;
   Admin.buildSidebar(u);
   loadPosts();
+
+  mde = new EasyMDE({
+    element: document.getElementById('b-content'),
+    placeholder: 'Write article content in Markdown. Use the toolbar above for formatting.',
+    spellChecker: false,
+    autofocus: false,
+    toolbar: ['bold','italic','heading','|','unordered-list','ordered-list','blockquote','|','link','|','preview','side-by-side','fullscreen','|','guide'],
+    status: false,
+  });
+
   document.getElementById('new-post-btn').addEventListener('click', openNew);
   document.getElementById('save-blog-btn').addEventListener('click', savePost);
 
@@ -222,15 +250,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.target.value = '';
   });
 
-  // Insert image into content (device upload -> <img> at cursor)
+  // Insert image into content (device upload -> markdown image at cursor)
   document.getElementById('b-content-image').addEventListener('change', async e => {
     const file = e.target.files[0]; if (!file) return;
     try {
       const data = await fileToResizedDataURL(file, 1000, 0.8);
-      const ta = document.getElementById('b-content');
-      const tag = `\n<img src="${data}" alt="" style="max-width:100%;border-radius:8px;margin:12px 0;">\n`;
-      const pos = ta.selectionStart || ta.value.length;
-      ta.value = ta.value.slice(0, pos) + tag + ta.value.slice(pos);
+      const cm = mde.codemirror;
+      const cursor = cm.getCursor();
+      cm.replaceRange(`\n![](${data})\n`, cursor);
       Admin.toast('Image inserted into content');
     } catch (err) { Admin.toast('Could not read that image', 'error'); }
     e.target.value = '';

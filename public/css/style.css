@@ -1124,6 +1124,40 @@ img { max-width: 100%; display: block; }
 .blog-card-meta { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 12px; }
 .blog-card-meta .material-icons-round { font-size: 0.9rem; }
 
+/* ── Article content (markdown-rendered blog post body) ─────── */
+.article-content h1,.article-content h2,.article-content h3,
+.article-content h4,.article-content h5,.article-content h6 {
+  font-family: var(--font-head); color: var(--text); font-weight: 700;
+  margin: 1.6em 0 0.5em; line-height: 1.25;
+}
+.article-content h1 { font-size: 2rem; }
+.article-content h2 { font-size: 1.5rem; }
+.article-content h3 { font-size: 1.2rem; }
+.article-content p  { margin-bottom: 1.1em; }
+.article-content ul,.article-content ol { padding-left: 1.6em; margin-bottom: 1.1em; }
+.article-content li { margin-bottom: 0.35em; }
+.article-content blockquote {
+  border-left: 3px solid var(--green); margin: 1.2em 0;
+  padding: 10px 18px; background: var(--surface-2);
+  color: var(--muted); border-radius: 0 var(--radius) var(--radius) 0;
+}
+.article-content code {
+  background: var(--surface-2); color: var(--green);
+  padding: 2px 6px; border-radius: 4px; font-size: 0.88em;
+}
+.article-content pre {
+  background: var(--surface-2); padding: 16px; border-radius: var(--radius);
+  overflow-x: auto; margin-bottom: 1.1em;
+}
+.article-content pre code { background: none; padding: 0; color: var(--text-soft); }
+.article-content img { max-width: 100%; border-radius: var(--radius-lg); margin: 1em 0; }
+.article-content a { color: var(--green); text-decoration: underline; }
+.article-content hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+.article-content strong { color: var(--text); font-weight: 700; }
+.article-content table { width: 100%; border-collapse: collapse; margin-bottom: 1.1em; }
+.article-content th,.article-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+.article-content th { background: var(--surface-2); font-weight: 600; color: var(--text); }
+
 /* ── Leaderboard ────────────────────────────────────────────── */
 .leaderboard-table { width: 100%; border-collapse: collapse; }
 .leaderboard-table th {

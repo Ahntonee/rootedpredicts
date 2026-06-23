@@ -51,6 +51,10 @@
 <footer class="site-footer" id="site-footer"></footer>
 <script src="/js/app.js"></script>
 <script src="/js/content-protection.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+marked.setOptions({ breaks: true, gfm: true });
+</script>
 <script>
 (async () => {
   const body = document.getElementById('post-body');
@@ -89,7 +93,7 @@
     <h1 style="font-family:var(--font-head);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:900;color:var(--text);line-height:1.15;margin-bottom:14px;">${esc(p.title)}</h1>
     <div class="blog-card-meta" style="margin-bottom:24px;"><span class="material-icons-round">calendar_today</span>${fmtDate(p.published_at)}${p.author_name?' <span class="material-icons-round">person</span>'+esc(p.author_name):''}</div>
     ${p.featured_image ? `<img src="${p.featured_image}" alt="${esc(p.title)}" style="width:100%;border-radius:var(--radius-lg);margin-bottom:28px;">` : ''}
-    <div style="font-size:1.02rem;line-height:1.85;color:var(--text-soft);" class="article-content">${p.content || ''}</div>`;
+    <div style="font-size:1.02rem;line-height:1.85;color:var(--text-soft);" class="article-content">${marked.parse(p.content || '')}</div>`;
 })();
 </script>
 </body>
