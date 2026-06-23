@@ -188,6 +188,70 @@
           </div>
         </div>
 
+        <!-- Subscription editor (only for subscription page) -->
+        <div class="card" style="padding:24px;margin-bottom:20px;" id="subscription-details-card">
+          <div class="section-divider" style="border-top:none;padding-top:0;margin-top:0;">Hero Section</div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:0;">
+            <div class="field-group">
+              <label class="field-label">Hero Title</label>
+              <input type="text" id="f-sub-hero-title" class="field-input" placeholder="e.g. Unlock the Full Edge">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Hero Subtitle</label>
+              <input type="text" id="f-sub-hero-subtitle" class="field-input" placeholder="e.g. High-confidence VIP picks...">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Trial Text (shown in red below subtitle)</label>
+              <input type="text" id="f-sub-hero-trial" class="field-input" placeholder="e.g. 3-day free trial on monthly plan...">
+            </div>
+          </div>
+
+          <div class="section-divider">Pricing Plans</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px;">
+            <div>
+              <div style="font-weight:700;font-size:0.82rem;margin-bottom:10px;color:var(--text);">Monthly</div>
+              <div class="field-group">
+                <label class="field-label">Price (USD)</label>
+                <input type="text" id="f-sub-monthly-price" class="field-input" placeholder="e.g. 4.89">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Features (one per line)</label>
+                <textarea id="f-sub-monthly-features" class="field-input" rows="7" style="resize:vertical;font-family:inherit;font-size:0.82rem;line-height:1.6;" placeholder="All free tips included&#10;Full VIP prediction cards&#10;Early access — 2hrs ahead"></textarea>
+              </div>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:0.82rem;margin-bottom:10px;color:var(--text);">Quarterly</div>
+              <div class="field-group">
+                <label class="field-label">Price (USD)</label>
+                <input type="text" id="f-sub-quarterly-price" class="field-input" placeholder="e.g. 12.99">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Save Label</label>
+                <input type="text" id="f-sub-quarterly-save" class="field-input" placeholder="e.g. Save ~12% vs monthly">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Features (one per line)</label>
+                <textarea id="f-sub-quarterly-features" class="field-input" rows="7" style="resize:vertical;font-family:inherit;font-size:0.82rem;line-height:1.6;" placeholder="Everything in Monthly&#10;Full VIP prediction cards"></textarea>
+              </div>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:0.82rem;margin-bottom:10px;color:var(--text);">Annual</div>
+              <div class="field-group">
+                <label class="field-label">Price (USD)</label>
+                <input type="text" id="f-sub-annual-price" class="field-input" placeholder="e.g. 39.99">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Save Label</label>
+                <input type="text" id="f-sub-annual-save" class="field-input" placeholder="e.g. Save ~32% — Best value">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Features (one per line)</label>
+                <textarea id="f-sub-annual-features" class="field-input" rows="7" style="resize:vertical;font-family:inherit;font-size:0.82rem;line-height:1.6;" placeholder="Everything in Quarterly&#10;Full VIP prediction cards"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- HTML content editor (about / terms / privacy) -->
         <div class="card" style="padding:24px;" id="content-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -261,7 +325,7 @@ function selectPage(slug, btn) {
   document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   currentSlug = slug;
-  document.getElementById('preview-link').href = slug === 'home' ? '/' : `/${slug}.html`;
+  document.getElementById('preview-link').href = slug === 'home' ? '/' : slug === 'subscription' ? '/pricing.html' : `/${slug}.html`;
   renderPage(slug);
 }
 
@@ -281,13 +345,15 @@ function renderPage(slug) {
     : 'Never';
 
   // Show/hide section cards
-  const isAbout   = slug === 'about';
-  const isContact = slug === 'contact';
-  document.getElementById('about-stats-card').style.display     = isAbout   ? '' : 'none';
-  document.getElementById('contact-details-card').style.display = isContact ? '' : 'none';
-  document.getElementById('content-card').style.display         = !isContact ? '' : 'none';
-  document.getElementById('last-updated-wrap').style.display    = (slug === 'terms' || slug === 'privacy') ? '' : 'none';
-  document.getElementById('hero-subtitle-wrap').style.display   = (slug === 'about' || slug === 'contact') ? '' : 'none';
+  const isAbout        = slug === 'about';
+  const isContact      = slug === 'contact';
+  const isSubscription = slug === 'subscription';
+  document.getElementById('about-stats-card').style.display          = isAbout        ? '' : 'none';
+  document.getElementById('contact-details-card').style.display      = isContact      ? '' : 'none';
+  document.getElementById('subscription-details-card').style.display = isSubscription ? '' : 'none';
+  document.getElementById('content-card').style.display              = (!isContact && !isSubscription) ? '' : 'none';
+  document.getElementById('last-updated-wrap').style.display         = (slug === 'terms' || slug === 'privacy') ? '' : 'none';
+  document.getElementById('hero-subtitle-wrap').style.display        = (slug === 'about' || slug === 'contact') ? '' : 'none';
 
   // About stats
   if (isAbout && p.extra) {
@@ -299,6 +365,21 @@ function renderPage(slug) {
     document.getElementById('f-stat-members-label').value   = p.extra.stat_members_label    || '';
     document.getElementById('f-stat-countries').value       = p.extra.stat_countries        || '';
     document.getElementById('f-stat-countries-label').value = p.extra.stat_countries_label  || '';
+  }
+
+  // Subscription fields
+  if (isSubscription && p.extra) {
+    document.getElementById('f-sub-hero-title').value         = p.extra.hero_title         || '';
+    document.getElementById('f-sub-hero-subtitle').value      = p.extra.hero_subtitle      || '';
+    document.getElementById('f-sub-hero-trial').value         = p.extra.hero_trial         || '';
+    document.getElementById('f-sub-monthly-price').value      = p.extra.monthly_price      || '';
+    document.getElementById('f-sub-monthly-features').value   = p.extra.monthly_features   || '';
+    document.getElementById('f-sub-quarterly-price').value    = p.extra.quarterly_price    || '';
+    document.getElementById('f-sub-quarterly-save').value     = p.extra.quarterly_save     || '';
+    document.getElementById('f-sub-quarterly-features').value = p.extra.quarterly_features || '';
+    document.getElementById('f-sub-annual-price').value       = p.extra.annual_price       || '';
+    document.getElementById('f-sub-annual-save').value        = p.extra.annual_save        || '';
+    document.getElementById('f-sub-annual-features').value    = p.extra.annual_features    || '';
   }
 
   // Contact details
@@ -333,9 +414,10 @@ function togglePreview() {
 
 async function savePage() {
   const btn   = document.getElementById('save-btn');
-  const slug  = currentSlug;
-  const isContact = slug === 'contact';
-  const isAbout   = slug === 'about';
+  const slug           = currentSlug;
+  const isContact      = slug === 'contact';
+  const isAbout        = slug === 'about';
+  const isSubscription = slug === 'subscription';
 
   const payload = {
     page_title:       document.getElementById('f-page-title').value.trim(),
@@ -343,7 +425,7 @@ async function savePage() {
     hero_title:       document.getElementById('f-hero-title').value.trim(),
     hero_subtitle:    document.getElementById('f-hero-subtitle').value.trim() || null,
     last_updated:     document.getElementById('f-last-updated').value || null,
-    content:          isContact ? null : document.getElementById('f-content').value,
+    content:          (isContact || isSubscription) ? null : document.getElementById('f-content').value,
     extra:            null,
   };
 
@@ -368,6 +450,21 @@ async function savePage() {
       telegram_url:          document.getElementById('f-telegram-url').value.trim(),
       support_hours_weekday: document.getElementById('f-hours-weekday').value.trim(),
       support_hours_weekend: document.getElementById('f-hours-weekend').value.trim(),
+    };
+  }
+  if (isSubscription) {
+    payload.extra = {
+      hero_title:          document.getElementById('f-sub-hero-title').value.trim(),
+      hero_subtitle:       document.getElementById('f-sub-hero-subtitle').value.trim(),
+      hero_trial:          document.getElementById('f-sub-hero-trial').value.trim(),
+      monthly_price:       document.getElementById('f-sub-monthly-price').value.trim(),
+      monthly_features:    document.getElementById('f-sub-monthly-features').value.trim(),
+      quarterly_price:     document.getElementById('f-sub-quarterly-price').value.trim(),
+      quarterly_save:      document.getElementById('f-sub-quarterly-save').value.trim(),
+      quarterly_features:  document.getElementById('f-sub-quarterly-features').value.trim(),
+      annual_price:        document.getElementById('f-sub-annual-price').value.trim(),
+      annual_save:         document.getElementById('f-sub-annual-save').value.trim(),
+      annual_features:     document.getElementById('f-sub-annual-features').value.trim(),
     };
   }
 
