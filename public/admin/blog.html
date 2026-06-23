@@ -54,6 +54,7 @@
             <label class="btn btn-outline btn-sm" style="margin:0;cursor:pointer;white-space:nowrap;"><span class="material-icons-round">upload</span>Upload<input type="file" id="b-image-file" accept="image/*" style="display:none;"></label>
           </div>
           <img id="b-image-preview" alt="" style="display:none;max-height:130px;margin-top:8px;border-radius:8px;border:1px solid var(--border);">
+          <input type="text" class="form-control" id="b-image-alt" placeholder="Image alt text (for SEO &amp; accessibility)" style="margin-top:6px;">
         </div>
 
         <div class="form-group" style="margin:0;"><label class="form-label">Excerpt</label><textarea class="form-control" id="b-excerpt" rows="2" placeholder="Short summary for blog listing page..."></textarea></div>
@@ -134,7 +135,7 @@ async function loadPosts() {
 function openNew() {
   blogEditId = null;
   document.getElementById('blog-modal-title').textContent = 'New Blog Post';
-  ['b-title','b-excerpt','b-content','b-meta-title','b-meta-desc','b-keywords','b-image'].forEach(id => document.getElementById(id).value = '');
+  ['b-title','b-excerpt','b-content','b-meta-title','b-meta-desc','b-keywords','b-image','b-image-alt'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('b-cat').value = '';
   document.getElementById('b-published').checked = false;
   showImagePreview('');
@@ -155,6 +156,7 @@ async function editPost(id) {
   document.getElementById('b-meta-desc').value    = p.meta_description || '';
   document.getElementById('b-keywords').value     = p.keywords || '';
   document.getElementById('b-image').value        = p.featured_image || '';
+  document.getElementById('b-image-alt').value   = p.featured_image_alt || '';
   showImagePreview(p.featured_image || '');
   document.getElementById('b-published').checked  = !!p.is_published;
   Admin.showModal('blog-modal');
@@ -175,7 +177,8 @@ async function savePost() {
     content:          document.getElementById('b-content').value.trim(),
     excerpt:          document.getElementById('b-excerpt').value.trim(),
     category:         document.getElementById('b-cat').value.trim(),
-    featured_image:   document.getElementById('b-image').value.trim(),
+    featured_image:     document.getElementById('b-image').value.trim(),
+    featured_image_alt: document.getElementById('b-image-alt').value.trim(),
     meta_title:       document.getElementById('b-meta-title').value.trim(),
     meta_description: document.getElementById('b-meta-desc').value.trim(),
     keywords:         document.getElementById('b-keywords').value.trim(),
