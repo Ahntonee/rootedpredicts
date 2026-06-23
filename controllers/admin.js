@@ -3,9 +3,6 @@
 'use strict';
 
 const bcrypt     = require('bcryptjs');
-const fs         = require('fs');
-const path       = require('path');
-const { randomUUID } = require('crypto');
 const db         = require('../config/db');
 const slugify    = require('slugify');
 const confidence = require('../services/confidence');
@@ -319,15 +316,15 @@ async function getBlogPost(req, res) {
 
 async function createBlogPost(req, res) {
   try {
-    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published } = req.body;
+    const { title,content,excerpt,category,featured_image,meta_title,meta_description,keywords,published } = req.body;
     if (!title||!content) return res.status(400).json({ success:false, message:'Title and content required' });
     let slug = generateBlogSlug(title);
     const [ex] = await db.query('SELECT id FROM blog_posts WHERE slug=?',[slug]);
     if (ex.length) slug = slug+'-'+Date.now();
     const [ins] = await db.query(
-      `INSERT INTO blog_posts (title,slug,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,
-        keywords,author_id,is_published,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [sanitiseText(title),slug,content,excerpt||null,category||null,featured_image||null,featured_image_alt||null,
+      `INSERT INTO blog_posts (title,slug,content,excerpt,category,featured_image,meta_title,meta_description,
+        keywords,author_id,is_published,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [sanitiseText(title),slug,content,excerpt||null,category||null,featured_image||null,
        meta_title||null,meta_description||null,keywords||null,req.user.id,
        published?1:0, published?new Date():null]
     );
@@ -338,14 +335,13 @@ async function createBlogPost(req, res) {
 
 async function updateBlogPost(req, res) {
   try {
-    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published } = req.body;
+    const { title,content,excerpt,category,featured_image,meta_title,meta_description,keywords,published } = req.body;
     const updates=[]; const args=[];
     if (title)            { updates.push('title=?');            args.push(sanitiseText(title)); }
     if (content)          { updates.push('content=?');          args.push(content); }
-    if (excerpt!==undefined)              { updates.push('excerpt=?');              args.push(excerpt||null); }
-    if (category!==undefined)             { updates.push('category=?');             args.push(category||null); }
-    if (featured_image!==undefined)       { updates.push('featured_image=?');       args.push(featured_image||null); }
-    if (featured_image_alt!==undefined)   { updates.push('featured_image_alt=?');   args.push(featured_image_alt||null); }
+    if (excerpt!==undefined)        { updates.push('excerpt=?');        args.push(excerpt||null); }
+    if (category!==undefined)       { updates.push('category=?');       args.push(category||null); }
+    if (featured_image!==undefined) { updates.push('featured_image=?'); args.push(featured_image||null); }
     if (meta_title)       { updates.push('meta_title=?');       args.push(meta_title); }
     if (meta_description) { updates.push('meta_description=?'); args.push(meta_description); }
     if (keywords)         { updates.push('keywords=?');         args.push(keywords); }
@@ -673,31 +669,4 @@ module.exports = {
   getAuditLog,
   getProfile, updateProfile, changePassword,
   getAdmins, createAdminAccount, updateAdminAccount, deleteAdminAccount,
-  uploadBlogImage,
 };
-
-// ── Blog image upload — receives base64 data URL, saves as static file
-async function uploadBlogImage(req, res) {
-  try {
-    const { image } = req.body;
-    if (!image || !image.startsWith('data:image/')) {
-      return res.status(400).json({ success: false, message: 'No valid image provided' });
-    }
-    const matches = image.match(/^data:image\/(\w+);base64,(.+)$/s);
-    if (!matches) return res.status(400).json({ success: false, message: 'Invalid image data' });
-
-    const ext    = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-    const buffer = Buffer.from(matches[2], 'base64');
-
-    const uploadDir = path.join(__dirname, '../public/uploads/blog');
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-    const filename = `${randomUUID()}.${ext}`;
-    fs.writeFileSync(path.join(uploadDir, filename), buffer);
-
-    return res.json({ success: true, url: `/uploads/blog/${filename}` });
-  } catch (e) {
-    console.error('[ADMIN] Image upload error:', e.message);
-    return res.status(500).json({ success: false, message: e.message });
-  }
-}

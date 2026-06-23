@@ -54,7 +54,6 @@
             <label class="btn btn-outline btn-sm" style="margin:0;cursor:pointer;white-space:nowrap;"><span class="material-icons-round">upload</span>Upload<input type="file" id="b-image-file" accept="image/*" style="display:none;"></label>
           </div>
           <img id="b-image-preview" alt="" style="display:none;max-height:130px;margin-top:8px;border-radius:8px;border:1px solid var(--border);">
-          <input type="text" class="form-control" id="b-image-alt" placeholder="Describe the image for screen readers and search engines" style="margin-top:6px;">
         </div>
 
         <div class="form-group" style="margin:0;"><label class="form-label">Excerpt</label><textarea class="form-control" id="b-excerpt" rows="2" placeholder="Short summary for blog listing page..."></textarea></div>
@@ -135,7 +134,7 @@ async function loadPosts() {
 function openNew() {
   blogEditId = null;
   document.getElementById('blog-modal-title').textContent = 'New Blog Post';
-  ['b-title','b-excerpt','b-content','b-meta-title','b-meta-desc','b-keywords','b-image','b-image-alt'].forEach(id => document.getElementById(id).value = '');
+  ['b-title','b-excerpt','b-content','b-meta-title','b-meta-desc','b-keywords','b-image'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('b-cat').value = '';
   document.getElementById('b-published').checked = false;
   showImagePreview('');
@@ -156,7 +155,6 @@ async function editPost(id) {
   document.getElementById('b-meta-desc').value    = p.meta_description || '';
   document.getElementById('b-keywords').value     = p.keywords || '';
   document.getElementById('b-image').value        = p.featured_image || '';
-  document.getElementById('b-image-alt').value    = p.featured_image_alt || '';
   showImagePreview(p.featured_image || '');
   document.getElementById('b-published').checked  = !!p.is_published;
   Admin.showModal('blog-modal');
@@ -177,9 +175,8 @@ async function savePost() {
     content:          document.getElementById('b-content').value.trim(),
     excerpt:          document.getElementById('b-excerpt').value.trim(),
     category:         document.getElementById('b-cat').value.trim(),
-    featured_image:     document.getElementById('b-image').value.trim(),
-    featured_image_alt: document.getElementById('b-image-alt').value.trim(),
-    meta_title:         document.getElementById('b-meta-title').value.trim(),
+    featured_image:   document.getElementById('b-image').value.trim(),
+    meta_title:       document.getElementById('b-meta-title').value.trim(),
     meta_description: document.getElementById('b-meta-desc').value.trim(),
     keywords:         document.getElementById('b-keywords').value.trim(),
     published:        document.getElementById('b-published').checked,
@@ -210,36 +207,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Featured image: URL typed â†’ preview
   document.getElementById('b-image').addEventListener('input', e => showImagePreview(e.target.value.trim()));
 
-  // Featured image: device upload → server → store URL
-  document.getElementById(‘b-image-file’).addEventListener(‘change’, async e => {
+  // Featured image: device upload â†’ resized base64
+  document.getElementById('b-image-file').addEventListener('change', async e => {
     const file = e.target.files[0]; if (!file) return;
     try {
-      const data = await fileToResizedDataURL(file, 1200, 0.85);
-      Admin.toast(‘Uploading...’, ‘info’);
-      const json = await Admin.api(‘POST’, ‘/api/admin/upload/image’, { image: data });
-      if (!json.success) throw new Error(json.message || ‘Upload failed’);
-      document.getElementById(‘b-image’).value = json.url;
-      showImagePreview(json.url);
-      Admin.toast(‘Image uploaded’);
-    } catch (err) { Admin.toast(err.message || ‘Could not upload image’, ‘error’); }
-    e.target.value = ‘’;
+      const data = await fileToResizedDataURL(file, 1000, 0.8);
+      document.getElementById('b-image').value = data;
+      showImagePreview(data);
+      Admin.toast('Image added');
+    } catch (err) { Admin.toast('Could not read that image', 'error'); }
+    e.target.value = '';
   });
 
-  // Insert image into content: device upload → server → <img> tag with URL
-  document.getElementById(‘b-content-image’).addEventListener(‘change’, async e => {
+  // Insert image into content (device upload â†’ <img> at cursor)
+  document.getElementById('b-content-image').addEventListener('change', async e => {
     const file = e.target.files[0]; if (!file) return;
     try {
-      const data = await fileToResizedDataURL(file, 1200, 0.85);
-      Admin.toast(‘Uploading...’, ‘info’);
-      const json = await Admin.api(‘POST’, ‘/api/admin/upload/image’, { image: data });
-      if (!json.success) throw new Error(json.message || ‘Upload failed’);
-      const ta = document.getElementById(‘b-content’);
-      const tag = `\n<img src="${json.url}" alt="" style="max-width:100%;border-radius:8px;margin:12px 0;">\n`;
+      const data = await fileToResizedDataURL(file, 1000, 0.8);
+      const ta = document.getElementById('b-content');
+      const tag = `\n<img src="${data}" alt="" style="max-width:100%;border-radius:8px;margin:12px 0;">\n`;
       const pos = ta.selectionStart || ta.value.length;
       ta.value = ta.value.slice(0, pos) + tag + ta.value.slice(pos);
-      Admin.toast(‘Image inserted into content’);
-    } catch (err) { Admin.toast(err.message || ‘Could not upload image’, ‘error’); }
-    e.target.value = ‘’;
+      Admin.toast('Image inserted into content');
+    } catch (err) { Admin.toast('Could not read that image', 'error'); }
+    e.target.value = '';
   });
 });
 </script>
