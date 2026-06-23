@@ -797,7 +797,14 @@ async function autoPredictFixtures(db, options = {}) {
       const hasData = homeForm || awayForm || h2hSummary;
       if (!hasData) { skipped++; continue; }
 
-      // Score with enriched data including venue-specific form
+      // Extract venue-specific goals averages for goals-market confidence scoring
+      // Prefer venue-specific (home team AT HOME, away team AWAY) for better accuracy
+      const homeGoalsFor      = data.home_stats ? (parseFloat(data.home_stats.goals_for_avg_home  || data.home_stats.goals_for_avg)    || null) : null;
+      const homeGoalsConceded = data.home_stats ? (parseFloat(data.home_stats.goals_against_home  || data.home_stats.goals_against_avg) || null) : null;
+      const awayGoalsFor      = data.away_stats ? (parseFloat(data.away_stats.goals_for_avg_away  || data.away_stats.goals_for_avg)    || null) : null;
+      const awayGoalsConceded = data.away_stats ? (parseFloat(data.away_stats.goals_against_away  || data.away_stats.goals_against_avg) || null) : null;
+
+      // Score with enriched data including venue-specific form and goals averages
       const { score: confScore } = confidence.score({
         tip:              suggestion.tip,
         market:           suggestion.market,
@@ -808,6 +815,11 @@ async function autoPredictFixtures(db, options = {}) {
         away_form_venue:  awayFormVenue,
         h2h_summary:      h2hSummary,
         league_id:        row.league_id,
+        // Goals-based signals — null when stats unavailable (confidence.js falls back gracefully)
+        home_goals_avg:          homeGoalsFor,
+        home_goals_conceded_avg: homeGoalsConceded,
+        away_goals_avg:          awayGoalsFor,
+        away_goals_conceded_avg: awayGoalsConceded,
       });
 
       // Only publish if confidence ≥ minConf (selectivity filter)

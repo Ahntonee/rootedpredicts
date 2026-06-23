@@ -139,6 +139,11 @@ function score(prediction) {
     home_form_venue, away_form_venue,  // venue-specific forms (richer signal)
     h2h_summary,
     league_id,
+    // Goals-based signals (optional — when absent, algorithm falls back to win-rate form)
+    home_goals_avg,           // home team's avg goals scored per game (venue-specific preferred)
+    home_goals_conceded_avg,  // home team's avg goals conceded per game (venue-specific preferred)
+    away_goals_avg,           // away team's avg goals scored per game (venue-specific preferred)
+    away_goals_conceded_avg,  // away team's avg goals conceded per game (venue-specific preferred)
   } = prediction;
 
   const breakdown = {};
@@ -175,11 +180,46 @@ function score(prediction) {
     formSignal = 1 - Math.abs(hFS - aFS);
     formSignal = (formSignal + (1 - Math.abs(avgForm - 0.5))) / 2;
   } else if (tipU.includes('OVER')) {
-    formSignal = (homeFormOverall + awayFormOverall) / 2;
+    const baseSignal = (homeFormOverall + awayFormOverall) / 2;
+    if (home_goals_avg != null && away_goals_avg != null) {
+      // Expected total goals for the fixture; extract threshold from tip (e.g. "Over 2.5" → 2.5)
+      const expectedTotal = home_goals_avg + away_goals_avg;
+      const threshMatch = tipU.match(/(\d+\.?\d*)/);
+      const threshold = threshMatch ? parseFloat(threshMatch[1]) : 2.5;
+      // Soft-step signal: 0.5 at the threshold, rising toward 1.0 as expected exceeds it
+      const goalsSignal = clamp(0.5 + (expectedTotal - threshold) / Math.max(threshold, 1.5) * 0.45);
+      formSignal = baseSignal * 0.35 + goalsSignal * 0.65;
+    } else {
+      formSignal = baseSignal;
+    }
   } else if (tipU.includes('UNDER')) {
-    formSignal = 1 - (homeFormOverall + awayFormOverall) / 2;
+    const baseSignal = 1 - (homeFormOverall + awayFormOverall) / 2;
+    if (home_goals_avg != null && away_goals_avg != null) {
+      const expectedTotal = home_goals_avg + away_goals_avg;
+      const threshMatch = tipU.match(/(\d+\.?\d*)/);
+      const threshold = threshMatch ? parseFloat(threshMatch[1]) : 2.5;
+      const goalsSignal = clamp(0.5 - (expectedTotal - threshold) / Math.max(threshold, 1.5) * 0.45);
+      formSignal = baseSignal * 0.35 + goalsSignal * 0.65;
+    } else {
+      formSignal = baseSignal;
+    }
   } else if (tipU.includes('BTTS') || tipU.includes('BOTH')) {
-    formSignal = Math.min(homeFormOverall, awayFormOverall);
+    const baseSignal = Math.min(homeFormOverall, awayFormOverall);
+    if (home_goals_avg != null && away_goals_avg != null &&
+        home_goals_conceded_avg != null && away_goals_conceded_avg != null) {
+      // Expected goals each team will score: blend own attack avg with opponent's defensive avg
+      const expHome = (home_goals_avg + away_goals_conceded_avg) / 2;
+      const expAway = (away_goals_avg + home_goals_conceded_avg) / 2;
+      // P(team scores ≥ 1) via Poisson: 1 - P(0 goals) = 1 - e^(-lambda)
+      const pHomeScores = 1 - Math.exp(-Math.max(expHome, 0.05));
+      const pAwayScores = 1 - Math.exp(-Math.max(expAway, 0.05));
+      const bttsProbGoals = pHomeScores * pAwayScores;
+      const isBttsYes = !tipU.includes(' NO');
+      const goalsSignal = isBttsYes ? bttsProbGoals : (1 - bttsProbGoals);
+      formSignal = baseSignal * 0.35 + goalsSignal * 0.65;
+    } else {
+      formSignal = baseSignal;
+    }
   } else {
     formSignal = (hFS + (1 - aFS)) / 2;
   }
