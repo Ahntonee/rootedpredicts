@@ -51,10 +51,7 @@
 <footer class="site-footer" id="site-footer"></footer>
 <script src="/js/app.js"></script>
 <script src="/js/content-protection.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script>
-marked.setOptions({ breaks: true, gfm: true });
-</script>
+<script src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
 <script>
 (async () => {
   const body = document.getElementById('post-body');
@@ -88,12 +85,20 @@ marked.setOptions({ breaks: true, gfm: true });
   const sc = document.getElementById('article-schema');
   if (sc) sc.textContent = JSON.stringify({ '@context':'https://schema.org','@type':'Article', headline:p.title, datePublished:p.published_at, author:{'@type':'Organization',name:'Rooted Predictions'}, publisher:{'@type':'Organization',name:'Rooted Predictions'}, description:p.meta_description||p.excerpt||'' });
 
+  function renderContent(raw) {
+    try {
+      return (window.marked && marked.parse) ? marked.parse(String(raw || ''), { breaks: true, gfm: true }) : String(raw || '').replace(/\n/g, '<br>');
+    } catch(e) {
+      return String(raw || '').replace(/\n/g, '<br>');
+    }
+  }
+
   body.innerHTML = `
     ${p.category ? `<div class="blog-category" style="margin-bottom:12px;">${esc(p.category)}</div>` : ''}
     <h1 style="font-family:var(--font-head);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:900;color:var(--text);line-height:1.15;margin-bottom:14px;">${esc(p.title)}</h1>
     <div class="blog-card-meta" style="margin-bottom:24px;"><span class="material-icons-round">calendar_today</span>${fmtDate(p.published_at)}${p.author_name?' <span class="material-icons-round">person</span>'+esc(p.author_name):''}</div>
     ${p.featured_image ? `<img src="${p.featured_image}" alt="${esc(p.title)}" style="width:100%;border-radius:var(--radius-lg);margin-bottom:28px;">` : ''}
-    <div style="font-size:1.02rem;line-height:1.85;color:var(--text-soft);" class="article-content">${marked.parse(p.content || '')}</div>`;
+    <div style="font-size:1.02rem;line-height:1.85;color:var(--text-soft);" class="article-content">${renderContent(p.content)}</div>`;
 })();
 </script>
 </body>
