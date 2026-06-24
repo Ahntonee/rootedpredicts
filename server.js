@@ -88,7 +88,7 @@ app.use((req, res, next) => {
                 req.originalUrl.startsWith('/api/pages');
   express.json({ limit: large ? '10mb' : '10kb' })(req, res, next);
 });
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 
 // ── Static files
@@ -115,7 +115,7 @@ app.get('/api/status', async (req, res) => {
       version: '2.0.0',
     });
   } catch(e) {
-    res.status(500).json({ success: false, message: 'Database error', error: e.message });
+    res.status(500).json({ success: false, message: 'Database error' });
   }
 });
 

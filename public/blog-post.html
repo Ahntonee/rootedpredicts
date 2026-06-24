@@ -52,6 +52,7 @@
 <script src="/js/app.js"></script>
 <script src="/js/content-protection.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 <script>
 (async () => {
   const body = document.getElementById('post-body');
@@ -87,7 +88,10 @@
 
   function renderContent(raw) {
     try {
-      return (window.marked && marked.parse) ? marked.parse(String(raw || ''), { breaks: true, gfm: true }) : String(raw || '').replace(/\n/g, '<br>');
+      const html = (window.marked && marked.parse)
+        ? marked.parse(String(raw || ''), { breaks: true, gfm: true })
+        : String(raw || '').replace(/\n/g, '<br>');
+      return (window.DOMPurify) ? DOMPurify.sanitize(html) : html;
     } catch(e) {
       return String(raw || '').replace(/\n/g, '<br>');
     }

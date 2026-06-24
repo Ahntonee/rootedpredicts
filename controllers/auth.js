@@ -150,16 +150,30 @@ async function initiateRegister(req, res) {
   }
 }
 
+// In-memory OTP failure tracker — resets on restart, which is fine
+// because OTPs expire in 15 min and server restarts are infrequent.
+const _otpFails = new Map();
+function _getOtpFails(email)  { const e = _otpFails.get(email); return (!e || Date.now() > e.resetAt) ? 0 : e.count; }
+function _incOtpFails(email)  { const e = _otpFails.get(email); const resetAt = Date.now() + 15*60*1000; _otpFails.set(email, { count: e && Date.now() <= e.resetAt ? e.count + 1 : 1, resetAt }); }
+function _clearOtpFails(email){ _otpFails.delete(email); }
+
 // ── VERIFY REGISTRATION — confirm OTP, create account ─────────
 async function verifyRegistration(req, res) {
   const { email, token } = req.body;
+  const lEmail = email.toLowerCase();
+
+  // Block after 5 consecutive wrong codes — prevents brute-force of 6-digit OTP
+  if (_getOtpFails(lEmail) >= 5) {
+    return errorResponse(res,
+      'Too many incorrect attempts. Please request a new verification code.', 429);
+  }
 
   try {
     // Look up pending record that hasn't expired
     const [rows] = await db.query(
       `SELECT * FROM pending_registrations
        WHERE email = ? AND expires_at > NOW()`,
-      [email.toLowerCase()]
+      [lEmail]
     );
 
     if (!rows.length) {
@@ -171,9 +185,12 @@ async function verifyRegistration(req, res) {
 
     // Constant-time token comparison
     if (pending.token !== token.trim()) {
+      _incOtpFails(lEmail);
       return errorResponse(res,
         'Incorrect verification code. Please check and try again.', 400);
     }
+
+    _clearOtpFails(lEmail); // reset on success
 
     // Guard against duplicate submission
     const [duplicate] = await db.query(
