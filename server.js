@@ -65,8 +65,17 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, max: 10,
   message: { success: false, message: 'Too many auth attempts. Try again in 15 minutes.' },
 });
+// Admin and sync routes get a separate high-capacity limiter so dashboard
+// operations (sync, auto-predict, bulk edits) never hit the public quota.
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 2000,
+  standardHeaders: true, legacyHeaders: false,
+  message: { success: false, message: 'Too many admin requests. Please slow down.' },
+});
 
-app.use('/api/', apiLimiter);
+app.use('/api/admin', adminLimiter);
+app.use('/api/sync',  adminLimiter);
+app.use('/api/',      apiLimiter);
 app.use('/api/auth/login',    authLimiter);
 app.use('/api/auth/register', authLimiter);
 

@@ -207,34 +207,36 @@ document.getElementById('auto-predict-btn').addEventListener('click', async () =
   try {
     // Run once or twice depending on mode
     const datesToRun = dateRange || [dateParam];
-    let combined = { success: true, data: { log: [], enriched: 0, errors: 0 } };
+    let combined = { success: true, data: { log: [], enriched: 0, skipped: 0, errors: 0, total: 0 } };
     for (const d of datesToRun) {
       const body = { limit, min_confidence: conf, auto_publish: pub };
       if (d) body.date = d;
-      const json = await Admin.api('POST', '/api/sync/auto-predict', body);
+      const json = await Admin.api(‘POST’, ‘/api/sync/auto-predict’, body);
       if (json.success) {
         combined.data.log.push(...(json.data.log || []));
         combined.data.enriched += json.data.enriched || 0;
+        combined.data.skipped  += json.data.skipped  || 0;
         combined.data.errors   += json.data.errors   || 0;
+        combined.data.total    += json.data.total    || 0;
       }
     }
     const json = combined;
 
-    document.getElementById('auto-predict-result').style.display = 'block';
+    document.getElementById(‘auto-predict-result’).style.display = ‘block’;
 
     if (json.success) {
       const d = json.data;
-      document.getElementById('ap-summary').innerHTML =
-        `<span style="color:var(--green);">âœ“ ${d.enriched} predictions generated</span> &nbsp;Â·&nbsp; ` +
-        `${d.skipped} skipped &nbsp;Â·&nbsp; ` +
-        `<span style="color:${d.errors>0?'var(--red)':'var(--muted)'};">${d.errors} errors</span> &nbsp;Â·&nbsp; ` +
+      document.getElementById(‘ap-summary’).innerHTML =
+        `<span style=”color:var(--green);”>&#10004; ${d.enriched} predictions generated</span> &nbsp;&middot;&nbsp; ` +
+        `${d.skipped} skipped &nbsp;&middot;&nbsp; ` +
+        `<span style=”color:${d.errors>0?’var(--red)’:’var(--muted)’};”>${d.errors} errors</span> &nbsp;&middot;&nbsp; ` +
         `${d.total} total processed`;
 
-      document.getElementById('ap-log').innerHTML = (d.log||[]).map(entry =>
+      document.getElementById(‘ap-log’).innerHTML = (d.log||[]).map(entry =>
         entry.error
-          ? `<div style="color:var(--red);">âœ— ${entry.match}: ${entry.error}</div>`
-          : `<div style="color:${entry.published?'var(--green)':'var(--text-soft)'};">${entry.published?'âœ“ Published':'â—Ž Draft'} â€” ${entry.match} â†’ <strong>${entry.tip}</strong> (${entry.confidence}%)</div>`
-      ).join('');
+          ? `<div style=”color:var(--red);”>&#10007; ${entry.match}: ${entry.error}</div>`
+          : `<div style=”color:${entry.published?’var(--green)’:’var(--text-soft)’};”>${entry.published?’&#10004; Published’:’&#9702; Draft’} &mdash; ${entry.match} &rarr; <strong>${entry.tip}</strong> (${entry.confidence}%)</div>`
+      ).join(‘’);
 
       log(`Auto-predict done: ${d.enriched} generated, ${d.errors} errors`, d.errors > 0 ? 'error' : 'success');
       Admin.toast(`Auto-predict: ${d.enriched} predictions generated`);
