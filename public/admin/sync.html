@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"><link rel="icon" type="image/png" href="/favicon.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -110,106 +110,114 @@
 <script src="/js/app.js"></script>
 <script src="/js/admin.js"></script>
 <script>
-const theme = localStorage.getItem('afro_theme')||'dark';
-document.documentElement.setAttribute('data-theme',theme);
+var theme = localStorage.getItem('afro_theme') || 'dark';
+document.documentElement.setAttribute('data-theme', theme);
 
 function log(msg, type) {
-  const el  = document.getElementById('sync-log');
-  const ts  = new Date().toLocaleTimeString('en-GB');
-  const colors = { success:'var(--green)', error:'var(--red)', info:'var(--text-soft)' };
-  el.innerHTML += `<div style="color:${colors[type]||colors.info};">[${ts}] ${msg}</div>`;
+  var el = document.getElementById('sync-log');
+  var ts = new Date().toLocaleTimeString('en-GB');
+  var colors = { success: 'var(--green)', error: 'var(--red)', info: 'var(--text-soft)' };
+  el.innerHTML += '<div style="color:' + (colors[type] || colors.info) + ';">[' + ts + '] ' + msg + '</div>';
   el.scrollTop = el.scrollHeight;
 }
 
 window.loadApiStatus = async function loadApiStatus() {
-  const el = document.getElementById('api-status');
+  var el = document.getElementById('api-status');
   el.textContent = 'Loading...';
   try {
-    const json = await Admin.api('GET', '/api/sync/status');
+    var json = await Admin.api('GET', '/api/sync/status');
     if (json && json.success) {
-      const d = json.data;
-      const remaining = d.requests_remaining != null ? d.requests_remaining : 'N/A';
-      const used      = d.requests_used      != null ? d.requests_used      : 'N/A';
-      const limit     = d.daily_limit        != null ? d.daily_limit        : 7400;
-      const season    = d.season             != null ? d.season             : 'N/A';
-      const pct       = (typeof d.requests_used === 'number' && limit)
+      var d = json.data;
+      var remaining = d.requests_remaining != null ? d.requests_remaining : 'N/A';
+      var used      = d.requests_used      != null ? d.requests_used      : 'N/A';
+      var limit     = d.daily_limit        != null ? d.daily_limit        : 7400;
+      var season    = d.season             != null ? d.season             : 'N/A';
+      var pct       = (typeof d.requests_used === 'number' && limit)
         ? Math.round(d.requests_used / limit * 100) : 0;
-      const barColor  = pct > 80 ? 'var(--red)' : pct > 50 ? 'var(--warning, #f59e0b)' : 'var(--green)';
-      el.innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <div style="display:flex;justify-content:space-between;"><span>Requests Used Today</span><strong>${used}</strong></div>
-          <div style="display:flex;justify-content:space-between;"><span>Remaining</span><strong style="color:var(--green);">${remaining}</strong></div>
-          <div style="display:flex;justify-content:space-between;"><span>Daily Limit</span><strong>${limit}</strong></div>
-          <div style="display:flex;justify-content:space-between;"><span>Season</span><strong>${season}</strong></div>
-          <div style="margin-top:6px;background:var(--border);border-radius:4px;height:6px;overflow:hidden;">
-            <div style="width:${pct}%;height:100%;background:${barColor};border-radius:4px;transition:width 0.4s;"></div>
-          </div>
-          <div style="font-size:0.75rem;color:var(--muted);text-align:right;">${pct}% used</div>
-        </div>`;
+      var barColor  = pct > 80 ? 'var(--red)' : pct > 50 ? 'var(--warning, #f59e0b)' : 'var(--green)';
+      el.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:6px;">' +
+          '<div style="display:flex;justify-content:space-between;"><span>Requests Used Today</span><strong>' + used + '</strong></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Remaining</span><strong style="color:var(--green);">' + remaining + '</strong></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Daily Limit</span><strong>' + limit + '</strong></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Season</span><strong>' + season + '</strong></div>' +
+          '<div style="margin-top:6px;background:var(--border);border-radius:4px;height:6px;overflow:hidden;">' +
+            '<div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:4px;transition:width 0.4s;"></div>' +
+          '</div>' +
+          '<div style="font-size:0.75rem;color:var(--muted);text-align:right;">' + pct + '% used</div>' +
+        '</div>';
     } else {
-      el.textContent = json?.message || 'Could not load API status. Check API key in .env';
+      el.textContent = (json && json.message) ? json.message : 'Could not load API status. Check API key in .env';
     }
   } catch (e) {
     el.textContent = 'Error: ' + (e.message || 'Could not reach the server.');
   }
-}
+};
 
 async function runSync(btnId, url, resultId, method, body) {
-  const btn = document.getElementById(btnId);
-  const res = document.getElementById(resultId);
-  const originalHTML = btn.innerHTML;
-  btn.disabled=true; btn.innerHTML='<span class="material-icons-round" style="animation:spin 1s linear infinite">sync</span>Syncing...';
-  log('Starting: '+url, 'info');
+  var btn = document.getElementById(btnId);
+  var res = document.getElementById(resultId);
+  var originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite">sync</span>Syncing...';
+  log('Starting: ' + url, 'info');
   try {
-    const json = await Admin.api(method||'POST', url, body||undefined);
+    var json = await Admin.api(method || 'POST', url, body || undefined);
     if (json.success) {
-      res.textContent = JSON.stringify(json.data||json.message);
-      log('Success: '+JSON.stringify(json.data||json.message), 'success');
+      res.textContent = JSON.stringify(json.data || json.message);
+      log('Success: ' + JSON.stringify(json.data || json.message), 'success');
       Admin.toast('Sync complete');
     } else {
-      res.textContent = json.message||'Sync failed';
-      log('Error: '+(json.message||'Unknown'), 'error');
-      Admin.toast(json.message||'Sync failed','error');
+      res.textContent = json.message || 'Sync failed';
+      log('Error: ' + (json.message || 'Unknown'), 'error');
+      Admin.toast(json.message || 'Sync failed', 'error');
     }
-  } catch(e) { log('Network error: '+e.message,'error'); Admin.toast('Network error','error'); }
-  btn.disabled=false; btn.innerHTML=originalHTML;
+  } catch (e) {
+    log('Network error: ' + e.message, 'error');
+    Admin.toast('Network error', 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = originalHTML;
 }
 
-document.getElementById('sync-leagues-btn').addEventListener('click',()=>runSync('sync-leagues-btn','/api/sync/leagues','sync-leagues-result'));
-document.getElementById('sync-today-btn').addEventListener('click',()=>runSync('sync-today-btn','/api/sync/today','sync-today-result'));
-document.getElementById('sync-date-btn').addEventListener('click',()=>{
-  const date = document.getElementById('sync-date').value;
-  if (!date) { Admin.toast('Select a date first','error'); return; }
-  runSync('sync-date-btn','/api/sync/fixtures','sync-date-result','POST',{date});
+document.getElementById('sync-leagues-btn').addEventListener('click', function() {
+  runSync('sync-leagues-btn', '/api/sync/leagues', 'sync-leagues-result');
 });
-document.getElementById('sync-results-btn').addEventListener('click',()=>{
-  const date = document.getElementById('results-date').value || new Date().toISOString().split('T')[0];
-  runSync('sync-results-btn','/api/sync/results','sync-results-result','POST',{date});
+document.getElementById('sync-today-btn').addEventListener('click', function() {
+  runSync('sync-today-btn', '/api/sync/today', 'sync-today-result');
+});
+document.getElementById('sync-date-btn').addEventListener('click', function() {
+  var date = document.getElementById('sync-date').value;
+  if (!date) { Admin.toast('Select a date first', 'error'); return; }
+  runSync('sync-date-btn', '/api/sync/fixtures', 'sync-date-result', 'POST', { date: date });
+});
+document.getElementById('sync-results-btn').addEventListener('click', function() {
+  var date = document.getElementById('results-date').value || new Date().toISOString().split('T')[0];
+  runSync('sync-results-btn', '/api/sync/results', 'sync-results-result', 'POST', { date: date });
 });
 
-// Show/hide specific date picker
-document.getElementById('ap-date-mode').addEventListener('change', function () {
+document.getElementById('ap-date-mode').addEventListener('change', function() {
   document.getElementById('ap-specific-date-wrap').style.display = this.value === 'specific' ? '' : 'none';
 });
 
-document.getElementById('auto-predict-btn').addEventListener('click', async () => {
-  const btn      = document.getElementById('auto-predict-btn');
-  const limit    = parseInt(document.getElementById('ap-limit').value) || 10;
-  const conf     = parseInt(document.getElementById('ap-confidence').value) || 55;
-  const pub      = document.getElementById('ap-publish').checked;
-  const dateMode = document.getElementById('ap-date-mode').value;
+document.getElementById('auto-predict-btn').addEventListener('click', async function() {
+  var btn      = document.getElementById('auto-predict-btn');
+  var limit    = parseInt(document.getElementById('ap-limit').value) || 10;
+  var conf     = parseInt(document.getElementById('ap-confidence').value) || 55;
+  var pub      = document.getElementById('ap-publish').checked;
+  var dateMode = document.getElementById('ap-date-mode').value;
 
-  // Resolve date param
   function localToday() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   function localTomorrow() {
-    const d = new Date(); d.setDate(d.getDate()+1);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    var d = new Date(); d.setDate(d.getDate() + 1);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
-  let dateParam = null;
-  let dateRange = null; // for today+tomorrow mode we run twice
+
+  var dateParam = null;
+  var dateRange = null;
   if (dateMode === 'today')    dateParam = localToday();
   if (dateMode === 'tomorrow') dateParam = localTomorrow();
   if (dateMode === 'specific') {
@@ -220,50 +228,51 @@ document.getElementById('auto-predict-btn').addEventListener('click', async () =
 
   btn.disabled = true;
   btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite">refresh</span>Running...';
-  log(`Auto-predict started: ${limit} fixtures, min conf ${conf}, date: ${dateRange ? dateRange.join(' + ') : dateParam || 'today+tomorrow'}`, 'info');
+  log('Auto-predict started: ' + limit + ' fixtures, min conf ' + conf + ', date: ' + (dateRange ? dateRange.join(' + ') : (dateParam || 'today+tomorrow')), 'info');
 
   try {
-    // Run once or twice depending on mode
-    const datesToRun = dateRange || [dateParam];
-    let combined = { success: true, data: { log: [], enriched: 0, skipped: 0, errors: 0, total: 0 } };
-    for (const d of datesToRun) {
-      const body = { limit, min_confidence: conf, auto_publish: pub };
-      if (d) body.date = d;
-      const json = await Admin.api(‘POST’, ‘/api/sync/auto-predict’, body);
+    var datesToRun = dateRange || [dateParam];
+    var combined = { success: true, data: { log: [], enriched: 0, skipped: 0, errors: 0, total: 0 } };
+    for (var i = 0; i < datesToRun.length; i++) {
+      var reqBody = { limit: limit, min_confidence: conf, auto_publish: pub };
+      if (datesToRun[i]) reqBody.date = datesToRun[i];
+      var json = await Admin.api('POST', '/api/sync/auto-predict', reqBody);
       if (json.success) {
-        combined.data.log.push(...(json.data.log || []));
+        combined.data.log = combined.data.log.concat(json.data.log || []);
         combined.data.enriched += json.data.enriched || 0;
         combined.data.skipped  += json.data.skipped  || 0;
         combined.data.errors   += json.data.errors   || 0;
         combined.data.total    += json.data.total    || 0;
       }
     }
-    const json = combined;
 
-    document.getElementById(‘auto-predict-result’).style.display = ‘block’;
+    document.getElementById('auto-predict-result').style.display = 'block';
 
-    if (json.success) {
-      const d = json.data;
-      document.getElementById(‘ap-summary’).innerHTML =
-        `<span style=”color:var(--green);”>&#10004; ${d.enriched} predictions generated</span> &nbsp;&middot;&nbsp; ` +
-        `${d.skipped} skipped &nbsp;&middot;&nbsp; ` +
-        `<span style=”color:${d.errors>0?’var(--red)’:’var(--muted)’};”>${d.errors} errors</span> &nbsp;&middot;&nbsp; ` +
-        `${d.total} total processed`;
+    if (combined.success) {
+      var data = combined.data;
+      document.getElementById('ap-summary').innerHTML =
+        '<span style="color:var(--green);">&#10004; ' + data.enriched + ' predictions generated</span> &nbsp;&middot;&nbsp; ' +
+        data.skipped + ' skipped &nbsp;&middot;&nbsp; ' +
+        '<span style="color:' + (data.errors > 0 ? 'var(--red)' : 'var(--muted)') + ';">' + data.errors + ' errors</span> &nbsp;&middot;&nbsp; ' +
+        data.total + ' total processed';
 
-      document.getElementById(‘ap-log’).innerHTML = (d.log||[]).map(entry =>
-        entry.error
-          ? `<div style=”color:var(--red);”>&#10007; ${entry.match}: ${entry.error}</div>`
-          : `<div style=”color:${entry.published?’var(--green)’:’var(--text-soft)’};”>${entry.published?’&#10004; Published’:’&#9702; Draft’} &mdash; ${entry.match} &rarr; <strong>${entry.tip}</strong> (${entry.confidence}%)</div>`
-      ).join(‘’);
+      document.getElementById('ap-log').innerHTML = (data.log || []).map(function(entry) {
+        if (entry.error) {
+          return '<div style="color:var(--red);">&#10007; ' + entry.match + ': ' + entry.error + '</div>';
+        }
+        return '<div style="color:' + (entry.published ? 'var(--green)' : 'var(--text-soft)') + ';">' +
+          (entry.published ? '&#10004; Published' : '&#9702; Draft') +
+          ' &mdash; ' + entry.match + ' &rarr; <strong>' + entry.tip + '</strong> (' + entry.confidence + '%)</div>';
+      }).join('');
 
-      log(`Auto-predict done: ${d.enriched} generated, ${d.errors} errors`, d.errors > 0 ? 'error' : 'success');
-      Admin.toast(`Auto-predict: ${d.enriched} predictions generated`);
+      log('Auto-predict done: ' + data.enriched + ' generated, ' + data.errors + ' errors', data.errors > 0 ? 'error' : 'success');
+      Admin.toast('Auto-predict: ' + data.enriched + ' predictions generated');
     } else {
-      document.getElementById('ap-summary').innerHTML = `<span style="color:var(--red);">&#10007; ${json.message}</span>`;
-      log('Auto-predict error: ' + json.message, 'error');
-      Admin.toast(json.message || 'Auto-predict failed', 'error');
+      document.getElementById('ap-summary').innerHTML = '<span style="color:var(--red);">&#10007; ' + (combined.message || 'Failed') + '</span>';
+      log('Auto-predict error: ' + (combined.message || 'Unknown'), 'error');
+      Admin.toast(combined.message || 'Auto-predict failed', 'error');
     }
-  } catch(e) {
+  } catch (e) {
     log('Network error: ' + e.message, 'error');
     Admin.toast('Network error', 'error');
   }
@@ -272,12 +281,13 @@ document.getElementById('auto-predict-btn').addEventListener('click', async () =
   btn.innerHTML = '<span class="material-icons-round">auto_awesome</span>Run Auto-Predict';
 });
 
-document.addEventListener('DOMContentLoaded', async () => {
-  const user = await Admin.requireAdmin();
+document.addEventListener('DOMContentLoaded', async function() {
+  var user = await Admin.requireAdmin();
   if (!user) return;
   Admin.buildSidebar(user);
-  if (user) { loadApiStatus(); document.getElementById('sync-date').value = new Date().toISOString().split('T')[0]; document.getElementById('results-date').value = new Date().toISOString().split('T')[0]; }
+  loadApiStatus();
+  document.getElementById('sync-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('results-date').value = new Date().toISOString().split('T')[0];
 });
 </script>
 </body></html>
-
