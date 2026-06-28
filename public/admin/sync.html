@@ -73,7 +73,7 @@
             <option value="today-tomorrow">Today + Tomorrow</option>
             <option value="today">Today only</option>
             <option value="tomorrow">Tomorrow only</option>
-            <option value="specific">Specific dateâ€¦</option>
+            <option value="specific">Specific date&hellip;</option>
           </select>
         </div>
         <div id="ap-specific-date-wrap" style="display:none;">
@@ -259,7 +259,7 @@ document.getElementById('auto-predict-btn').addEventListener('click', async () =
       log(`Auto-predict done: ${d.enriched} generated, ${d.errors} errors`, d.errors > 0 ? 'error' : 'success');
       Admin.toast(`Auto-predict: ${d.enriched} predictions generated`);
     } else {
-      document.getElementById('ap-summary').innerHTML = `<span style="color:var(--red);">âœ— ${json.message}</span>`;
+      document.getElementById('ap-summary').innerHTML = `<span style="color:var(--red);">&#10007; ${json.message}</span>`;
       log('Auto-predict error: ' + json.message, 'error');
       Admin.toast(json.message || 'Auto-predict failed', 'error');
     }
