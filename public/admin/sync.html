@@ -128,10 +128,10 @@ async function loadApiStatus() {
     const json = await Admin.api('GET', '/api/sync/status');
     if (json && json.success) {
       const d = json.data;
-      const remaining = d.requests_remaining ?? '—';
-      const used      = d.requests_used      ?? '—';
-      const limit     = d.daily_limit        ?? 7400;
-      const season    = d.season             ?? '—';
+      const remaining = d.requests_remaining != null ? d.requests_remaining : 'N/A';
+      const used      = d.requests_used      != null ? d.requests_used      : 'N/A';
+      const limit     = d.daily_limit        != null ? d.daily_limit        : 7400;
+      const season    = d.season             != null ? d.season             : 'N/A';
       const pct       = (typeof d.requests_used === 'number' && limit)
         ? Math.round(d.requests_used / limit * 100) : 0;
       const barColor  = pct > 80 ? 'var(--red)' : pct > 50 ? 'var(--warning, #f59e0b)' : 'var(--green)';

@@ -32,7 +32,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com'],
+      scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.tailwindcss.com', 'cdn.jsdelivr.net'],
       // Allow inline event handlers (onclick="...") used throughout the app.
       // Without this, Helmet defaults script-src-attr to 'none', silently
       // disabling every inline onclick (edit/delete buttons, modal closes, tabs).
