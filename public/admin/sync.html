@@ -122,17 +122,35 @@ function log(msg, type) {
 }
 
 async function loadApiStatus() {
-  const json = await Admin.api('GET','/api/sync/status');
-  if (json.success) {
-    document.getElementById('api-status').innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="display:flex;justify-content:space-between;"><span>Requests Used Today</span><strong>${json.data.requests_used}</strong></div>
-        <div style="display:flex;justify-content:space-between;"><span>Remaining</span><strong style="color:var(--green);">${json.data.requests_remaining}</strong></div>
-        <div style="display:flex;justify-content:space-between;"><span>Daily Limit</span><strong>${json.data.daily_limit}</strong></div>
-        <div style="display:flex;justify-content:space-between;"><span>Season</span><strong>${json.data.season}</strong></div>
-      </div>`;
-  } else {
-    document.getElementById('api-status').textContent = 'Could not load API status. Check API key in .env';
+  const el = document.getElementById('api-status');
+  el.textContent = 'Loading...';
+  try {
+    const json = await Admin.api('GET', '/api/sync/status');
+    if (json && json.success) {
+      const d = json.data;
+      const remaining = d.requests_remaining ?? '—';
+      const used      = d.requests_used      ?? '—';
+      const limit     = d.daily_limit        ?? 7400;
+      const season    = d.season             ?? '—';
+      const pct       = (typeof d.requests_used === 'number' && limit)
+        ? Math.round(d.requests_used / limit * 100) : 0;
+      const barColor  = pct > 80 ? 'var(--red)' : pct > 50 ? 'var(--warning, #f59e0b)' : 'var(--green)';
+      el.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;"><span>Requests Used Today</span><strong>${used}</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Remaining</span><strong style="color:var(--green);">${remaining}</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Daily Limit</span><strong>${limit}</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Season</span><strong>${season}</strong></div>
+          <div style="margin-top:6px;background:var(--border);border-radius:4px;height:6px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${barColor};border-radius:4px;transition:width 0.4s;"></div>
+          </div>
+          <div style="font-size:0.75rem;color:var(--muted);text-align:right;">${pct}% used</div>
+        </div>`;
+    } else {
+      el.textContent = json?.message || 'Could not load API status. Check API key in .env';
+    }
+  } catch (e) {
+    el.textContent = 'Error: ' + (e.message || 'Could not reach the server.');
   }
 }
 
