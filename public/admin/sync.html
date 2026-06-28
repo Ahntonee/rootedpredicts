@@ -121,7 +121,7 @@ function log(msg, type) {
   el.scrollTop = el.scrollHeight;
 }
 
-async function loadApiStatus() {
+window.loadApiStatus = async function loadApiStatus() {
   const el = document.getElementById('api-status');
   el.textContent = 'Loading...';
   try {
