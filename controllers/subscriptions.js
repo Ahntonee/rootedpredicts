@@ -379,9 +379,9 @@ async function paystackWebhook(req, res) {
 // ── GET /api/subscriptions/bank-details  (public — no auth needed)
 async function getBankDetails(req, res) {
   const details = {
-    bank_name:      process.env.MANUAL_BANK_NAME       || '',
-    account_name:   process.env.MANUAL_ACCOUNT_NAME    || '',
-    account_number: process.env.MANUAL_ACCOUNT_NUMBER  || '',
+    bank_name:      process.env.MANUAL_BANK_NAME       || 'Moniepoint Microfinance Bank',
+    account_name:   process.env.MANUAL_ACCOUNT_NAME    || 'Anthony Ikpe',
+    account_number: process.env.MANUAL_ACCOUNT_NUMBER  || '9077025895',
     sort_code:      process.env.MANUAL_SORT_CODE        || '',
     amounts: {
       monthly:   { ngn: 8000,  label: 'Monthly VIP' },
