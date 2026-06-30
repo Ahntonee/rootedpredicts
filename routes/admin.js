@@ -5,6 +5,7 @@
 const express    = require('express');
 const router     = express.Router();
 const admin      = require('../controllers/admin');
+const subCtrl    = require('../controllers/subscriptions');
 const { authenticate, requireAdmin, requireAdminRole } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/helpers');
 
@@ -69,5 +70,11 @@ router.get   ('/admins',     requireAdminRole('superadmin'), asyncHandler(admin.
 router.post  ('/admins',     requireAdminRole('superadmin'), asyncHandler(admin.createAdminAccount));
 router.put   ('/admins/:id', requireAdminRole('superadmin'), asyncHandler(admin.updateAdminAccount));
 router.delete('/admins/:id', requireAdminRole('superadmin'), asyncHandler(admin.deleteAdminAccount));
+
+// ── Payment submissions (superadmin only) ──────────────────────
+router.get ('/payment-submissions',              requireAdminRole('superadmin'), asyncHandler(subCtrl.adminListSubmissions));
+router.get ('/payment-submissions/:id/image',    requireAdminRole('superadmin'), asyncHandler(subCtrl.adminViewImage));
+router.post('/payment-submissions/:id/approve',  requireAdminRole('superadmin'), asyncHandler(subCtrl.adminApproveSubmission));
+router.post('/payment-submissions/:id/reject',   requireAdminRole('superadmin'), asyncHandler(subCtrl.adminRejectSubmission));
 
 module.exports = router;

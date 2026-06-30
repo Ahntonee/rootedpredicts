@@ -760,6 +760,35 @@ const MIGRATIONS = [
       console.log('[MIGRATE] ✓ accuracy_stats.tip added; old data cleared for fresh recalculation');
     },
   },
+
+  // ----------------------------------------------------------
+  // 21. PAYMENT SUBMISSIONS
+  //     Manual bank-transfer payment proofs awaiting admin approval
+  // ----------------------------------------------------------
+  {
+    name: 'Create payment_submissions table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS payment_submissions (
+        id            INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+        user_id       INT UNSIGNED  NOT NULL,
+        plan          ENUM('monthly','quarterly','annual') NOT NULL,
+        amount_ngn    INT UNSIGNED  NOT NULL COMMENT 'Amount in NGN (not kobo)',
+        image_path    VARCHAR(500)  NOT NULL COMMENT 'Relative path under uploads/payment-proofs/',
+        image_mime    VARCHAR(50)   NOT NULL DEFAULT 'image/jpeg',
+        status        ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+        notes         TEXT          DEFAULT NULL COMMENT 'Admin rejection reason or approval note',
+        submitted_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        reviewed_at   DATETIME      DEFAULT NULL,
+        reviewed_by   INT UNSIGNED  DEFAULT NULL,
+
+        PRIMARY KEY (id),
+        INDEX idx_ps_user   (user_id),
+        INDEX idx_ps_status (status),
+        CONSTRAINT fk_ps_user FOREIGN KEY (user_id)
+          REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `,
+  },
 ];
 
 // ============================================================

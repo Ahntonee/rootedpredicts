@@ -189,9 +189,10 @@
         <a href="/leaderboard.html"       class="admin-nav-link" target="_blank"><span class="material-icons-round">leaderboard</span>Leaderboard</a>
 
         <div class="admin-nav-section">Management</div>
-        ${isSuperAdmin ? `<a href="/admin/users.html"   class="admin-nav-link"><span class="material-icons-round">people</span>Users</a>` : ''}
-        ${isEditor     ? `<a href="/admin/leagues.html" class="admin-nav-link"><span class="material-icons-round">emoji_events</span>Leagues</a>` : ''}
-        ${isSuperAdmin ? `<a href="/admin/admins.html"  class="admin-nav-link"><span class="material-icons-round">admin_panel_settings</span>Admin Accounts</a>` : ''}
+        ${isSuperAdmin ? `<a href="/admin/users.html"    class="admin-nav-link"><span class="material-icons-round">people</span>Users</a>` : ''}
+        ${isSuperAdmin ? `<a href="/admin/payments.html" class="admin-nav-link"><span class="material-icons-round">payments</span>Payment Approvals</a>` : ''}
+        ${isEditor     ? `<a href="/admin/leagues.html"  class="admin-nav-link"><span class="material-icons-round">emoji_events</span>Leagues</a>` : ''}
+        ${isSuperAdmin ? `<a href="/admin/admins.html"   class="admin-nav-link"><span class="material-icons-round">admin_panel_settings</span>Admin Accounts</a>` : ''}
 
         <div class="admin-nav-section">Settings</div>
         ${isEditor ? `<a href="/admin/pages.html" class="admin-nav-link"><span class="material-icons-round">pages</span>Site Pages</a>

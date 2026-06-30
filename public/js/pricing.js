@@ -1,25 +1,28 @@
 // public/js/pricing.js
-// Rooted Predictions — Pricing page: payment button logic + subscription status check
+// Rooted Predictions — Pricing page: bank-transfer payment flow
 (function () {
   'use strict';
 
+  var _selectedPlan = null;
+  var _bankDetails  = null;
+
   async function apiFetch(method, url, body) {
-    const opts = { method, credentials: 'include', headers: {} };
+    var opts = { method: method, credentials: 'include', headers: {} };
     if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
-    const res = await fetch(url, opts);
+    var res = await fetch(url, opts);
     return res.json();
   }
 
   function showToast(msg, type) {
     type = type || 'success';
-    const colors = { success: '#22c55e', error: '#e94560', info: '#3b82f6' };
-    const el = document.createElement('div');
-    el.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;background:${colors[type]||colors.success};
-      color:#fff;padding:12px 20px;border-radius:8px;font-size:0.875rem;font-weight:600;
-      display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3);max-width:360px;`;
-    el.innerHTML = `<span class="material-icons-round" style="font-size:1.1rem;">${type==='error'?'error':'check_circle'}</span>${msg}`;
+    var colors = { success: '#22c55e', error: '#e94560', info: '#3b82f6' };
+    var el = document.createElement('div');
+    el.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:' + (colors[type] || colors.success) + ';' +
+      'color:#fff;padding:12px 20px;border-radius:8px;font-size:0.875rem;font-weight:600;' +
+      'display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3);max-width:360px;';
+    el.innerHTML = '<span class="material-icons-round" style="font-size:1.1rem;">' + (type === 'error' ? 'error' : 'check_circle') + '</span>' + msg;
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 5000);
+    setTimeout(function() { el.remove(); }, 5000);
   }
 
   function setButtonLoading(btn, loading) {
@@ -33,71 +36,169 @@
     }
   }
 
-  async function handleStripe(plan, btn) {
-    setButtonLoading(btn, true);
-    try {
-      const json = await apiFetch('POST', '/api/subscriptions/stripe/create-checkout', { plan });
-      if (json.success && json.data?.url) {
-        window.location.href = json.data.url;
+  // ── Bank Details Modal ────────────────────────────────────────
+  function showBankModal(plan) {
+    _selectedPlan = plan;
+    var el = document.getElementById('bank-modal');
+    if (!el) return;
+
+    var amounts = { monthly: '8,000', quarterly: '20,800', annual: '64,000' };
+    var planLabels = { monthly: 'Monthly VIP', quarterly: 'Quarterly VIP', annual: 'Annual VIP' };
+    document.getElementById('bm-plan-label').textContent  = planLabels[plan] || plan;
+    document.getElementById('bm-amount').textContent      = '₦' + (amounts[plan] || '');
+
+    if (_bankDetails) {
+      document.getElementById('bm-bank-name').textContent    = _bankDetails.bank_name      || 'Loading...';
+      document.getElementById('bm-acct-name').textContent    = _bankDetails.account_name   || 'Loading...';
+      document.getElementById('bm-acct-number').textContent  = _bankDetails.account_number || 'Loading...';
+      var sortRow = document.getElementById('bm-sort-row');
+      if (_bankDetails.sort_code) {
+        document.getElementById('bm-sort-code').textContent = _bankDetails.sort_code;
+        if (sortRow) sortRow.style.display = '';
       } else {
-        showToast(json.message || 'Could not start checkout. Please try again.', 'error');
-        setButtonLoading(btn, false);
+        if (sortRow) sortRow.style.display = 'none';
       }
-    } catch (e) {
-      showToast('Network error. Please check your connection.', 'error');
-      setButtonLoading(btn, false);
+    }
+
+    el.style.display = 'flex';
+  }
+
+  function hideBankModal() {
+    var el = document.getElementById('bank-modal');
+    if (el) el.style.display = 'none';
+  }
+
+  // ── Upload Modal ──────────────────────────────────────────────
+  function showUploadModal() {
+    hideBankModal();
+    var el = document.getElementById('upload-modal');
+    if (el) {
+      document.getElementById('um-preview').style.display = 'none';
+      document.getElementById('um-preview').src = '';
+      document.getElementById('um-file').value  = '';
+      document.getElementById('um-status').textContent = '';
+      document.getElementById('um-status').style.color = '';
+      el.style.display = 'flex';
     }
   }
 
-  async function handlePaystack(plan, btn) {
-    setButtonLoading(btn, true);
-    try {
-      const json = await apiFetch('POST', '/api/subscriptions/paystack/initialize', { plan });
-      if (json.success && json.data?.url) {
-        window.location.href = json.data.url;
-      } else {
-        showToast(json.message || 'Could not start Paystack checkout.', 'error');
-        setButtonLoading(btn, false);
-      }
-    } catch (e) {
-      showToast('Network error. Please check your connection.', 'error');
-      setButtonLoading(btn, false);
-    }
+  function hideUploadModal() {
+    var el = document.getElementById('upload-modal');
+    if (el) el.style.display = 'none';
   }
 
-  async function checkPaystackReturn() {
-    const params = new URLSearchParams(window.location.search);
-    const ref    = params.get('reference') || params.get('trxref');
-    if (!ref) return;
+  function handleFileChange(evt) {
+    var file = evt.target.files[0];
+    if (!file) return;
 
-    const json = await apiFetch('POST', '/api/subscriptions/paystack/verify', { reference: ref });
-    if (json.success) {
-      showToast('VIP activated! Welcome to Rooted Predictions VIP.', 'success');
-      setTimeout(() => window.location.href = '/dashboard.html?vip=success', 2500);
-    } else {
-      showToast(json.message || 'Payment verification failed.', 'error');
+    var allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowed.indexOf(file.type) === -1) {
+      document.getElementById('um-status').textContent = 'Only JPEG, PNG, WebP, or GIF images are allowed.';
+      document.getElementById('um-status').style.color = '#e94560';
+      evt.target.value = '';
+      return;
     }
-    // Clean URL
-    history.replaceState({}, '', '/pricing.html');
+    if (file.size > 5 * 1024 * 1024) {
+      document.getElementById('um-status').textContent = 'Image must be under 5 MB.';
+      document.getElementById('um-status').style.color = '#e94560';
+      evt.target.value = '';
+      return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var preview = document.getElementById('um-preview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    document.getElementById('um-status').textContent = '';
+  }
+
+  async function submitProof() {
+    var fileInput = document.getElementById('um-file');
+    var statusEl  = document.getElementById('um-status');
+    var submitBtn = document.getElementById('um-submit-btn');
+
+    if (!fileInput.files[0]) {
+      statusEl.textContent = 'Please select an image first.';
+      statusEl.style.color = '#e94560';
+      return;
+    }
+    if (!_selectedPlan) {
+      statusEl.textContent = 'No plan selected. Please close and try again.';
+      statusEl.style.color = '#e94560';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    statusEl.textContent  = '';
+
+    // Convert file to base64
+    var reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        var json = await apiFetch('POST', '/api/subscriptions/manual/submit', {
+          plan:      _selectedPlan,
+          imageData: e.target.result,
+        });
+
+        if (json.success) {
+          hideUploadModal();
+          showSuccessModal();
+        } else {
+          statusEl.textContent = json.message || 'Submission failed. Please try again.';
+          statusEl.style.color = '#e94560';
+          submitBtn.disabled   = false;
+          submitBtn.textContent = 'Submit for Verification';
+        }
+      } catch (err) {
+        statusEl.textContent = 'Network error. Please check your connection.';
+        statusEl.style.color = '#e94560';
+        submitBtn.disabled   = false;
+        submitBtn.textContent = 'Submit for Verification';
+      }
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  }
+
+  // ── Success Modal ─────────────────────────────────────────────
+  function showSuccessModal() {
+    var el = document.getElementById('success-modal');
+    if (el) el.style.display = 'flex';
+  }
+
+  function hideSuccessModal() {
+    var el = document.getElementById('success-modal');
+    if (el) el.style.display = 'none';
+  }
+
+  // ── Session / Status ──────────────────────────────────────────
+  async function getSessionUser() {
+    try {
+      var json = await apiFetch('GET', '/api/auth/me');
+      return (json.success && json.data) ? json.data : null;
+    } catch (e) {
+      return null;
+    }
   }
 
   async function loadSubscriptionStatus() {
-    const json = await apiFetch('GET', '/api/subscriptions/status');
+    var json = await apiFetch('GET', '/api/subscriptions/status');
     if (!json.success || !json.data) return;
-
-    const sub = json.data;
+    var sub = json.data;
     if (sub.status === 'active' || sub.status === 'trialing') {
-      const banner = document.getElementById('vip-active-banner');
-      const label  = document.getElementById('vip-expires-label');
+      var banner = document.getElementById('vip-active-banner');
+      var label  = document.getElementById('vip-expires-label');
       if (banner) banner.style.display = 'block';
       if (label && sub.expires_at) {
-        const exp = new Date(sub.expires_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+        var exp = new Date(sub.expires_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         label.textContent = sub.status === 'trialing'
-          ? `Trial ends ${new Date(sub.trial_ends_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}`
-          : `Active until ${exp}`;
+          ? 'Trial ends ' + new Date(sub.trial_ends_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+          : 'Active until ' + exp;
       }
-      // Disable all pay buttons if already subscribed
-      document.querySelectorAll('.pay-btn').forEach(btn => {
+      document.querySelectorAll('.pay-btn').forEach(function(btn) {
         btn.disabled = true;
         btn.innerHTML = '<span class="material-icons-round">check_circle</span> Already Subscribed';
         btn.style.opacity = '0.6';
@@ -106,65 +207,107 @@
     }
   }
 
-  // Returns the current user from the session cookie, or null if not logged in.
-  // httpOnly cookies are invisible to JS so we must ask the server.
-  async function getSessionUser() {
-    try {
-      const json = await apiFetch('GET', '/api/auth/me');
-      return json.success && json.data ? json.data : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
+  // ── Init ──────────────────────────────────────────────────────
   function init() {
-    // Add spin keyframe if not present
     if (!document.getElementById('spin-style')) {
-      const s = document.createElement('style');
+      var s = document.createElement('style');
       s.id = 'spin-style';
       s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
       document.head.appendChild(s);
     }
 
-    // Handle Paystack return redirect
-    checkPaystackReturn();
+    // Load bank details once in background
+    apiFetch('GET', '/api/subscriptions/bank-details').then(function(json) {
+      if (json.success) {
+        _bankDetails = json.data;
+        // Refresh if modal is already open
+        if (document.getElementById('bank-modal') &&
+            document.getElementById('bank-modal').style.display === 'flex' &&
+            _selectedPlan) {
+          showBankModal(_selectedPlan);
+        }
+      }
+    }).catch(function() {});
 
-    // Check session once on load — show VIP status or enable buttons
-    getSessionUser().then(user => {
+    // Check session once on load
+    getSessionUser().then(function(user) {
       if (user) loadSubscriptionStatus();
     });
 
-    // Wire up all pay buttons
-    document.querySelectorAll('.pay-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
+    // Wire up all pay buttons to show bank modal
+    document.querySelectorAll('.pay-btn').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
         if (btn.disabled) return;
 
         setButtonLoading(btn, true);
-        const user = await getSessionUser();
+        var user = await getSessionUser();
+        setButtonLoading(btn, false);
 
         if (!user) {
-          setButtonLoading(btn, false);
           showToast('Please log in or create an account to subscribe.', 'info');
-          setTimeout(() => {
+          setTimeout(function() {
             window.location.href = '/login.html?redirect=' + encodeURIComponent('/pricing.html');
           }, 1200);
           return;
         }
 
-        // User is logged in — proceed with payment (button stays loading)
-        const plan     = btn.dataset.plan;
-        const provider = btn.dataset.provider;
-
-        if (provider === 'paystack') {
-          handlePaystack(plan, btn);
-        } else {
-          handleStripe(plan, btn);
-        }
+        showBankModal(btn.dataset.plan);
       });
     });
 
-    // Show cancelled toast if redirected back from Stripe
-    const params = new URLSearchParams(window.location.search);
+    // Bank modal: "I Have Made Payment" button
+    var paidBtn = document.getElementById('bm-paid-btn');
+    if (paidBtn) paidBtn.addEventListener('click', showUploadModal);
+
+    // Bank modal: Cancel
+    var bmCancelBtn = document.getElementById('bm-cancel-btn');
+    if (bmCancelBtn) bmCancelBtn.addEventListener('click', hideBankModal);
+
+    // Upload modal: file change
+    var fileInput = document.getElementById('um-file');
+    if (fileInput) fileInput.addEventListener('change', handleFileChange);
+
+    // Upload modal: submit
+    var umSubmitBtn = document.getElementById('um-submit-btn');
+    if (umSubmitBtn) umSubmitBtn.addEventListener('click', submitProof);
+
+    // Upload modal: back / cancel
+    var umBackBtn   = document.getElementById('um-back-btn');
+    if (umBackBtn) umBackBtn.addEventListener('click', function() { hideUploadModal(); showBankModal(_selectedPlan); });
+
+    var umCancelBtn = document.getElementById('um-cancel-btn');
+    if (umCancelBtn) umCancelBtn.addEventListener('click', hideUploadModal);
+
+    // Success modal: close
+    var smCloseBtn = document.getElementById('sm-close-btn');
+    if (smCloseBtn) smCloseBtn.addEventListener('click', hideSuccessModal);
+
+    // Close modals on backdrop click
+    ['bank-modal', 'upload-modal', 'success-modal'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('click', function(e) {
+          if (e.target === el) el.style.display = 'none';
+        });
+      }
+    });
+
+    // Copy account number to clipboard
+    var copyBtn = document.getElementById('bm-copy-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function() {
+        var num = document.getElementById('bm-acct-number').textContent.trim();
+        if (num && navigator.clipboard) {
+          navigator.clipboard.writeText(num).then(function() {
+            copyBtn.textContent = 'Copied!';
+            setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000);
+          });
+        }
+      });
+    }
+
+    // Show cancelled toast if redirected back
+    var params = new URLSearchParams(window.location.search);
     if (params.get('cancelled') === '1') {
       showToast('Checkout cancelled. No charge was made.', 'info');
       history.replaceState({}, '', '/pricing.html');

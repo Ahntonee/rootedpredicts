@@ -17,6 +17,10 @@ const { randomUUID } = require('crypto');
 
 const db        = require('./config/db');
 const { startScheduler } = require('./services/scheduler');
+const fs        = require('fs');
+
+// Ensure payment-proof upload directory exists on startup
+fs.mkdirSync(path.join(__dirname, 'uploads', 'payment-proofs'), { recursive: true });
 
 // Route imports
 const leagueRoutes     = require('./routes/leagues');
@@ -94,7 +98,8 @@ app.use((req, res, next) => {
   }
   const large = req.originalUrl.startsWith('/api/admin/blog') ||
                 req.originalUrl.startsWith('/api/admin/pages') ||
-                req.originalUrl.startsWith('/api/pages');
+                req.originalUrl.startsWith('/api/pages')       ||
+                req.originalUrl === '/api/subscriptions/manual/submit';
   express.json({ limit: large ? '10mb' : '10kb' })(req, res, next);
 });
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
@@ -226,6 +231,7 @@ const VALID_ADMIN_PATHS = [
   '/admin/sync.html',
   '/admin/seo.html',
   '/admin/pages.html',
+  '/admin/payments.html',
 ];
 app.get('/admin', (req, res) => res.status(404).send(adminErrorPage()));
 app.get('/admin/{*path}', (req, res, next) => {
