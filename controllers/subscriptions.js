@@ -446,13 +446,13 @@ async function manualSubmit(req, res) {
       [req.user.id, plan, ngnAmounts[plan], filename, mime]
     );
 
-    // Email admin
+    // Email admin — fire-and-forget so slow SMTP doesn't block the response
     const adminEmail  = process.env.ADMIN_EMAIL || 'rootedpredict@gmail.com';
     const siteUrl     = process.env.SITE_URL    || 'https://www.rootedpredict.com';
     const planLabels  = { monthly: 'Monthly (8,000)', quarterly: 'Quarterly (20,800)', annual: 'Annual (64,000)' };
-    await sendMail({
+    sendMail({
       to:      adminEmail,
-      subject: `New VIP Payment Awaiting Approval — ${req.user.name || req.user.email}`,
+      subject: 'New VIP Payment Awaiting Approval — ' + (req.user.name || req.user.email),
       html: `
         <h2 style="font-family:sans-serif;">New Payment Submission</h2>
         <table style="font-family:sans-serif;font-size:14px;border-collapse:collapse;">
@@ -467,7 +467,7 @@ async function manualSubmit(req, res) {
         </p>
         <p style="font-family:sans-serif;font-size:12px;color:#999;margin-top:24px;">Only superadmins can approve VIP access.</p>
       `,
-    });
+    }).catch(function(e) { console.error('[MAILER] admin notify failed:', e.message); });
 
     return res.json({
       success: true,
@@ -554,10 +554,10 @@ async function adminApproveSubmission(req, res) {
       [req.user.id, req.body.notes || null, sub.id]
     );
 
-    // Email the user
+    // Email the user — fire-and-forget
     const siteUrl = process.env.SITE_URL || 'https://www.rootedpredict.com';
     const planLabels = { monthly: 'Monthly', quarterly: 'Quarterly', annual: 'Annual' };
-    await sendMail({
+    sendMail({
       to:      sub.user_email,
       subject: 'Your VIP Access Has Been Approved — Rooted Predictions',
       html: `
@@ -571,7 +571,7 @@ async function adminApproveSubmission(req, res) {
         </p>
         <p style="font-family:sans-serif;font-size:12px;color:#999;margin-top:24px;">Questions? Email rootedpredict@gmail.com</p>
       `,
-    });
+    }).catch(function(e) { console.error('[MAILER] approve notify failed:', e.message); });
 
     return res.json({ success: true, message: 'VIP activated and user notified.' });
   } catch (e) {
@@ -601,7 +601,7 @@ async function adminRejectSubmission(req, res) {
       [req.user.id, notes, sub.id]
     );
 
-    await sendMail({
+    sendMail({
       to:      sub.user_email,
       subject: 'Payment Verification Update — Rooted Predictions',
       html: `
@@ -613,7 +613,7 @@ async function adminRejectSubmission(req, res) {
           <a href="mailto:rootedpredict@gmail.com">rootedpredict@gmail.com</a>
           or resubmit with a clearer screenshot of your bank transfer receipt.</p>
       `,
-    });
+    }).catch(function(e) { console.error('[MAILER] reject notify failed:', e.message); });
 
     return res.json({ success: true, message: 'Submission rejected and user notified.' });
   } catch (e) {

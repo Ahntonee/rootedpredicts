@@ -231,7 +231,18 @@
 
     // Check session once on load
     getSessionUser().then(function(user) {
-      if (user) loadSubscriptionStatus();
+      if (!user) return;
+      // Admins don't pay — disable buttons with a different label
+      if (user.role === 'admin') {
+        document.querySelectorAll('.pay-btn').forEach(function(btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="material-icons-round">admin_panel_settings</span> Admin Account';
+          btn.style.opacity = '0.6';
+          btn.style.cursor  = 'not-allowed';
+        });
+        return;
+      }
+      loadSubscriptionStatus();
     });
 
     // Wire up all pay buttons to show bank modal
