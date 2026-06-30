@@ -77,4 +77,9 @@ router.get ('/payment-submissions/:id/image',    requireAdminRole('superadmin'),
 router.post('/payment-submissions/:id/approve',  requireAdminRole('superadmin'), asyncHandler(subCtrl.adminApproveSubmission));
 router.post('/payment-submissions/:id/reject',   requireAdminRole('superadmin'), asyncHandler(subCtrl.adminRejectSubmission));
 
+// ── Newsletter (superadmin only) ───────────────────────────────
+const nlCtrl = require('../controllers/newsletter');
+router.get ('/newsletter/subscribers', requireAdminRole('superadmin'), asyncHandler(nlCtrl.adminListSubscribers));
+router.post('/newsletter/send',        requireAdminRole('superadmin'), asyncHandler(nlCtrl.adminSend));
+
 module.exports = router;

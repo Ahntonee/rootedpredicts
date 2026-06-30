@@ -217,6 +217,7 @@ app.use('/api/comments',      require('./routes/comments'));
 app.use('/api/blog',          require('./routes/blog'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/admin/analytics', require('./routes/analytics'));
+app.use('/api/newsletter',    require('./routes/newsletter'));
 app.use('/api/pages',         require('./routes/pages'));
 app.use('/api/webhooks',      require('./routes/webhooks'));
 
@@ -232,6 +233,10 @@ const VALID_ADMIN_PATHS = [
   '/admin/seo.html',
   '/admin/pages.html',
   '/admin/payments.html',
+  '/admin/newsletter.html',
+  '/admin/audit.html',
+  '/admin/admins.html',
+  '/admin/profile.html',
 ];
 app.get('/admin', (req, res) => res.status(404).send(adminErrorPage()));
 app.get('/admin/{*path}', (req, res, next) => {

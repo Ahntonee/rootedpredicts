@@ -191,6 +191,7 @@
         <div class="admin-nav-section">Management</div>
         ${isSuperAdmin ? `<a href="/admin/users.html"    class="admin-nav-link"><span class="material-icons-round">people</span>Users</a>` : ''}
         ${isSuperAdmin ? `<a href="/admin/payments.html" class="admin-nav-link"><span class="material-icons-round">payments</span>Payment Approvals</a>` : ''}
+        ${isSuperAdmin ? `<a href="/admin/newsletter.html" class="admin-nav-link"><span class="material-icons-round">mark_email_read</span>Newsletter</a>` : ''}
         ${isEditor     ? `<a href="/admin/leagues.html"  class="admin-nav-link"><span class="material-icons-round">emoji_events</span>Leagues</a>` : ''}
         ${isSuperAdmin ? `<a href="/admin/admins.html"   class="admin-nav-link"><span class="material-icons-round">admin_panel_settings</span>Admin Accounts</a>` : ''}
 

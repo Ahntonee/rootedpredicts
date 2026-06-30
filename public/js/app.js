@@ -189,6 +189,19 @@
               <li><a href="/login.html" id="footer-login-link">Login</a></li>
             </ul>
           </div>
+          <div class="footer-col">
+            <h4>Stay Updated</h4>
+            <p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:12px;line-height:1.5;">Get free tips and match previews straight to your inbox.</p>
+            <form id="footer-newsletter-form" style="display:flex;flex-direction:column;gap:8px;">
+              <input type="email" id="footer-nl-email" placeholder="Your email address"
+                style="padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:0.85rem;outline:none;width:100%;">
+              <button type="submit"
+                style="padding:10px 14px;border-radius:8px;background:var(--red);color:#fff;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                <span class="material-icons-round" style="font-size:1rem;">send</span>Subscribe
+              </button>
+              <p id="footer-nl-msg" style="font-size:0.78rem;margin:0;display:none;"></p>
+            </form>
+          </div>
         </div>
         <div class="footer-bottom">
           <p>&copy; ${new Date().getFullYear()} Rooted Predictions. All rights reserved. Predictions for informational purposes only. 18+ only.</p>
@@ -199,6 +212,74 @@
         </div>
       </div>
     `;
+
+    // Wire up newsletter form
+    var nlForm = document.getElementById('footer-newsletter-form');
+    if (nlForm) {
+      nlForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var emailEl = document.getElementById('footer-nl-email');
+        var msgEl   = document.getElementById('footer-nl-msg');
+        var btn     = nlForm.querySelector('button[type="submit"]');
+        var email   = emailEl.value.trim();
+        if (!email) return;
+        btn.disabled = true;
+        btn.textContent = 'Subscribing...';
+        msgEl.style.display = 'none';
+        try {
+          var res  = await fetch('/api/newsletter/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email }),
+          });
+          var json = await res.json();
+          msgEl.textContent   = json.message || (json.success ? 'Subscribed!' : 'Error, try again.');
+          msgEl.style.color   = json.success ? 'var(--green)' : 'var(--red)';
+          msgEl.style.display = 'block';
+          if (json.success) emailEl.value = '';
+        } catch (_) {
+          msgEl.textContent   = 'Network error. Please try again.';
+          msgEl.style.color   = 'var(--red)';
+          msgEl.style.display = 'block';
+        }
+        btn.disabled    = false;
+        btn.innerHTML   = '<span class="material-icons-round" style="font-size:1rem;">send</span>Subscribe';
+      });
+    }
+  }
+
+  // ── Cookie consent banner
+  function initCookieConsent() {
+    if (localStorage.getItem('rp_cookie_consent')) return;
+    var banner = document.createElement('div');
+    banner.id  = 'cookie-banner';
+    banner.style.cssText = [
+      'position:fixed', 'bottom:0', 'left:0', 'right:0', 'z-index:9000',
+      'background:var(--surface,#1a1a2e)', 'border-top:1px solid var(--border,#2a2a3e)',
+      'padding:16px 24px', 'display:flex', 'align-items:center', 'justify-content:space-between',
+      'gap:16px', 'flex-wrap:wrap', 'box-shadow:0 -4px 24px rgba(0,0,0,0.3)',
+    ].join(';');
+    banner.innerHTML = [
+      '<p style="margin:0;font-size:0.85rem;color:var(--text-soft,#aaa);flex:1;min-width:200px;">',
+        'We use cookies to improve your experience. By continuing, you agree to our ',
+        '<a href="/privacy.html" style="color:var(--red,#e94560);">Privacy Policy</a>.',
+      '</p>',
+      '<div style="display:flex;gap:8px;flex-shrink:0;">',
+        '<button id="cookie-decline" style="padding:8px 16px;border-radius:6px;border:1px solid var(--border,#2a2a3e);',
+          'background:transparent;color:var(--text-soft,#aaa);font-size:0.8rem;cursor:pointer;">Decline</button>',
+        '<button id="cookie-accept" style="padding:8px 18px;border-radius:6px;border:none;',
+          'background:var(--red,#e94560);color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;">Accept</button>',
+      '</div>',
+    ].join('');
+    document.body.appendChild(banner);
+    document.getElementById('cookie-accept').onclick = function() {
+      localStorage.setItem('rp_cookie_consent', 'accepted');
+      banner.remove();
+    };
+    document.getElementById('cookie-decline').onclick = function() {
+      localStorage.setItem('rp_cookie_consent', 'declined');
+      banner.remove();
+    };
   }
 
   // ── League filter dropdown component
@@ -646,6 +727,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     injectHeader();
     injectFooter();
+    initCookieConsent();
 
     // Check auth state AFTER header is injected so updateHeaderForUser finds .header-actions
     ensureAuthLoaded(() => window.AfroAuth.checkAuthState());

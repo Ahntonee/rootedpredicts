@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><link rel="icon" type="image/png" href="/favicon.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Newsletter | Rooted Predictions Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar"><span class="admin-topbar-title">Newsletter</span></div>
+<main class="admin-main">
+
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;">
+
+    <!-- Compose panel -->
+    <div class="card" style="padding:24px;">
+      <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+        <span class="material-icons-round" style="color:var(--red);">edit</span>Compose Newsletter
+      </h2>
+
+      <div class="form-group">
+        <label class="form-label">Audience</label>
+        <select id="nl-audience" class="form-control">
+          <option value="all_users">All Registered Users</option>
+          <option value="vip">VIP Subscribers only</option>
+          <option value="free">Free (non-VIP) Users only</option>
+          <option value="subscribers">Newsletter Subscribers (footer signup)</option>
+          <option value="everyone">Everyone (users + newsletter subscribers)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Subject Line</label>
+        <input type="text" id="nl-subject" class="form-control" placeholder="e.g. This Weekend's Top Picks Are Ready">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email Body (HTML supported)</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button class="btn btn-outline btn-sm" onclick="setTab('edit')" id="tab-edit">Edit</button>
+          <button class="btn btn-outline btn-sm" onclick="setTab('preview')" id="tab-preview">Preview</button>
+        </div>
+        <textarea id="nl-body" class="form-control" rows="18" placeholder="Write your email content here. HTML is supported — use <b>, <p>, <a href=&quot;...&quot;>, etc."
+          style="font-family:monospace;font-size:0.82rem;resize:vertical;"></textarea>
+        <iframe id="nl-preview-frame" style="display:none;width:100%;min-height:360px;border:1px solid var(--border);border-radius:8px;background:#fff;" title="Preview"></iframe>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="nl-send-btn" onclick="sendNewsletter()">
+          <span class="material-icons-round">send</span>Send Newsletter
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="insertTemplate()">
+          <span class="material-icons-round">auto_fix_high</span>Insert Template
+        </button>
+        <span id="nl-status" style="font-size:0.85rem;"></span>
+      </div>
+    </div>
+
+    <!-- Stats sidebar -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Subscriber count card -->
+      <div class="card" style="padding:20px;">
+        <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+          <span class="material-icons-round" style="color:var(--red);font-size:1.1rem;">group</span>Subscriber Stats
+        </h3>
+        <div id="sub-stats" style="font-size:0.85rem;color:var(--text-soft);">Loading...</div>
+      </div>
+
+      <!-- Tips -->
+      <div class="card" style="padding:20px;">
+        <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:12px;">Tips</h3>
+        <ul style="font-size:0.8rem;color:var(--text-soft);line-height:1.8;padding-left:16px;">
+          <li>Keep subject lines under 60 characters</li>
+          <li>Always include an unsubscribe link (added automatically)</li>
+          <li>Use <code>&lt;b&gt;</code>, <code>&lt;p&gt;</code>, <code>&lt;a&gt;</code> tags for formatting</li>
+          <li>Test the preview before sending</li>
+          <li>Emails are sent one-by-one — large lists take a few minutes</li>
+        </ul>
+      </div>
+
+      <!-- Recent subscribers -->
+      <div class="card" style="padding:20px;">
+        <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:12px;">Recent Subscribers</h3>
+        <div id="recent-subs" style="font-size:0.82rem;color:var(--text-soft);">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="/js/app.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+var theme = localStorage.getItem('afro_theme') || 'dark';
+document.documentElement.setAttribute('data-theme', theme);
+
+var currentTab = 'edit';
+
+function setTab(tab) {
+  currentTab = tab;
+  var body    = document.getElementById('nl-body');
+  var frame   = document.getElementById('nl-preview-frame');
+  var tabEdit = document.getElementById('tab-edit');
+  var tabPrev = document.getElementById('tab-preview');
+  if (tab === 'preview') {
+    frame.srcdoc = wrapHtml(body.value);
+    frame.style.display = 'block';
+    body.style.display  = 'none';
+    tabPrev.classList.add('active');
+    tabEdit.classList.remove('active');
+  } else {
+    frame.style.display = 'none';
+    body.style.display  = 'block';
+    tabEdit.classList.add('active');
+    tabPrev.classList.remove('active');
+  }
+}
+
+function wrapHtml(content) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+    'body{font-family:Inter,sans-serif;font-size:15px;color:#111;background:#fff;max-width:600px;margin:0 auto;padding:24px;}' +
+    'a{color:#e94560;}' +
+    '</style></head><body>' + content + '</body></html>';
+}
+
+function insertTemplate() {
+  var siteUrl = 'https://www.rootedpredict.com';
+  var tmpl = [
+    '<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;">',
+    '  <div style="background:#0f3460;padding:24px;border-radius:12px 12px 0 0;text-align:center;">',
+    '    <h1 style="color:#e94560;margin:0;font-size:1.6rem;">Rooted Predictions</h1>',
+    '    <p style="color:#aaa;margin:6px 0 0;font-size:0.85rem;">Your edge in football betting</p>',
+    '  </div>',
+    '  <div style="background:#fff;padding:28px;border:1px solid #eee;">',
+    '    <h2 style="color:#111;font-size:1.2rem;">Hello there,</h2>',
+    '    <p style="color:#333;line-height:1.7;">Write your message here. Keep it concise and valuable.</p>',
+    '    <div style="text-align:center;margin:28px 0;">',
+    '      <a href="' + siteUrl + '/predictions.html" style="background:#e94560;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.95rem;">',
+    '        View Today\'s Tips',
+    '      </a>',
+    '    </div>',
+    '    <p style="color:#666;font-size:0.85rem;">Good luck,<br><strong>The Rooted Predictions Team</strong></p>',
+    '  </div>',
+    '  <div style="background:#f5f5f5;padding:16px;border-radius:0 0 12px 12px;text-align:center;">',
+    '    <p style="color:#999;font-size:0.75rem;margin:0;">',
+    '      <a href="' + siteUrl + '" style="color:#999;">' + siteUrl + '</a>',
+    '    </p>',
+    '  </div>',
+    '</div>',
+  ].join('\n');
+  document.getElementById('nl-body').value = tmpl;
+  if (currentTab === 'preview') setTab('preview');
+}
+
+async function sendNewsletter() {
+  var subject  = document.getElementById('nl-subject').value.trim();
+  var body     = document.getElementById('nl-body').value.trim();
+  var audience = document.getElementById('nl-audience').value;
+  var statusEl = document.getElementById('nl-status');
+  var sendBtn  = document.getElementById('nl-send-btn');
+
+  if (!subject) { Admin.toast('Please enter a subject line.', 'error'); return; }
+  if (!body)    { Admin.toast('Please write the email body.', 'error'); return; }
+
+  var audienceLabels = {
+    all_users:   'all registered users',
+    vip:         'VIP users only',
+    free:        'free users only',
+    subscribers: 'newsletter subscribers',
+    everyone:    'everyone (all users + subscribers)',
+  };
+
+  Admin.confirm(
+    'Send this newsletter to ' + audienceLabels[audience] + '? This cannot be undone.',
+    async function() {
+      sendBtn.disabled    = true;
+      sendBtn.innerHTML   = '<span class="material-icons-round" style="animation:spin 1s linear infinite;font-size:1rem;">refresh</span> Sending...';
+      statusEl.textContent = '';
+      statusEl.style.color = '';
+
+      var json = await Admin.api('POST', '/api/admin/newsletter/send', {
+        subject:  subject,
+        html:     body,
+        audience: audience,
+      });
+
+      sendBtn.disabled  = false;
+      sendBtn.innerHTML = '<span class="material-icons-round">send</span>Send Newsletter';
+
+      if (json.success) {
+        Admin.toast('Newsletter sent! ' + json.data.sent + ' delivered' + (json.data.failed ? ', ' + json.data.failed + ' failed' : '') + '.');
+        statusEl.textContent = 'Sent ' + json.data.sent + '/' + json.data.total + ' emails.';
+        statusEl.style.color = 'var(--green)';
+      } else {
+        Admin.toast(json.message || 'Send failed.', 'error');
+        statusEl.textContent = json.message || 'Failed.';
+        statusEl.style.color = 'var(--red)';
+      }
+    }
+  );
+}
+
+async function loadStats() {
+  var active   = await Admin.api('GET', '/api/admin/newsletter/subscribers?status=active');
+  var inactive = await Admin.api('GET', '/api/admin/newsletter/subscribers?status=unsubscribed');
+
+  document.getElementById('sub-stats').innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:10px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<span>Newsletter subscribers</span>' +
+        '<strong style="font-size:1.1rem;color:var(--text);">' + (active.total || 0) + '</strong>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<span>Unsubscribed</span>' +
+        '<strong style="color:var(--muted);">' + (inactive.total || 0) + '</strong>' +
+      '</div>' +
+    '</div>';
+
+  var rows = (active.data || []).slice(0, 6);
+  document.getElementById('recent-subs').innerHTML = rows.length
+    ? rows.map(function(r) {
+        return '<div style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">' +
+          '<div>' +
+            '<div style="font-weight:600;color:var(--text);">' + (r.name || r.email.split('@')[0]) + '</div>' +
+            '<div style="font-size:0.75rem;color:var(--muted);">' + r.email + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('')
+    : '<p style="color:var(--muted);">No subscribers yet.</p>';
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+  var user = await Admin.requireAdmin();
+  if (!user) return;
+  if (user.effectiveRole !== 'superadmin') {
+    document.querySelector('.admin-main').innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);">Superadmin access required.</div>';
+    Admin.buildSidebar(user);
+    return;
+  }
+  Admin.buildSidebar(user);
+  setTab('edit');
+
+  // Add spin keyframe
+  if (!document.getElementById('spin-kf')) {
+    var s = document.createElement('style');
+    s.id = 'spin-kf';
+    s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(s);
+  }
+
+  loadStats();
+});
+</script>
+</body></html>

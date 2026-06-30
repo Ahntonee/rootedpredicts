@@ -789,6 +789,27 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `,
   },
+
+  // ----------------------------------------------------------
+  // 22. NEWSLETTER SUBSCRIBERS
+  //     Stores emails from the footer newsletter signup form
+  // ----------------------------------------------------------
+  {
+    name: 'Create newsletter_subscribers table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+        id             INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+        email          VARCHAR(255)  NOT NULL,
+        name           VARCHAR(100)  DEFAULT NULL,
+        status         ENUM('active','unsubscribed') NOT NULL DEFAULT 'active',
+        subscribed_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        unsubscribed_at DATETIME     DEFAULT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uq_ns_email (email),
+        INDEX idx_ns_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `,
+  },
 ];
 
 // ============================================================
