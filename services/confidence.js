@@ -272,24 +272,79 @@ function score(prediction) {
 function clamp(v)   { return Math.max(0, Math.min(1, v)); }
 function clamp01(v) { return Math.max(1, Math.min(99, Math.round(v))); }
 
-// ── Batch: score all unscored predictions in DB ───────────────────────────────
+// ── Calibration: blend base score toward empirical win-rate ──────────────────
+//
+// calibrationRows comes from accuracy.getCalibration(db) — the accuracy_stats
+// table that records real win-rates grouped by (market, tip, confidence_band, league_id).
+//
+// Lookup hierarchy (most → least specific):
+//   1. market + tip + league + band
+//   2. market + tip + band          (cross-league)
+//   3. market + band                (all tips combined)
+//   4. band only                    (market-agnostic fallback)
+//
+// Trust formula: grows from 0→1 as sample count goes 10→150.
+// Max blend weight is 40% — the model always contributes ≥ 60% of the score,
+// preventing runaway drift on small or unrepresentative samples.
+//
+// Returns baseScore unchanged when no calibration data exists (new site, sparse
+// history, or unseen market/tip combination) — fully backward-compatible.
+function calibrate(baseScore, prediction, calibrationRows) {
+  if (!calibrationRows || !calibrationRows.length) return baseScore;
+
+  const confBand = Math.floor(baseScore / 5) * 5;
+  const mkt = prediction.market || '1X2';
+  const tip = prediction.tip    || '';
+  const lid = prediction.league_id ? parseInt(prediction.league_id) : null;
+
+  const pool = calibrationRows.filter(
+    r => r.confidence_band === confBand && r.total_predictions >= 10
+  );
+  if (!pool.length) return baseScore;
+
+  const match =
+    // Most specific: market + tip + this league
+    pool.find(r => r.market === mkt && r.tip === tip && parseInt(r.league_id) === lid && lid !== null) ||
+    // Market + tip, any league
+    pool.find(r => r.market === mkt && r.tip === tip && !r.league_id) ||
+    // Market only (tips merged)
+    pool.find(r => r.market === mkt && (!r.tip || r.tip === '') && !r.league_id) ||
+    // Band-only fallback
+    pool.find(r => !r.market && !r.league_id);
+
+  if (!match) return baseScore;
+
+  // trust: 0 at 10 samples → 1.0 at 150+ samples; maxBlend caps at 40%
+  const trust   = Math.min(1, (match.total_predictions - 10) / 140);
+  const blendW  = trust * 0.40;
+  const adjusted = baseScore * (1 - blendW) + match.accuracy_pct * blendW;
+  return clamp01(adjusted);
+}
+
+// ── Batch: score all pending predictions in DB ────────────────────────────────
 async function scoreAllPending(db) {
+  const { getCalibration } = require('./accuracy');
+
   const [rows] = await db.query(
     `SELECT id, tip, market, odds, home_form, away_form, h2h_summary, league_id, confidence_score
      FROM predictions WHERE result = 'pending'`
   );
 
+  // Load calibration table once for the whole batch (avoids per-row DB queries)
+  const calibrationRows = await getCalibration(db);
+
   let updated = 0;
   for (const row of rows) {
-    // Skip if already manually set to a non-null value AND we have no form data
-    // (respect manual overrides when algorithm has nothing to work with)
+    // Respect manual overrides when algorithm has nothing to work with
     const hasFormData = row.home_form || row.away_form || row.h2h_summary || row.odds;
     if (row.confidence_score && !hasFormData) continue;
 
-    const { score: s } = score(row);
+    const { score: baseScore } = score(row);
+    const finalScore = calibrate(baseScore, row, calibrationRows);
+
     await db.query(
       `UPDATE predictions SET confidence_score = ?, updated_at = NOW() WHERE id = ?`,
-      [s, row.id]
+      [finalScore, row.id]
     );
     updated++;
   }
@@ -298,18 +353,26 @@ async function scoreAllPending(db) {
 
 // ── Score a single prediction by id ──────────────────────────────────────────
 async function scorePrediction(db, predictionId) {
+  const { getCalibration } = require('./accuracy');
+
   const [rows] = await db.query(
     `SELECT id, tip, market, odds, home_form, away_form, h2h_summary, league_id
      FROM predictions WHERE id = ?`,
     [predictionId]
   );
   if (!rows.length) throw new Error('Prediction not found');
-  const { score: s, breakdown } = score(rows[0]);
+
+  const { score: baseScore, breakdown } = score(rows[0]);
+  const calibrationRows = await getCalibration(db);
+  const finalScore = calibrate(baseScore, rows[0], calibrationRows);
+
   await db.query(
     `UPDATE predictions SET confidence_score = ?, updated_at = NOW() WHERE id = ?`,
-    [s, predictionId]
+    [finalScore, predictionId]
   );
-  return { score: s, breakdown };
+
+  // Return both so admin UI can show "model said X, calibrated to Y"
+  return { score: finalScore, baseScore, breakdown };
 }
 
-module.exports = { score, scorePrediction, scoreAllPending };
+module.exports = { score, calibrate, scorePrediction, scoreAllPending };
