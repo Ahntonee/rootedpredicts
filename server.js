@@ -105,6 +105,111 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 
+// ── SEO: Bot detection + dynamic rendering
+// Googlebot crawls in two waves: Wave 1 (raw HTML, no JS) and Wave 2 (JS,
+// possibly days later). Since the site is CSR, Wave 1 sees empty containers.
+// For known search bots we inject server-rendered prediction cards and
+// JSON-LD structured data before serving the HTML. Regular browsers skip
+// this path entirely and get the normal CSR experience.
+
+function isSearchBot(req) {
+  const ua = req.headers['user-agent'] || '';
+  return /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|facebot|ia_archiver/i.test(ua);
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function buildBotPredCard(p) {
+  const confClass = p.confidence_score >= 80 ? 'high' : p.confidence_score >= 65 ? 'medium' : 'low';
+  const matchTime = p.match_date
+    ? new Date(p.match_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
+    : '';
+  return `<article class="pred-card" data-id="${p.id}" data-market="${escHtml(p.market)}" data-league="${p.league_id || ''}">
+  <div class="pred-card-header">
+    <div class="pred-league"><span class="league-name">${escHtml(p.league_name || 'League')} &middot; ${escHtml(p.league_country || '')}</span></div>
+    <div class="pred-meta"><span class="badge badge-free">FREE</span></div>
+  </div>
+  <div class="pred-card-body">
+    <div class="pred-teams">
+      <div class="pred-team"><span class="team-name">${escHtml(p.home_team)}</span></div>
+      <div class="vs-divider">VS<span class="vs-time">${matchTime} UTC</span></div>
+      <div class="pred-team"><span class="team-name">${escHtml(p.away_team)}</span></div>
+    </div>
+    <div class="pred-tip-row">
+      <span class="tip-label">Our Tip</span>
+      <span class="tip-value">${escHtml(p.tip || 'TBD')}</span>
+      ${p.odds ? `<span class="tip-odds">@ ${parseFloat(p.odds).toFixed(2)}</span>` : ''}
+    </div>
+    ${p.confidence_score
+      ? `<div class="confidence-bar-wrap">
+           <span class="confidence-label">Confidence</span>
+           <div class="confidence-track"><div class="confidence-fill ${confClass}" style="width:${p.confidence_score}%;"></div></div>
+           <span class="confidence-pct">${p.confidence_score}%</span>
+         </div>`
+      : ''}
+  </div>
+</article>`;
+}
+
+async function prerenderPage(req, res, next, file, containerId) {
+  try {
+    let html = fs.readFileSync(path.join(__dirname, 'public', file), 'utf8');
+    const [preds] = await db.query(`
+      SELECT p.id, p.slug, p.home_team, p.away_team, p.match_date,
+             p.tip, p.market, p.odds, p.confidence_score, p.league_id,
+             l.name AS league_name, l.country AS league_country
+      FROM predictions p
+      LEFT JOIN leagues l ON l.id = p.league_id
+      WHERE DATE(p.match_date) = CURDATE()
+        AND p.published_at IS NOT NULL
+      ORDER BY p.confidence_score DESC
+      LIMIT 30
+    `);
+
+    if (preds.length) {
+      const cardsHtml = preds.map(buildBotPredCard).join('\n');
+      html = html.replace(`<div id="${containerId}">`, `<div id="${containerId}">\n${cardsHtml}`);
+
+      const BASE = process.env.SITE_URL || 'https://www.rootedpredict.com';
+      const today = new Date().toISOString().split('T')[0];
+      const schema = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        'name': `Football Predictions for ${today}`,
+        'description': 'Free football predictions and betting tips updated daily.',
+        'url': `${BASE}/predictions.html`,
+        'numberOfItems': preds.length,
+        'itemListElement': preds.map((p, i) => ({
+          '@type': 'ListItem',
+          'position': i + 1,
+          'name': `${p.home_team} vs ${p.away_team} — ${p.tip || 'Prediction'}`,
+          'url': `${BASE}/prediction/${p.slug || p.id}`,
+          'description': `${p.market || ''} tip: ${p.tip || ''}${p.odds ? ` at odds ${p.odds}` : ''}`,
+        })),
+      });
+      html = html.replace('</head>', `<script type="application/ld+json">${schema}</script>\n</head>`);
+    }
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (e) {
+    console.error('[PRERENDER]', e.message);
+    next();
+  }
+}
+
+// Bot pre-render routes — must come BEFORE express.static()
+app.get(['/', '/index.html'], (req, res, next) => {
+  if (!isSearchBot(req)) return next();
+  return prerenderPage(req, res, next, 'index.html', 'free-picks-list');
+});
+app.get('/predictions.html', (req, res, next) => {
+  if (!isSearchBot(req)) return next();
+  return prerenderPage(req, res, next, 'predictions.html', 'picks-list');
+});
+
 // ── Static files
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
@@ -267,8 +372,42 @@ function adminErrorPage() {
 }
 
 // ── Pretty prediction detail URL → serve the detail page
-app.get('/prediction/:slug', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'prediction-detail.html'));
+app.get('/prediction/:slug', async (req, res) => {
+  if (!isSearchBot(req)) {
+    return res.sendFile(path.join(__dirname, 'public', 'prediction-detail.html'));
+  }
+  try {
+    const [rows] = await db.query(
+      `SELECT p.*, l.name AS league_name, l.country AS league_country
+       FROM predictions p
+       LEFT JOIN leagues l ON l.id = p.league_id
+       WHERE p.slug = ? OR CAST(p.id AS CHAR) = ? LIMIT 1`,
+      [req.params.slug, req.params.slug]
+    );
+    if (!rows.length) return res.sendFile(path.join(__dirname, 'public', 'prediction-detail.html'));
+    const p = rows[0];
+    let html = fs.readFileSync(path.join(__dirname, 'public', 'prediction-detail.html'), 'utf8');
+    const BASE = process.env.SITE_URL || 'https://www.rootedpredict.com';
+    const schema = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'SportsEvent',
+      'name': `${p.home_team} vs ${p.away_team}`,
+      'startDate': p.match_date ? new Date(p.match_date).toISOString() : undefined,
+      'description': `${p.market || '1X2'} prediction: ${p.tip || 'TBD'}${p.odds ? ` at odds ${p.odds}` : ''}. Confidence: ${p.confidence_score || 'N/A'}%.`,
+      'url': `${BASE}/prediction/${req.params.slug}`,
+      'location': { '@type': 'Place', 'name': p.league_name || 'Football Match' },
+      'competitor': [
+        { '@type': 'SportsTeam', 'name': p.home_team },
+        { '@type': 'SportsTeam', 'name': p.away_team },
+      ],
+    });
+    html = html.replace('</head>', `<script type="application/ld+json">${schema}</script>\n</head>`);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (e) {
+    console.error('[PRERENDER slug]', e.message);
+    res.sendFile(path.join(__dirname, 'public', 'prediction-detail.html'));
+  }
 });
 
 // ── Pretty blog post URL → serve the blog post page
