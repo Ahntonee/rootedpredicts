@@ -151,34 +151,29 @@ router.get('/research/:fixtureId', asyncHandler(async (req, res) => {
   return successResponse(res, data);
 }));
 
-// ── POST /api/sync/today — Sync today + tomorrow fixtures for popular leagues
+// ── POST /api/sync/today — Sync ALL fixtures for today + tomorrow (2 API calls)
 router.post('/today', asyncHandler(async (req, res) => {
   const today    = new Date().toISOString().split('T')[0];
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
   const results = [];
 
-  // Sync popular leagues for today and tomorrow
-  const POPULAR = [39, 140, 135, 78, 61, 2, 3, 253, 71, 6];
+  try {
+    // No league filter → one call returns every fixture across all leagues for that date
+    const r1 = await apiSvc.syncFixtures(today, null);
+    results.push({ date: today, ...r1 });
 
-  for (const leagueId of POPULAR) {
-    try {
-      const r1 = await apiSvc.syncFixtures(today, leagueId);
-      results.push({ league: leagueId, date: today, ...r1 });
-      // Small delay between requests
-      await new Promise(r => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 300));
 
-      const r2 = await apiSvc.syncFixtures(tomorrow, leagueId);
-      results.push({ league: leagueId, date: tomorrow, ...r2 });
-      await new Promise(r => setTimeout(r, 200));
-    } catch (e) {
-      results.push({ league: leagueId, error: e.message });
-    }
+    const r2 = await apiSvc.syncFixtures(tomorrow, null);
+    results.push({ date: tomorrow, ...r2 });
+  } catch (e) {
+    results.push({ error: e.message });
   }
 
   const totalCreated = results.reduce((s, r) => s + (r.created || 0), 0);
   return successResponse(res, { results, total_created: totalCreated },
-    `Daily sync complete: ${totalCreated} new fixtures`);
+    `Daily sync complete: ${totalCreated} new fixtures across all leagues`);
 }));
 
 module.exports = router;
