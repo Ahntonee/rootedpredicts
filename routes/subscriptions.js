@@ -35,4 +35,7 @@ router.post('/admin/grant', requireAdmin, asyncHandler(ctrl.adminGrantVip));
 // POST /api/subscriptions/manual/submit — user submits bank transfer proof
 router.post('/manual/submit', asyncHandler(ctrl.manualSubmit));
 
+// GET /api/subscriptions/my-payments — user's own payment submission history
+router.get('/my-payments', asyncHandler(ctrl.getMyPayments));
+
 module.exports = router;

@@ -26,6 +26,32 @@
       .dash-stats-grid { grid-template-columns:repeat(2,1fr); }
       .dash-stats-grid .card { text-align:center; }
     }
+    /* Mobile subscription banner — only shows when sidebar is hidden */
+    .dash-mob-sub {
+      display: none;
+      background: var(--card-bg, #1e1e2e);
+      border: 1px solid var(--border, #2a2a3c);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      font-size: 0.875rem;
+    }
+    .dash-mob-sub .mob-sub-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .dash-mob-sub .mob-sub-label { color: var(--muted); }
+    .dash-mob-sub .mob-sub-link {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    @media (max-width: 1024px) {
+      .dash-mob-sub { display: block; }
+    }
   </style>
 </head>
 <body>
@@ -39,6 +65,9 @@
         <p style="font-size:0.875rem;color:var(--muted);">Welcome back — here's your activity overview</p>
       </div>
     </div>
+
+    <!-- Mobile subscription banner (hidden on desktop where sidebar shows it) -->
+    <div id="mob-sub-banner" class="dash-mob-sub" style="display:none;"></div>
 
     <!-- Stats row -->
     <div class="dash-stats-grid">
@@ -147,6 +176,30 @@
         </div>
       </div>
 
+      <!-- Payment history -->
+      <div id="payment-history-section" style="display:none;margin-bottom:20px;">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+            <span class="material-icons-round" style="color:var(--red);font-size:1.1rem;">receipt_long</span>
+            <span style="font-weight:700;font-size:0.95rem;">Payment History</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:var(--surface);">
+                  <th style="padding:10px 8px;text-align:left;font-size:0.78rem;color:var(--muted);font-weight:600;">Date</th>
+                  <th style="padding:10px 8px;text-align:left;font-size:0.78rem;color:var(--muted);font-weight:600;">Plan</th>
+                  <th style="padding:10px 8px;text-align:left;font-size:0.78rem;color:var(--muted);font-weight:600;">Amount</th>
+                  <th style="padding:10px 8px;text-align:left;font-size:0.78rem;color:var(--muted);font-weight:600;">Status</th>
+                  <th style="padding:10px 8px;text-align:left;font-size:0.78rem;color:var(--muted);font-weight:600;">Notes</th>
+                </tr>
+              </thead>
+              <tbody class="pay-hist-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- Sidebar -->
       <aside class="sidebar">
         <!-- VIP upgrade CTA (shown to free users) -->
@@ -159,9 +212,36 @@
             <div style="display:flex;flex-direction:column;gap:10px;">
               <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--muted);">Plan</span><span style="font-weight:600;" id="user-plan">Free</span></div>
               <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--muted);">Member since</span><span style="font-weight:600;" id="user-since">—</span></div>
-              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;"><span style="color:var(--muted);">Country</span><span style="font-weight:600;" id="user-country">—</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--muted);">Country</span><span style="font-weight:600;" id="user-country">—</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:6px 0;" id="sub-expiry-row">
+                <span style="color:var(--muted);">VIP until</span>
+                <span style="font-weight:600;" id="sub-expiry-val">—</span>
+              </div>
             </div>
             <a href="/profile.html" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:14px;"><span class="material-icons-round">settings</span>Edit Profile</a>
+          </div>
+        </div>
+
+        <!-- Subscription status card -->
+        <div class="sidebar-card" id="sub-status-card" style="display:none;">
+          <div class="sidebar-card-header"><span class="material-icons-round">workspace_premium</span>Subscription</div>
+          <div class="sidebar-card-body" id="sub-status-body">
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:0.85rem;">
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--muted);">Status</span><span id="sub-status-val" style="font-weight:600;">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--muted);">Plan</span><span id="sub-plan-val" style="font-weight:600;">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--muted);">Started</span><span id="sub-starts-val" style="font-weight:600;">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;"><span style="color:var(--muted);">Expires</span><span id="sub-expires-val" style="font-weight:600;">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upgrade CTA — shown to free/expired users -->
+        <div class="sidebar-card" id="upgrade-cta-card" style="display:none;background:linear-gradient(135deg,var(--navy),#1a1a2e);border-color:rgba(233,69,96,0.3);">
+          <div style="padding:18px;text-align:center;">
+            <span class="material-icons-round" style="font-size:2rem;color:var(--red);display:block;margin-bottom:8px;">workspace_premium</span>
+            <h3 style="font-size:1rem;font-weight:700;color:#fff;margin:0 0 6px;">Upgrade to VIP</h3>
+            <p style="font-size:0.8rem;color:rgba(255,255,255,0.55);margin-bottom:14px;">Get exclusive high-confidence tips and full analysis.</p>
+            <a href="/pricing.html" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">View Plans</a>
           </div>
         </div>
       </aside>
@@ -210,6 +290,111 @@ async function checkAuth() {
     document.getElementById('user-since').textContent   = data.created_at
       ? new Date(data.created_at).toLocaleDateString('en-GB', { month:'short', year:'numeric' }) : '—';
   } catch(e) { /* stay on page during dev */ }
+}
+
+async function loadSubscription() {
+  try {
+    const res  = await fetch('/api/subscriptions/status', { credentials: 'include' });
+    const json = await res.json();
+    const sub  = json.success ? json.data : null;
+    const planLabels = { monthly: 'Monthly VIP', quarterly: 'Quarterly VIP', annual: 'Annual VIP' };
+
+    const mobBanner = document.getElementById('mob-sub-banner');
+
+    if (sub && sub.status === 'active') {
+      document.getElementById('sub-expiry-row').style.display = '';
+      document.getElementById('sub-expiry-val').textContent   = fmtDate(sub.expires_at);
+      document.getElementById('sub-expiry-val').style.color   = 'var(--green)';
+      document.getElementById('sub-status-card').style.display = '';
+      document.getElementById('sub-status-val').innerHTML  = '<span style="color:var(--green);font-weight:700;">&#9679; Active</span>';
+      document.getElementById('sub-plan-val').textContent  = planLabels[sub.plan] || sub.plan || '—';
+      document.getElementById('sub-starts-val').textContent  = fmtDate(sub.starts_at);
+      document.getElementById('sub-expires-val').textContent = fmtDate(sub.expires_at);
+      const daysLeft = Math.ceil((new Date(sub.expires_at) - Date.now()) / 86400000);
+      if (daysLeft <= 7) {
+        document.getElementById('sub-expires-val').style.color    = 'var(--red)';
+        document.getElementById('sub-expires-val').textContent   += ' (' + daysLeft + 'd left)';
+        var cta = document.getElementById('upgrade-cta-card');
+        cta.style.display = '';
+        cta.querySelector('h3').textContent = 'Renew VIP';
+        cta.querySelector('p').textContent  = 'Your VIP expires in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + '. Renew to keep access.';
+      }
+      // Mobile banner — active
+      if (mobBanner) {
+        const expiryColor = daysLeft <= 7 ? 'var(--red)' : 'var(--green)';
+        const expiryText  = daysLeft <= 7
+          ? fmtDate(sub.expires_at) + ' <span style="color:var(--red);">(' + daysLeft + 'd left)</span>'
+          : fmtDate(sub.expires_at);
+        mobBanner.innerHTML =
+          '<div class="mob-sub-row">' +
+            '<span><span class="mob-sub-label">Plan: </span><strong>' + (planLabels[sub.plan] || sub.plan) + '</strong></span>' +
+            '<span style="color:var(--green);font-weight:600;">&#9679; Active</span>' +
+          '</div>' +
+          '<div class="mob-sub-row" style="margin-top:6px;">' +
+            '<span><span class="mob-sub-label">VIP until: </span><strong style="color:' + expiryColor + ';">' + expiryText + '</strong></span>' +
+            (daysLeft <= 7 ? '<a href="/pricing.html" class="mob-sub-link">Renew &rarr;</a>' : '') +
+          '</div>';
+      }
+    } else if (sub && sub.status === 'expired') {
+      document.getElementById('sub-expiry-row').style.display   = '';
+      document.getElementById('sub-expiry-val').textContent     = 'Expired ' + fmtDate(sub.expires_at);
+      document.getElementById('sub-expiry-val').style.color     = 'var(--red)';
+      document.getElementById('sub-status-card').style.display  = '';
+      document.getElementById('sub-status-val').innerHTML       = '<span style="color:var(--red);font-weight:700;">&#9679; Expired</span>';
+      document.getElementById('sub-plan-val').textContent       = planLabels[sub.plan] || sub.plan || '—';
+      document.getElementById('sub-starts-val').textContent     = fmtDate(sub.starts_at);
+      document.getElementById('sub-expires-val').textContent    = fmtDate(sub.expires_at);
+      document.getElementById('upgrade-cta-card').style.display = '';
+      // Mobile banner — expired
+      if (mobBanner) {
+        mobBanner.innerHTML =
+          '<div class="mob-sub-row">' +
+            '<span><span class="mob-sub-label">Plan: </span><strong>' + (planLabels[sub.plan] || sub.plan) + '</strong></span>' +
+            '<span style="color:var(--red);font-weight:600;">&#9679; Expired</span>' +
+          '</div>' +
+          '<div class="mob-sub-row" style="margin-top:6px;">' +
+            '<span style="color:var(--muted);font-size:0.8rem;">Expired ' + fmtDate(sub.expires_at) + '</span>' +
+            '<a href="/pricing.html" class="mob-sub-link">Upgrade &rarr;</a>' +
+          '</div>';
+      }
+    } else {
+      document.getElementById('sub-expiry-row').style.display   = 'none';
+      document.getElementById('upgrade-cta-card').style.display = '';
+      // Mobile banner — no subscription
+      if (mobBanner) {
+        mobBanner.innerHTML =
+          '<div class="mob-sub-row">' +
+            '<span><span class="mob-sub-label">Plan: </span><strong>Free</strong></span>' +
+            '<a href="/pricing.html" class="mob-sub-link">Upgrade to VIP &rarr;</a>' +
+          '</div>';
+      }
+    }
+  } catch(e) { /* non-fatal */ }
+}
+
+async function loadPaymentHistory() {
+  try {
+    const res  = await fetch('/api/subscriptions/my-payments', { credentials: 'include' });
+    const json = await res.json();
+    if (!json.success || !json.data.length) return;
+    const planLabels = { monthly: 'Monthly', quarterly: 'Quarterly', annual: 'Annual' };
+    const statusBadge = function(s) {
+      var map = { pending: 'badge-pending', approved: 'badge-won', rejected: 'badge-lost' };
+      return '<span class="badge ' + (map[s] || 'badge-pending') + '">' + s.toUpperCase() + '</span>';
+    };
+    var container = document.getElementById('payment-history-section');
+    if (!container) return;
+    container.style.display = '';
+    container.querySelector('.pay-hist-body').innerHTML = json.data.map(function(p) {
+      return '<tr style="border-bottom:1px solid var(--border);">' +
+        '<td style="padding:10px 8px;font-size:0.82rem;">' + fmtDate(p.created_at) + '</td>' +
+        '<td style="padding:10px 8px;font-size:0.82rem;">' + (planLabels[p.plan] || p.plan) + '</td>' +
+        '<td style="padding:10px 8px;font-size:0.82rem;">&#8358;' + Number(p.amount_ngn || 0).toLocaleString() + '</td>' +
+        '<td style="padding:10px 8px;">' + statusBadge(p.status) + '</td>' +
+        '<td style="padding:10px 8px;font-size:0.75rem;color:var(--muted);">' + (p.notes || (p.status === 'pending' ? 'Awaiting review' : '')) + '</td>' +
+        '</tr>';
+    }).join('');
+  } catch(e) { /* non-fatal */ }
 }
 
 async function loadStats() {
@@ -298,6 +483,8 @@ async function loadRecord() {
 checkAuth();
 loadStats();
 loadRecord();
+loadSubscription();
+loadPaymentHistory();
 </script>
 </body>
 </html>

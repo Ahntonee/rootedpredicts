@@ -1436,6 +1436,8 @@ img { max-width: 100%; display: block; }
   .pred-meta { width: 100%; justify-content: flex-end; margin-top: 4px; }
   .team-logo { width: 32px; height: 32px; }
   .team-logo-placeholder { width: 32px; height: 32px; }
+  .pred-tip-row { flex-wrap: wrap; row-gap: 4px; }
+  .tip-value { word-break: break-word; }
 
   /* ── Pricing ── */
   .pricing-price { font-size: 2rem; }

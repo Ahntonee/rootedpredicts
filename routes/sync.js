@@ -11,6 +11,7 @@
 const express   = require('express');
 const router    = express.Router();
 const apiSvc    = require('../services/apiFootball');
+const telegram  = require('../services/telegram');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { asyncHandler, successResponse, errorResponse } = require('../utils/helpers');
 
@@ -108,6 +109,33 @@ router.post('/auto-predict', asyncHandler(async (req, res) => {
     forceCategory: req.body.force_category || null,  // pin all results to this category
   };
   const result = await apiSvc.autoPredictFixtures(db, options);
+
+  // Fire-and-forget Telegram notification for newly published predictions
+  if (result.enriched > 0) {
+    const publishedIds = (result.log || []).filter(r => r.published && r.id).map(r => r.id);
+    if (publishedIds.length) {
+      const dateLabel = options.date
+        ? new Date(options.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      (async () => {
+        try {
+          const [preds] = await db.query(
+            `SELECT p.id, p.slug, p.home_team, p.away_team, p.match_date,
+                    p.tip, p.market, p.odds, p.confidence_score,
+                    l.name AS league_name, l.country AS league_country
+             FROM predictions p
+             LEFT JOIN leagues l ON l.id = p.league_id
+             WHERE p.id IN (${publishedIds.map(() => '?').join(',')})`,
+            publishedIds
+          );
+          await telegram.sendPredictions(preds, { date: dateLabel, generated: result.enriched });
+        } catch (e) {
+          console.error('[TELEGRAM] auto-predict hook failed:', e.message);
+        }
+      })();
+    }
+  }
+
   return successResponse(res, result,
     `Auto-predict done: ${result.enriched} predictions generated, ${result.errors} errors`);
 }));

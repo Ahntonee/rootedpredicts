@@ -360,21 +360,23 @@ function renderTipField(market, currentTip) {
   }
 }
 
-// Min date = now (admins can publish right up to kickoff)
-function setDateMin() {
-  const el  = document.getElementById('m-date');
-  const min = new Date(Date.now());
-  const pad = n => String(n).padStart(2, '0');
-  el.min = `${min.getFullYear()}-${pad(min.getMonth()+1)}-${pad(min.getDate())}T${pad(min.getHours())}:${pad(min.getMinutes())}`;
-}
+// No min-date constraint — admins can publish historical or off-API fixtures
+function setDateMin() { /* intentionally unrestricted */ }
 
 function validateDate() {
   const val  = document.getElementById('m-date').value;
   const warn = document.getElementById('m-date-warn');
   if (!val) { warn.style.display = 'none'; return true; }
+  // Warn (but do not block) for past dates — allows publishing historical matches
   const chosen = new Date(val).getTime();
-  if (chosen < Date.now()) { warn.style.display = 'block'; return false; }
-  warn.style.display = 'none'; return true;
+  if (chosen < Date.now() - 60000) {
+    warn.textContent    = 'Note: match date is in the past.';
+    warn.style.display  = 'block';
+    warn.style.color    = 'var(--yellow, #f59e0b)';
+  } else {
+    warn.style.display  = 'none';
+  }
+  return true; // always allow submission
 }
 
 let editingId = null;

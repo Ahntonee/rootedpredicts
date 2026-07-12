@@ -621,9 +621,26 @@ async function adminRejectSubmission(req, res) {
   }
 }
 
+// ── GET /api/subscriptions/my-payments — user's own payment submission history
+async function getMyPayments(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT id, plan, amount_ngn, status, created_at, reviewed_at, notes
+       FROM payment_submissions
+       WHERE user_id = ?
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [req.user.id]
+    );
+    return res.json({ success: true, data: rows });
+  } catch (e) {
+    return res.status(500).json({ success: false, message: e.message });
+  }
+}
+
 module.exports = {
   getStatus, stripeCreateCheckout, paystackInitialize, paystackVerify,
   cancelSubscription, adminGrantVip, stripeWebhook, paystackWebhook,
-  getBankDetails, manualSubmit,
+  getBankDetails, manualSubmit, getMyPayments,
   adminListSubmissions, adminViewImage, adminApproveSubmission, adminRejectSubmission,
 };
