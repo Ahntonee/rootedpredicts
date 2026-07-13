@@ -12,6 +12,7 @@ const express   = require('express');
 const router    = express.Router();
 const apiSvc    = require('../services/apiFootball');
 const telegram  = require('../services/telegram');
+const accuracy  = require('../services/accuracy');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { asyncHandler, successResponse, errorResponse } = require('../utils/helpers');
 
@@ -174,6 +175,67 @@ router.post('/today', asyncHandler(async (req, res) => {
   const totalCreated = results.reduce((s, r) => s + (r.created || 0), 0);
   return successResponse(res, { results, total_created: totalCreated },
     `Daily sync complete: ${totalCreated} new fixtures across all leagues`);
+}));
+
+// ── POST /api/sync/backfill
+// Body: { leagues: [39,140,...], seasons: [2022,2023,2024] }
+// Syncs ALL fixtures (including finished ones with actual scores) for each league+season combo.
+// One API request per league+season combination.
+router.post('/backfill', asyncHandler(async (req, res) => {
+  if (!process.env.API_FOOTBALL_KEY) {
+    return errorResponse(res, 'API_FOOTBALL_KEY not configured in .env', 400);
+  }
+  const db      = require('../config/db');
+  const leagues = Array.isArray(req.body.leagues) ? req.body.leagues.map(Number).filter(Boolean) : [];
+  const seasons = Array.isArray(req.body.seasons) ? req.body.seasons.map(Number).filter(Boolean) : [];
+
+  if (!leagues.length || !seasons.length) {
+    return errorResponse(res, 'leagues (array) and seasons (array) are required', 400);
+  }
+
+  const results = [];
+  let totalCreated = 0, totalBackfilled = 0, totalUpdated = 0;
+
+  for (const leagueId of leagues) {
+    for (const season of seasons) {
+      try {
+        await new Promise(r => setTimeout(r, 300)); // rate-limit spacing
+        const r = await apiSvc.syncLeagueSeasonFixtures(leagueId, season, { backfill: true });
+        totalCreated    += r.created    || 0;
+        totalBackfilled += r.backfilled || 0;
+        totalUpdated    += r.updated    || 0;
+        results.push({ league: leagueId, season, ...r });
+        console.log(`[BACKFILL] league=${leagueId} season=${season}: ${r.created} created (${r.backfilled || 0} historical), ${r.updated} updated`);
+      } catch (e) {
+        results.push({ league: leagueId, season, error: e.message });
+        console.error(`[BACKFILL] Failed league=${leagueId} season=${season}:`, e.message);
+      }
+    }
+  }
+
+  return successResponse(res, { results, totalCreated, totalBackfilled, totalUpdated },
+    `Backfill complete: ${totalCreated} fixtures inserted (${totalBackfilled} historical), ${totalUpdated} scores updated`);
+}));
+
+// ── POST /api/sync/grade-all
+// Grades all predictions that have stored scores (home_score/away_score) but result='pending'.
+// Then logs outcomes and recalculates accuracy_stats for calibration.
+router.post('/grade-all', asyncHandler(async (req, res) => {
+  const db      = require('../config/db');
+  const graded  = await apiSvc.gradeFromScores(db);
+  const logged  = await accuracy.logUntracked(db);
+  await accuracy.recalculateStats(db);
+  return successResponse(res, { graded, logged },
+    `Graded ${graded} predictions, logged ${logged} outcomes, accuracy stats recalculated`);
+}));
+
+// ── POST /api/sync/recalibrate
+// Logs any untracked resolved predictions then recalculates accuracy_stats.
+router.post('/recalibrate', asyncHandler(async (req, res) => {
+  const db     = require('../config/db');
+  const logged = await accuracy.logUntracked(db);
+  await accuracy.recalculateStats(db);
+  return successResponse(res, { logged }, `Logged ${logged} new outcomes, accuracy stats recalculated`);
 }));
 
 module.exports = router;

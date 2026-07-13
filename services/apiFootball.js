@@ -912,10 +912,42 @@ async function fetchFixturesByDate(date, leagueId = null, season = null) {
   return request('/fixtures', params);
 }
 
+// ── Grade predictions that already have scores stored but are still 'pending'
+// Used after a historical backfill to set won/lost without extra API calls.
+async function gradeFromScores(db) {
+  const [rows] = await db.query(
+    `SELECT id, tip, market, home_score, away_score
+     FROM predictions
+     WHERE result = 'pending'
+       AND tip IS NOT NULL AND tip != 'TBD'
+       AND home_score IS NOT NULL AND away_score IS NOT NULL`
+  );
+  let graded = 0;
+  for (const row of rows) {
+    const goals = { home: row.home_score, away: row.away_score };
+    const teams = {
+      home: { winner: row.home_score > row.away_score },
+      away: { winner: row.away_score > row.home_score },
+    };
+    const result = evaluateTip(row.tip, row.market, goals, teams);
+    if (result) {
+      await db.query(
+        `UPDATE predictions SET result = ?, updated_at = NOW() WHERE id = ?`,
+        [result, row.id]
+      );
+      graded++;
+    }
+  }
+  console.log(`[GRADE] ${graded} predictions graded from stored scores`);
+  return graded;
+}
+
 // ── Bulk-sync ALL fixtures for a league + season into the predictions table
 // Useful for pre-loading tournaments (e.g. World Cup 2026) so admins can
 // browse and create predictions without repeated live API calls.
-async function syncLeagueSeasonFixtures(leagueId, season) {
+// Pass { backfill: true } to also insert finished historical fixtures with scores.
+async function syncLeagueSeasonFixtures(leagueId, season, options = {}) {
+  const backfill = options.backfill === true;
   console.log(`[API-Football] Syncing all fixtures: league=${leagueId} season=${season}`);
   const { data: fixtures } = await request('/fixtures', { league: leagueId, season, timezone: 'UTC' });
   console.log(`[API-Football] Fetched ${fixtures.length} fixtures`);
@@ -951,18 +983,27 @@ async function syncLeagueSeasonFixtures(leagueId, season) {
 
   let created = 0, updated = 0, skipped = 0;
   const FINISHED = new Set(['FT','AET','PEN','CANC','ABD','WO','AWD']);
+  const SCOREABLE = new Set(['FT','AET','PEN']);
   const cutoff   = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
-  // ── 3. Collect new (not-yet-stored) fixtures for slug batch-check
-  const toUpdate = [], toInsert = [];
+  // ── 3. Classify fixtures
+  const toUpdate = [], toInsert = [], toBackfill = [];
   for (const item of fixtures) {
     const { fixture, league, teams, goals } = item;
     if (!fixture || !league || !teams) { skipped++; continue; }
     if (existingMap.has(fixture.id)) {
       toUpdate.push({ fixture, goals });
     } else {
-      if (FINISHED.has(fixture.status?.short) || (fixture.date && new Date(fixture.date) < cutoff)) {
-        skipped++;
+      const isFinished = FINISHED.has(fixture.status?.short);
+      const isPast     = fixture.date && new Date(fixture.date) < cutoff;
+      if (isFinished || isPast) {
+        // In backfill mode, insert finished fixtures with their actual scores
+        if (backfill && SCOREABLE.has(fixture.status?.short) && goals &&
+            goals.home != null && goals.away != null) {
+          toBackfill.push(item);
+        } else {
+          skipped++;
+        }
       } else {
         toInsert.push(item);
       }
@@ -972,7 +1013,7 @@ async function syncLeagueSeasonFixtures(leagueId, season) {
   // ── 4. Batch-update finished scores for already-stored fixtures
   for (const { fixture, goals } of toUpdate) {
     const status = fixture.status?.short;
-    if (['FT','AET','PEN'].includes(status) && goals) {
+    if (SCOREABLE.has(status) && goals) {
       await db.query(
         `UPDATE predictions SET home_score=?,away_score=?,status_short=? WHERE fixture_id=?`,
         [goals.home ?? null, goals.away ?? null, status, fixture.id]
@@ -983,13 +1024,14 @@ async function syncLeagueSeasonFixtures(leagueId, season) {
     }
   }
 
-  if (!toInsert.length) {
+  // ── 5. Build slug candidates for both inserts and backfills
+  const allToSlug    = [...toInsert, ...toBackfill];
+  if (!allToSlug.length) {
     console.log(`[API-Football] Sync done: ${created} created, ${updated} updated, ${skipped} skipped`);
     return { created, updated, skipped, total: fixtures.length };
   }
 
-  // ── 5. Batch-check slug conflicts for new inserts
-  const candidateSlugs = toInsert.map(({ fixture, league, teams }) => {
+  const candidateSlugs = allToSlug.map(({ fixture, league, teams }) => {
     const matchDate = fixture.date?.split('T')[0] || '';
     return generatePredictionSlug(league.name, teams.home.name, teams.away.name, matchDate);
   });
@@ -999,7 +1041,7 @@ async function syncLeagueSeasonFixtures(leagueId, season) {
   );
   const usedSlugs = new Set(slugRows.map(r => r.slug));
 
-  // ── 6. Insert new stubs
+  // ── 6. Insert upcoming stubs (tip = TBD, no scores)
   for (let i = 0; i < toInsert.length; i++) {
     const { fixture, teams } = toInsert[i];
     let slug = candidateSlugs[i];
@@ -1021,8 +1063,33 @@ async function syncLeagueSeasonFixtures(leagueId, season) {
     } catch(e) { console.error(`Fixture insert failed ${fixture.id}:`, e.message); skipped++; }
   }
 
-  console.log(`[API-Football] Sync done: ${created} created, ${updated} updated, ${skipped} skipped`);
-  return { created, updated, skipped, total: fixtures.length };
+  // ── 7. Insert backfill rows (finished fixtures with actual scores stored)
+  const backfillOffset = toInsert.length;
+  for (let i = 0; i < toBackfill.length; i++) {
+    const { fixture, teams, goals } = toBackfill[i];
+    let slug = candidateSlugs[backfillOffset + i];
+    if (usedSlugs.has(slug)) slug = `${slug}-${fixture.id}`;
+    const mysqlDate = fixture.date
+      ? fixture.date.replace('T', ' ').replace(/[Z+][^\s]*$/, '').slice(0, 19)
+      : '';
+    if (!mysqlDate) { skipped++; continue; }
+    try {
+      await db.query(
+        `INSERT INTO predictions
+           (fixture_id,league_id,home_team,away_team,home_team_logo,away_team_logo,
+            match_date,tip,market,visibility,result,slug,published_at,
+            home_score,away_score,status_short)
+         VALUES (?,?,?,?,?,?,?,'TBD','1X2','free','pending',?,NULL,?,?,'FT')`,
+        [fixture.id, dbLeagueId, teams.home.name, teams.away.name,
+         teams.home.logo || null, teams.away.logo || null, mysqlDate,
+         slug, goals.home, goals.away]
+      );
+      created++;
+    } catch(e) { console.error(`Backfill insert failed ${fixture.id}:`, e.message); skipped++; }
+  }
+
+  console.log(`[API-Football] Sync done: ${created} created (${toBackfill.length} backfill), ${updated} updated, ${skipped} skipped`);
+  return { created, updated, skipped, total: fixtures.length, backfilled: toBackfill.length };
 }
 
 module.exports = {
@@ -1032,7 +1099,7 @@ module.exports = {
   fetchLeagueFixtures, fetchFixturesByDate,
   calculateFormString, evaluateTip, mapCountryToContinent,
   isPopularLeague, getRequestCount, getRemainingCount, CURRENT_SEASON,
-  researchFixture, autoPredictFixtures,
+  researchFixture, autoPredictFixtures, gradeFromScores,
   fetchFixtureOdds, oddsForTip,
   goalProbabilities, poissonPMF, generateTipSuggestion, scoreForm,
 };

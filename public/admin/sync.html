@@ -100,6 +100,47 @@
       </div>
     </div>
 
+    <!-- Historical Backfill -->
+    <div class="card" style="padding:20px;grid-column:1/-1;border:1px solid rgba(139,92,246,0.3);">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+        <span class="material-icons-round" style="color:#8b5cf6;">history</span>Historical Backfill
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;color:#8b5cf6;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.25);border-radius:4px;padding:2px 8px;text-transform:uppercase;">Calibration</span>
+      </h3>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;">Pull completed historical fixtures (with actual scores) into the database so the confidence engine can calibrate. <strong style="color:var(--text);">1 API request per league × season.</strong> After backfill, run Auto-Predict with "Include Past" then click Grade &amp; Recalibrate.</p>
+
+      <div style="display:flex;flex-wrap:wrap;gap:20px;margin-bottom:16px;">
+        <!-- Seasons -->
+        <div>
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:8px;">Seasons to backfill</label>
+          <div id="season-checkboxes" style="display:flex;flex-wrap:wrap;gap:8px;">
+          </div>
+        </div>
+        <!-- Leagues -->
+        <div style="flex:1;min-width:240px;">
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:8px;">Leagues <span style="font-weight:400;">(popular pre-selected)</span></label>
+          <div id="league-checkboxes" style="display:flex;flex-wrap:wrap;gap:8px;max-height:130px;overflow-y:auto;"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div id="backfill-cost" style="font-size:0.82rem;color:var(--muted);background:var(--surface);padding:6px 12px;border-radius:6px;border:1px solid var(--border);">
+          Estimated API cost: <strong id="backfill-cost-val" style="color:#8b5cf6;">0</strong> requests
+        </div>
+        <button class="btn btn-sm" id="backfill-btn" style="background:#8b5cf6;color:#fff;border:none;">
+          <span class="material-icons-round">download</span>Start Backfill
+        </button>
+      </div>
+      <div id="backfill-result" style="margin-top:10px;font-size:0.82rem;color:var(--muted);"></div>
+    </div>
+
+    <!-- Grade & Recalibrate -->
+    <div class="card" style="padding:20px;">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:#8b5cf6;">auto_graph</span>Grade &amp; Recalibrate</h3>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">Grade all predictions that have stored scores, log outcomes, and recalculate accuracy stats. Run this after every backfill or results sync.</p>
+      <button class="btn btn-sm" id="grade-all-btn" style="background:#8b5cf6;color:#fff;border:none;"><span class="material-icons-round">grading</span>Grade &amp; Recalibrate</button>
+      <div id="grade-all-result" style="margin-top:10px;font-size:0.82rem;color:var(--muted);"></div>
+    </div>
+
     <!-- Sync Log -->
     <div class="card" style="padding:20px;grid-column:1/-1;">
       <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:10px;">Sync Log</h3>
@@ -281,6 +322,134 @@ document.getElementById('auto-predict-btn').addEventListener('click', async func
   btn.innerHTML = '<span class="material-icons-round">auto_awesome</span>Run Auto-Predict';
 });
 
+// ── Historical Backfill UI ────────────────────────────────────────────────────
+var POPULAR_LEAGUES = [
+  { id: 39,  name: 'Premier League',     flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { id: 140, name: 'La Liga',            flag: '🇪🇸' },
+  { id: 135, name: 'Serie A',            flag: '🇮🇹' },
+  { id: 78,  name: 'Bundesliga',         flag: '🇩🇪' },
+  { id: 61,  name: 'Ligue 1',            flag: '🇫🇷' },
+  { id: 2,   name: 'Champions League',   flag: '🏆' },
+  { id: 3,   name: 'Europa League',      flag: '🏆' },
+  { id: 848, name: 'Conference League',  flag: '🏆' },
+  { id: 253, name: 'MLS',               flag: '🇺🇸' },
+  { id: 71,  name: 'Brasileirao',        flag: '🇧🇷' },
+  { id: 307, name: 'Saudi Pro League',   flag: '🇸🇦' },
+  { id: 203, name: 'Süper Lig',         flag: '🇹🇷' },
+  { id: 88,  name: 'Eredivisie',         flag: '🇳🇱' },
+  { id: 94,  name: 'Primeira Liga',      flag: '🇵🇹' },
+  { id: 144, name: 'Belgian Pro League', flag: '🇧🇪' },
+  { id: 197, name: 'Super League Greece',flag: '🇬🇷' },
+  { id: 283, name: 'Liga MX',            flag: '🇲🇽' },
+  { id: 98,  name: 'J1 League',          flag: '🇯🇵' },
+  { id: 292, name: 'K League 1',         flag: '🇰🇷' },
+  { id: 188, name: 'CAF Champions League',flag:'🌍' },
+];
+var DEFAULT_LEAGUE_IDS = [39, 140, 135, 78, 61, 2, 3, 253, 71];
+
+function buildBackfillUI() {
+  // Seasons: 2018 → current year - 1
+  var currentYear = new Date().getFullYear();
+  var seasonBox = document.getElementById('season-checkboxes');
+  for (var y = currentYear - 1; y >= 2018; y--) {
+    var label = document.createElement('label');
+    label.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:0.82rem;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 10px;';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.value = y; cb.dataset.type = 'season';
+    // Pre-select last 3 seasons
+    if (y >= currentYear - 3) cb.checked = true;
+    cb.addEventListener('change', updateBackfillCost);
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(' ' + y));
+    seasonBox.appendChild(label);
+  }
+
+  // Leagues
+  var leagueBox = document.getElementById('league-checkboxes');
+  POPULAR_LEAGUES.forEach(function(l) {
+    var label = document.createElement('label');
+    label.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:0.79rem;cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 10px;white-space:nowrap;';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.value = l.id; cb.dataset.type = 'league';
+    cb.checked = DEFAULT_LEAGUE_IDS.includes(l.id);
+    cb.addEventListener('change', updateBackfillCost);
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(' ' + l.flag + ' ' + l.name));
+    leagueBox.appendChild(label);
+  });
+
+  updateBackfillCost();
+}
+
+function updateBackfillCost() {
+  var seasons = document.querySelectorAll('#season-checkboxes input:checked').length;
+  var leagues = document.querySelectorAll('#league-checkboxes input:checked').length;
+  document.getElementById('backfill-cost-val').textContent = (seasons * leagues);
+}
+
+function getBackfillSelections() {
+  var seasons = Array.from(document.querySelectorAll('#season-checkboxes input:checked')).map(function(el){ return parseInt(el.value); });
+  var leagues = Array.from(document.querySelectorAll('#league-checkboxes input:checked')).map(function(el){ return parseInt(el.value); });
+  return { seasons: seasons, leagues: leagues };
+}
+
+document.getElementById('backfill-btn').addEventListener('click', async function() {
+  var sel = getBackfillSelections();
+  if (!sel.seasons.length || !sel.leagues.length) {
+    Admin.toast('Select at least one season and one league', 'error'); return;
+  }
+  var cost = sel.seasons.length * sel.leagues.length;
+  if (!confirm('This will use ~' + cost + ' API requests and may take several minutes. Continue?')) return;
+
+  var btn = document.getElementById('backfill-btn');
+  var res = document.getElementById('backfill-result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite">sync</span>Backfilling...';
+  log('Backfill started: ' + sel.leagues.length + ' leagues × ' + sel.seasons.length + ' seasons = ' + cost + ' API requests', 'info');
+
+  try {
+    var json = await Admin.api('POST', '/api/sync/backfill', { leagues: sel.leagues, seasons: sel.seasons });
+    if (json.success) {
+      var d = json.data;
+      res.innerHTML = '<span style="color:var(--green);">✓ ' + d.totalCreated + ' fixtures inserted (' + d.totalBackfilled + ' historical with scores), ' + d.totalUpdated + ' updated</span>';
+      log('Backfill complete: ' + d.totalCreated + ' created (' + d.totalBackfilled + ' historical), ' + d.totalUpdated + ' updated', 'success');
+      Admin.toast('Backfill complete — now run Grade & Recalibrate');
+    } else {
+      res.textContent = json.message || 'Backfill failed';
+      log('Backfill error: ' + (json.message || 'Unknown'), 'error');
+    }
+  } catch(e) {
+    log('Network error: ' + e.message, 'error');
+    Admin.toast('Network error', 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-icons-round">download</span>Start Backfill';
+});
+
+document.getElementById('grade-all-btn').addEventListener('click', async function() {
+  var btn = document.getElementById('grade-all-btn');
+  var res = document.getElementById('grade-all-result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite">sync</span>Grading...';
+  log('Grade & Recalibrate started', 'info');
+  try {
+    var json = await Admin.api('POST', '/api/sync/grade-all');
+    if (json.success) {
+      var d = json.data;
+      res.innerHTML = '<span style="color:var(--green);">✓ ' + d.graded + ' predictions graded, ' + d.logged + ' outcomes logged, accuracy stats updated</span>';
+      log('Grade & Recalibrate done: ' + d.graded + ' graded, ' + d.logged + ' logged', 'success');
+      Admin.toast('Recalibration complete');
+    } else {
+      res.textContent = json.message || 'Failed';
+      log('Grade error: ' + (json.message || 'Unknown'), 'error');
+    }
+  } catch(e) {
+    log('Network error: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-icons-round">grading</span>Grade &amp; Recalibrate';
+});
+
 document.addEventListener('DOMContentLoaded', async function() {
   var user = await Admin.requireAdmin();
   if (!user) return;
@@ -288,6 +457,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   loadApiStatus();
   document.getElementById('sync-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('results-date').value = new Date().toISOString().split('T')[0];
+  buildBackfillUI();
 });
 </script>
 </body></html>
