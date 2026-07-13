@@ -364,6 +364,58 @@ function evaluateTip(tip, market, goals, teams) {
   return null;
 }
 
+// ── Local DB helpers — H2H and form from backfilled historical data ───────────
+
+async function localH2HRows(homeTeam, awayTeam, limit = 10) {
+  const h = homeTeam.slice(0, 12);
+  const a = awayTeam.slice(0, 12);
+  const [rows] = await db.query(
+    `SELECT home_team, away_team, home_score, away_score, match_date
+     FROM predictions
+     WHERE home_score IS NOT NULL AND away_score IS NOT NULL
+       AND ((home_team LIKE ? AND away_team LIKE ?)
+            OR (home_team LIKE ? AND away_team LIKE ?))
+     ORDER BY match_date DESC LIMIT ?`,
+    [`%${h}%`, `%${a}%`, `%${a}%`, `%${h}%`, limit]
+  );
+  return rows;
+}
+
+async function localFormRows(teamName, limit = 15) {
+  const t = teamName.slice(0, 12);
+  const [rows] = await db.query(
+    `SELECT home_team, away_team, home_score, away_score, match_date
+     FROM predictions
+     WHERE home_score IS NOT NULL AND away_score IS NOT NULL
+       AND (home_team LIKE ? OR away_team LIKE ?)
+     ORDER BY match_date DESC LIMIT ?`,
+    [`%${t}%`, `%${t}%`, limit]
+  );
+  return rows;
+}
+
+function localRowResult(row, teamName) {
+  const tn = teamName.toLowerCase().slice(0, 10);
+  const isHome = row.home_team.toLowerCase().includes(tn);
+  const homeWon = row.home_score > row.away_score;
+  const awayWon = row.away_score > row.home_score;
+  return isHome ? (homeWon ? 'W' : awayWon ? 'L' : 'D') : (awayWon ? 'W' : homeWon ? 'L' : 'D');
+}
+
+function localFormStr(rows, teamName, limit = 5) {
+  return rows.slice(0, limit).map(r => localRowResult(r, teamName)).join('');
+}
+
+function localH2HCount(rows) {
+  let hw = 0, aw = 0, dw = 0;
+  for (const r of rows) {
+    if (r.home_score > r.away_score) hw++;
+    else if (r.away_score > r.home_score) aw++;
+    else dw++;
+  }
+  return { hw, aw, dw };
+}
+
 // ── H2H, form, standings, stats
 async function fetchH2H(team1Id, team2Id, last = 10) {
   // Paid plan: use the `last` parameter directly — only finished H2H meetings,
@@ -586,80 +638,132 @@ function generateTipSuggestion(homeForm, awayForm, h2hData, homeStats, awayStats
 
 function pct(v) { return Math.round((v || 0) * 100); }
 
-// ── Research a single fixture — returns enriched data for admin display ────────
+// ── Research a single fixture — hybrid: local DB first, API fills the gaps ─────
 async function researchFixture(fixtureId) {
-  // Get the prediction from DB to find team API IDs
   const fixtureInfo = await request('/fixtures', { id: fixtureId });
   if (!fixtureInfo.data.length) throw new Error('Fixture not found in API');
 
-  const fix      = fixtureInfo.data[0];
-  const homeId   = fix.teams.home.id;
-  const awayId   = fix.teams.away.id;
-  const leagueId = fix.league.id;
+  const fix          = fixtureInfo.data[0];
+  const homeId       = fix.teams.home.id;
+  const awayId       = fix.teams.away.id;
+  const leagueId     = fix.league.id;
+  const homeTeamName = fix.teams.home.name;
+  const awayTeamName = fix.teams.away.name;
 
-  // Fetch 15 recent fixtures per team (more than 5) so we can compute venue-specific form
+  // ── Step 1: query local DB for H2H and form (free — no API cost) ─────────
+  const [localH2H, localHome, localAway] = await Promise.all([
+    localH2HRows(homeTeamName, awayTeamName, 10).catch(() => []),
+    localFormRows(homeTeamName, 15).catch(() => []),
+    localFormRows(awayTeamName, 15).catch(() => []),
+  ]);
+
+  // Use local data when we have enough; otherwise fall back to API
+  const useLocalH2H  = localH2H.length >= 5;
+  const useLocalHome = localHome.length >= 8;
+  const useLocalAway = localAway.length >= 8;
+
+  // ── Step 2: only call API where local data is thin ────────────────────────
   const [homeFormRaw, awayFormRaw, h2hRaw, homeStatsRaw, awayStatsRaw, standingsRaw, oddsRaw] = await Promise.all([
-    fetchTeamForm(homeId, 15).catch(() => []),
-    fetchTeamForm(awayId, 15).catch(() => []),
-    fetchH2H(homeId, awayId, 10).catch(() => []),
+    useLocalHome ? Promise.resolve([]) : fetchTeamForm(homeId, 15).catch(() => []),
+    useLocalAway ? Promise.resolve([]) : fetchTeamForm(awayId, 15).catch(() => []),
+    useLocalH2H  ? Promise.resolve([]) : fetchH2H(homeId, awayId, 10).catch(() => []),
     fetchTeamStats(homeId, leagueId).catch(() => null),
     fetchTeamStats(awayId, leagueId).catch(() => null),
     fetchStandings(leagueId).catch(() => []),
     fetchFixtureOdds(fixtureId).catch(() => null),
   ]);
 
-  const homeForm = calculateFormString(homeFormRaw, homeId);
-  const awayForm = calculateFormString(awayFormRaw, awayId);
+  // ── Step 3: build form strings (local rows or API rows) ───────────────────
+  let homeForm, awayForm, homeFormVenue, awayFormVenue, homeRecent, awayRecent;
 
-  // Venue-specific form: home team AT HOME, away team AWAY
-  const homeAtHomeFixtures = homeFormRaw.filter(f => f.teams.home.id === homeId);
-  const awayAtAwayFixtures = awayFormRaw.filter(f => f.teams.away.id === awayId);
-  const homeFormVenue = calculateFormString(homeAtHomeFixtures, homeId);
-  const awayFormVenue = calculateFormString(awayAtAwayFixtures, awayId);
-
-  // H2H summary — "recent|older" format for recency-weighted confidence scoring
-  // Counts from each team's perspective as HOME/AWAY in those H2H fixtures
-  function h2hCounts(fixtures) {
-    let hw = 0, aw = 0, dw = 0;
-    for (const f of fixtures) {
-      const hWinner = f.teams.home.winner === true;
-      const aWinner = f.teams.away.winner === true;
-      if (hWinner) hw++;
-      else if (aWinner) aw++;
-      else dw++;
-    }
-    return { hw, aw, dw };
-  }
-  const recentH2H = h2hRaw.slice(0, 5);
-  const olderH2H  = h2hRaw.slice(5, 10);
-  let h2hSummary  = null;
-  if (h2hRaw.length) {
-    const r = h2hCounts(recentH2H);
-    if (olderH2H.length) {
-      const o = h2hCounts(olderH2H);
-      h2hSummary = `H${r.hw}-A${r.aw}-D${r.dw}|H${o.hw}-A${o.aw}-D${o.dw}`;
-    } else {
-      h2hSummary = `H${r.hw}-A${r.aw}-D${r.dw}`;
-    }
+  if (useLocalHome) {
+    homeForm      = localFormStr(localHome, homeTeamName, 5);
+    const atHome  = localHome.filter(r => r.home_team.toLowerCase().includes(homeTeamName.toLowerCase().slice(0, 10)));
+    homeFormVenue = localFormStr(atHome, homeTeamName, 5);
+    homeRecent    = localHome.slice(0, 5).map(r => ({
+      date:   r.match_date ? new Date(r.match_date).toISOString().split('T')[0] : null,
+      home:   r.home_team,
+      away:   r.away_team,
+      score:  `${r.home_score}-${r.away_score}`,
+      result: localRowResult(r, homeTeamName),
+    }));
+  } else {
+    homeForm      = calculateFormString(homeFormRaw, homeId);
+    const atHome  = homeFormRaw.filter(f => f.teams.home.id === homeId);
+    homeFormVenue = calculateFormString(atHome, homeId);
+    homeRecent    = homeFormRaw.slice(0, 5).map(f => ({
+      date:   f.fixture.date?.split('T')[0],
+      home:   f.teams.home.name,
+      away:   f.teams.away.name,
+      score:  `${f.goals.home}-${f.goals.away}`,
+      result: f.teams.home.id === homeId ? (f.teams.home.winner ? 'W' : f.teams.away.winner ? 'L' : 'D') : (f.teams.away.winner ? 'W' : f.teams.home.winner ? 'L' : 'D'),
+    }));
   }
 
-  // Recent results detail
-  const homeRecent = homeFormRaw.slice(0, 5).map(f => ({
-    date:     f.fixture.date?.split('T')[0],
-    home:     f.teams.home.name,
-    away:     f.teams.away.name,
-    score:    `${f.goals.home}-${f.goals.away}`,
-    result:   f.teams.home.id === homeId ? (f.teams.home.winner ? 'W' : f.teams.away.winner ? 'L' : 'D') : (f.teams.away.winner ? 'W' : f.teams.home.winner ? 'L' : 'D'),
-  }));
-  const awayRecent = awayFormRaw.slice(0, 5).map(f => ({
-    date:     f.fixture.date?.split('T')[0],
-    home:     f.teams.home.name,
-    away:     f.teams.away.name,
-    score:    `${f.goals.home}-${f.goals.away}`,
-    result:   f.teams.home.id === awayId ? (f.teams.home.winner ? 'W' : f.teams.away.winner ? 'L' : 'D') : (f.teams.away.winner ? 'W' : f.teams.home.winner ? 'L' : 'D'),
-  }));
+  if (useLocalAway) {
+    awayForm      = localFormStr(localAway, awayTeamName, 5);
+    const atAway  = localAway.filter(r => r.away_team.toLowerCase().includes(awayTeamName.toLowerCase().slice(0, 10)));
+    awayFormVenue = localFormStr(atAway, awayTeamName, 5);
+    awayRecent    = localAway.slice(0, 5).map(r => ({
+      date:   r.match_date ? new Date(r.match_date).toISOString().split('T')[0] : null,
+      home:   r.home_team,
+      away:   r.away_team,
+      score:  `${r.home_score}-${r.away_score}`,
+      result: localRowResult(r, awayTeamName),
+    }));
+  } else {
+    awayForm      = calculateFormString(awayFormRaw, awayId);
+    const atAway  = awayFormRaw.filter(f => f.teams.away.id === awayId);
+    awayFormVenue = calculateFormString(atAway, awayId);
+    awayRecent    = awayFormRaw.slice(0, 5).map(f => ({
+      date:   f.fixture.date?.split('T')[0],
+      home:   f.teams.home.name,
+      away:   f.teams.away.name,
+      score:  `${f.goals.home}-${f.goals.away}`,
+      result: f.teams.home.id === awayId ? (f.teams.home.winner ? 'W' : f.teams.away.winner ? 'L' : 'D') : (f.teams.away.winner ? 'W' : f.teams.home.winner ? 'L' : 'D'),
+    }));
+  }
 
-  // Standings position
+  // ── Step 4: build H2H summary (local rows or API rows) ───────────────────
+  let h2hSummary = null;
+  let h2hRecentDisplay = [];
+
+  if (useLocalH2H) {
+    const r = localH2HCount(localH2H.slice(0, 5));
+    const older = localH2H.slice(5, 10);
+    h2hSummary = older.length
+      ? `H${r.hw}-A${r.aw}-D${r.dw}|H${localH2HCount(older).hw}-A${localH2HCount(older).aw}-D${localH2HCount(older).dw}`
+      : `H${r.hw}-A${r.aw}-D${r.dw}`;
+    h2hRecentDisplay = localH2H.slice(0, 5).map(row => ({
+      date:  row.match_date ? new Date(row.match_date).toISOString().split('T')[0] : null,
+      home:  row.home_team,
+      away:  row.away_team,
+      score: `${row.home_score}-${row.away_score}`,
+    }));
+  } else if (h2hRaw.length) {
+    function h2hCounts(fixtures) {
+      let hw = 0, aw = 0, dw = 0;
+      for (const f of fixtures) {
+        if (f.teams.home.winner === true) hw++;
+        else if (f.teams.away.winner === true) aw++;
+        else dw++;
+      }
+      return { hw, aw, dw };
+    }
+    const r = h2hCounts(h2hRaw.slice(0, 5));
+    const o = h2hRaw.length > 5 ? h2hCounts(h2hRaw.slice(5, 10)) : null;
+    h2hSummary = o
+      ? `H${r.hw}-A${r.aw}-D${r.dw}|H${o.hw}-A${o.aw}-D${o.dw}`
+      : `H${r.hw}-A${r.aw}-D${r.dw}`;
+    h2hRecentDisplay = h2hRaw.slice(0, 5).map(f => ({
+      date:  f.fixture.date?.split('T')[0],
+      home:  f.teams.home.name,
+      away:  f.teams.away.name,
+      score: `${f.goals.home}-${f.goals.away}`,
+    }));
+  }
+
+  // ── Step 5: standings, tip suggestion, Poisson ────────────────────────────
   let homeStanding = null, awayStanding = null;
   if (standingsRaw.length && standingsRaw[0]?.league?.standings) {
     const table = standingsRaw[0].league.standings.flat();
@@ -667,12 +771,21 @@ async function researchFixture(fixtureId) {
     awayStanding = table.find(t => t.team.id === awayId);
   }
 
+  // Pass a normalised h2h array to generateTipSuggestion — works with both sources
+  const h2hForTip = useLocalH2H
+    ? localH2H.map(r => ({
+        teams: {
+          home: { winner: r.home_score > r.away_score ? true : r.home_score < r.away_score ? false : null },
+          away: { winner: r.away_score > r.home_score ? true : r.away_score < r.home_score ? false : null },
+        },
+      }))
+    : h2hRaw;
+
   const suggestion = generateTipSuggestion(
-    homeForm, awayForm, h2hRaw, homeStatsRaw, awayStatsRaw,
+    homeForm, awayForm, h2hForTip, homeStatsRaw, awayStatsRaw,
     homeFormVenue, awayFormVenue
   );
 
-  // Compute Poisson probabilities for display in admin UI
   let poissonProbs = null;
   if (homeStatsRaw && awayStatsRaw) {
     const homeAtkH = parseFloat(homeStatsRaw.goals?.for?.average?.home  || homeStatsRaw.goals?.for?.average?.total)  || 0;
@@ -694,25 +807,26 @@ async function researchFixture(fixtureId) {
 
   return {
     fixture: {
-      id:      fix.fixture.id,
-      date:    fix.fixture.date,
-      home:    { id: homeId, name: fix.teams.home.name, logo: fix.teams.home.logo },
-      away:    { id: awayId, name: fix.teams.away.name, logo: fix.teams.away.logo },
-      league:  { id: leagueId, name: fix.league.name, logo: fix.league.logo },
+      id:     fix.fixture.id,
+      date:   fix.fixture.date,
+      home:   { id: homeId, name: homeTeamName, logo: fix.teams.home.logo },
+      away:   { id: awayId, name: awayTeamName, logo: fix.teams.away.logo },
+      league: { id: leagueId, name: fix.league.name, logo: fix.league.logo },
     },
     home_form:       homeForm,
     away_form:       awayForm,
     home_form_venue: homeFormVenue || null,
     away_form_venue: awayFormVenue || null,
-    home_recent:  homeRecent,
-    away_recent:  awayRecent,
-    h2h_summary:  h2hSummary,
-    h2h_recent:   h2hRaw.slice(0, 5).map(f => ({
-      date:  f.fixture.date?.split('T')[0],
-      home:  f.teams.home.name,
-      away:  f.teams.away.name,
-      score: `${f.goals.home}-${f.goals.away}`,
-    })),
+    home_recent:     homeRecent,
+    away_recent:     awayRecent,
+    h2h_summary:     h2hSummary,
+    h2h_recent:      h2hRecentDisplay,
+    // Source labels help admin see which data came from where
+    data_sources: {
+      h2h:       useLocalH2H  ? 'local-db' : 'api',
+      home_form: useLocalHome ? 'local-db' : 'api',
+      away_form: useLocalAway ? 'local-db' : 'api',
+    },
     home_standing: homeStanding ? { rank: homeStanding.rank, points: homeStanding.points, played: homeStanding.all.played, gd: homeStanding.goalsDiff } : null,
     away_standing: awayStanding ? { rank: awayStanding.rank, points: awayStanding.points, played: awayStanding.all.played, gd: awayStanding.goalsDiff } : null,
     home_stats: homeStatsRaw ? {
@@ -733,8 +847,8 @@ async function researchFixture(fixtureId) {
       draws:               awayStatsRaw.fixtures?.draws?.total,
       losses:              awayStatsRaw.fixtures?.loses?.total,
     } : null,
-    poisson:    poissonProbs,
-    odds:       oddsRaw,
+    poisson:  poissonProbs,
+    odds:     oddsRaw,
     suggestion,
   };
 }
