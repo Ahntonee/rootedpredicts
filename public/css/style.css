@@ -59,13 +59,6 @@ body {
   transition: background var(--transition), color var(--transition);
 }
 
-/* ── Content Protection ─────────────────────────────────────── */
-body, p, h1, h2, h3, h4, h5, h6, span, div, article, section, li, td, th, a {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
 /* Exempt form elements */
 input, textarea, select, [contenteditable] {
   -webkit-user-select: text;
