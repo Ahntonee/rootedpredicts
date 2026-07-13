@@ -764,7 +764,7 @@ async function autoPredictFixtures(db, options = {}) {
   args.push(limit);
 
   const [rows] = await db.query(
-    `SELECT p.id, p.fixture_id, p.home_team, p.away_team, p.league_id,
+    `SELECT p.id, p.fixture_id, p.home_team, p.away_team, p.league_id, p.match_date,
             l.api_league_id
      FROM predictions p
      LEFT JOIN leagues l ON l.id = p.league_id
@@ -822,8 +822,14 @@ async function autoPredictFixtures(db, options = {}) {
         away_goals_conceded_avg: awayGoalsConceded,
       });
 
-      // Only publish if confidence ≥ minConf (selectivity filter)
-      const shouldPublish = autoPublish && confScore >= minConf;
+      // Only publish if confidence ≥ minConf AND match hasn't kicked off yet
+      // Allow up to 1 minute after kick-off to cover clock drift; block after that
+      const kickoffMs = row.match_date
+        ? new Date(String(row.match_date).replace(' ', 'T') + 'Z').getTime()
+        : Infinity;
+      const minsUntilKickoff = (kickoffMs - Date.now()) / 60000;
+      const kickoffOk = minsUntilKickoff > -1;
+      const shouldPublish = autoPublish && confScore >= minConf && kickoffOk;
 
       // Real bookmaker odds for the tip's market (null when unavailable)
       const marketOdds = data.odds ? data.odds[suggestion.market] : null;

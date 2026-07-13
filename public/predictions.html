@@ -945,8 +945,11 @@
             ? `<span class="pick-time">${p.home_score}–${p.away_score} FT</span>`
             : `<span class="pick-time" style="color:var(--muted);">FT</span>`;
         } else {
-          const t = p.match_date ? new Date(p.match_date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
-          timeDisplay = `<span class="pick-time">${esc(t)}</span>`;
+          const dt = p.match_date ? new Date(p.match_date) : null;
+          const timeStr = dt ? dt.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', timeZone:'UTC'}) + ' UTC' : '';
+          const dateStr = dt ? dt.toLocaleDateString('en-GB', {day:'2-digit', month:'short', timeZone:'UTC'}) : '';
+          const showDate = currentOffset !== 0;
+          timeDisplay = `<span class="pick-time">${showDate && dateStr ? esc(dateStr) + ' · ' : ''}${esc(timeStr)}</span>`;
         }
         const odds = p.odds ? parseFloat(p.odds).toFixed(2) : '—';
         const tip  = p.tip || '—';
