@@ -410,10 +410,10 @@ document.getElementById('backfill-btn').addEventListener('click', async function
   try {
     var json = await Admin.api('POST', '/api/sync/backfill', { leagues: sel.leagues, seasons: sel.seasons });
     if (json.success) {
-      var d = json.data;
-      res.innerHTML = '<span style="color:var(--green);">✓ ' + d.totalCreated + ' fixtures inserted (' + d.totalBackfilled + ' historical with scores), ' + d.totalUpdated + ' updated</span>';
-      log('Backfill complete: ' + d.totalCreated + ' created (' + d.totalBackfilled + ' historical), ' + d.totalUpdated + ' updated', 'success');
-      Admin.toast('Backfill complete — now run Grade & Recalibrate');
+      var msg = json.message || 'Backfill running in background.';
+      res.innerHTML = '<span style="color:#8b5cf6;">⏳ ' + msg + ' Check server logs for progress, then run Grade &amp; Recalibrate when done.</span>';
+      log(msg, 'success');
+      Admin.toast('Backfill started — runs in background');
     } else {
       res.textContent = json.message || 'Backfill failed';
       log('Backfill error: ' + (json.message || 'Unknown'), 'error');

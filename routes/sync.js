@@ -193,28 +193,35 @@ router.post('/backfill', asyncHandler(async (req, res) => {
     return errorResponse(res, 'leagues (array) and seasons (array) are required', 400);
   }
 
-  const results = [];
-  let totalCreated = 0, totalBackfilled = 0, totalUpdated = 0;
+  const total = leagues.length * seasons.length;
 
-  for (const leagueId of leagues) {
-    for (const season of seasons) {
-      try {
-        await new Promise(r => setTimeout(r, 300)); // rate-limit spacing
-        const r = await apiSvc.syncLeagueSeasonFixtures(leagueId, season, { backfill: true });
-        totalCreated    += r.created    || 0;
-        totalBackfilled += r.backfilled || 0;
-        totalUpdated    += r.updated    || 0;
-        results.push({ league: leagueId, season, ...r });
-        console.log(`[BACKFILL] league=${leagueId} season=${season}: ${r.created} created (${r.backfilled || 0} historical), ${r.updated} updated`);
-      } catch (e) {
-        results.push({ league: leagueId, season, error: e.message });
-        console.error(`[BACKFILL] Failed league=${leagueId} season=${season}:`, e.message);
+  // Respond immediately — backfill runs in background to avoid 504 timeout
+  res.status(202).json({
+    success: true,
+    message: `Backfill started in background: ${leagues.length} leagues × ${seasons.length} seasons = ${total} API requests. Progress logged to server console.`,
+    total_requests: total,
+  });
+
+  // Background job — no response to send, errors only logged
+  ;(async () => {
+    let totalCreated = 0, totalBackfilled = 0, totalUpdated = 0;
+    console.log(`[BACKFILL] Starting: ${leagues.length} leagues × ${seasons.length} seasons = ${total} requests`);
+    for (const leagueId of leagues) {
+      for (const season of seasons) {
+        try {
+          await new Promise(r => setTimeout(r, 300));
+          const r = await apiSvc.syncLeagueSeasonFixtures(leagueId, season, { backfill: true });
+          totalCreated    += r.created    || 0;
+          totalBackfilled += r.backfilled || 0;
+          totalUpdated    += r.updated    || 0;
+          console.log(`[BACKFILL] league=${leagueId} season=${season}: ${r.created} created (${r.backfilled || 0} historical), ${r.updated} updated`);
+        } catch (e) {
+          console.error(`[BACKFILL] Failed league=${leagueId} season=${season}:`, e.message);
+        }
       }
     }
-  }
-
-  return successResponse(res, { results, totalCreated, totalBackfilled, totalUpdated },
-    `Backfill complete: ${totalCreated} fixtures inserted (${totalBackfilled} historical), ${totalUpdated} scores updated`);
+    console.log(`[BACKFILL] Done: ${totalCreated} inserted (${totalBackfilled} historical), ${totalUpdated} updated`);
+  })().catch(e => console.error('[BACKFILL] Fatal:', e.message));
 }));
 
 // ── POST /api/sync/grade-all
