@@ -101,7 +101,9 @@ async function syncTeams(leagueId, season = CURRENT_SEASON) {
 
 // ── Sync fixtures for a date
 async function syncFixtures(date, leagueId = null) {
-  const params = { date, season: CURRENT_SEASON, timezone: 'UTC' };
+  // No season filter — lets the API return all fixtures for the date across any season.
+  // Filtering by CURRENT_SEASON was excluding leagues on 2025/2026 calendars (MLS, etc.)
+  const params = { date, timezone: 'UTC' };
   if (leagueId) params.league = leagueId;
   const { data: fixtures } = await request('/fixtures', params);
   console.log(`[API-Football] Fetched ${fixtures.length} fixtures for ${date}`);
