@@ -179,19 +179,19 @@ async function loadPosts() {
 }
 
 function openNew() {
-  ensureQuill();
   blogEditId = null;
   document.getElementById('blog-modal-title').textContent = 'New Blog Post';
   ['b-title','b-excerpt','b-meta-title','b-meta-desc','b-keywords','b-image','b-image-alt'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('b-cat').value = '';
   document.getElementById('b-published').checked = false;
   showImagePreview('');
-  clearContent();
+  // Show modal first so the editor div is visible before Quill initialises
   Admin.showModal('blog-modal');
+  ensureQuill();
+  clearContent();
 }
 
 async function editPost(id) {
-  ensureQuill();
   const json = await Admin.api('GET', '/api/admin/blog/'+id);
   const p = json.data;
   if (!p) return;
@@ -207,8 +207,10 @@ async function editPost(id) {
   document.getElementById('b-image-alt').value    = p.featured_image_alt || '';
   showImagePreview(p.featured_image || '');
   document.getElementById('b-published').checked  = !!p.is_published;
-  setContent(p.content || '');
+  // Show modal first so editor div is visible before Quill initialises
   Admin.showModal('blog-modal');
+  ensureQuill();
+  setContent(p.content || '');
 }
 
 async function deletePost(id) {
