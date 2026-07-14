@@ -179,6 +179,7 @@ async function loadPosts() {
 }
 
 function openNew() {
+  ensureQuill();
   blogEditId = null;
   document.getElementById('blog-modal-title').textContent = 'New Blog Post';
   ['b-title','b-excerpt','b-meta-title','b-meta-desc','b-keywords','b-image','b-image-alt'].forEach(id => document.getElementById(id).value = '');
@@ -190,6 +191,7 @@ function openNew() {
 }
 
 async function editPost(id) {
+  ensureQuill();
   const json = await Admin.api('GET', '/api/admin/blog/'+id);
   const p = json.data;
   if (!p) return;
@@ -246,8 +248,8 @@ async function savePost() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  // Init Quill immediately — before any async await — so it's ready when modals open
+function ensureQuill() {
+  if (quill) return;
   quill = new Quill('#b-content-editor', {
     theme: 'snow',
     placeholder: 'Write article content here...',
@@ -262,13 +264,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       ],
     },
   });
+}
 
-  document.getElementById('save-blog-btn').addEventListener('click', savePost);
-
+document.addEventListener('DOMContentLoaded', async () => {
   const u = await Admin.requireAdmin();
   if (!u) return;
   Admin.buildSidebar(u);
   loadPosts();
+
+  document.getElementById('save-blog-btn').addEventListener('click', savePost);
 
   document.getElementById('b-image').addEventListener('input', e => showImagePreview(e.target.value.trim()));
 
