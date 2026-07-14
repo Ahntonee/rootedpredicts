@@ -55,7 +55,7 @@
 </head>
 <body>
 <div id="admin-sidebar" class="admin-sidebar"></div>
-<div class="admin-topbar"><span class="admin-topbar-title">Blog Post CMS</span><button class="btn btn-primary btn-sm" id="new-post-btn"><span class="material-icons-round">add</span>New Post</button></div>
+<div class="admin-topbar"><span class="admin-topbar-title">Blog Post CMS</span><button class="btn btn-primary btn-sm" onclick="openNew()"><span class="material-icons-round">add</span>New Post</button></div>
 <main class="admin-main">
   <div class="card" style="overflow:hidden;">
     <div id="blog-loading" style="text-align:center;padding:40px;"><p style="color:var(--muted);">Loading posts...</p></div>
@@ -247,11 +247,7 @@ async function savePost() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const u = await Admin.requireAdmin();
-  if (!u) return;
-  Admin.buildSidebar(u);
-  loadPosts();
-
+  // Init Quill immediately — before any async await — so it's ready when modals open
   quill = new Quill('#b-content-editor', {
     theme: 'snow',
     placeholder: 'Write article content here...',
@@ -267,8 +263,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
   });
 
-  document.getElementById('new-post-btn').addEventListener('click', openNew);
   document.getElementById('save-blog-btn').addEventListener('click', savePost);
+
+  const u = await Admin.requireAdmin();
+  if (!u) return;
+  Admin.buildSidebar(u);
+  loadPosts();
 
   document.getElementById('b-image').addEventListener('input', e => showImagePreview(e.target.value.trim()));
 
