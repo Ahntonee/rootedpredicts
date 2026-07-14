@@ -41,7 +41,7 @@ app.use(helmet({
       // Without this, Helmet defaults script-src-attr to 'none', silently
       // disabling every inline onclick (edit/delete buttons, modal closes, tabs).
       scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc:    ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com'],
+      styleSrc:    ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net'],
       fontSrc:     ["'self'", 'fonts.gstatic.com', 'fonts.googleapis.com'],
       imgSrc:      ["'self'", 'data:', 'https:', 'media.api-sports.io'],
       connectSrc:  ["'self'"],
