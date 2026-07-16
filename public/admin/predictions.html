@@ -27,6 +27,9 @@
     <div class="admin-filters">
       <select class="admin-filter-select" id="f-result"><option value="">All Results</option><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option></select>
       <select class="admin-filter-select" id="f-visibility"><option value="">All Visibility</option><option value="free">Free</option><option value="vip">VIP</option></select>
+      <select class="admin-filter-select" id="f-market"><option value="">All Markets</option><option>1X2</option><option>Over/Under</option><option>BTTS</option><option>Double Chance</option><option>Draw No Bet</option><option>Correct Score</option><option>Accumulator</option></select>
+      <select class="admin-filter-select" id="f-tip"><option value="">All Tips</option><option>Home Win</option><option>Away Win</option><option>Draw</option><option>Over 2.5</option><option>Under 2.5</option><option>Over 1.5</option><option>Under 1.5</option><option>Over 3.5</option><option>Under 3.5</option><option>BTTS - Yes</option><option>BTTS - No</option></select>
+      <select class="admin-filter-select" id="f-confidence"><option value="">Any Confidence</option><option value="50">50%+</option><option value="60">60%+</option><option value="65">65%+</option><option value="70">70%+</option><option value="80">80%+</option></select>
       <input type="date" class="admin-filter-select" id="f-date">
     </div>
     <button class="btn btn-outline btn-sm" id="apply-filters"><span class="material-icons-round">filter_list</span>Apply</button>
@@ -290,13 +293,19 @@ function describeScore(s) {
 
 async function loadPredictions(page) {
   page = page||1;
-  const result     = document.getElementById('f-result').value;
-  const visibility = document.getElementById('f-visibility').value;
-  const date       = document.getElementById('f-date').value;
+  const result          = document.getElementById('f-result').value;
+  const visibility      = document.getElementById('f-visibility').value;
+  const date            = document.getElementById('f-date').value;
+  const market          = document.getElementById('f-market').value;
+  const tip             = document.getElementById('f-tip').value;
+  const confidence_min  = document.getElementById('f-confidence').value;
   let url = `/api/admin/predictions?page=${page}&limit=20`;
-  if (result)     url += '&result='+result;
-  if (visibility) url += '&visibility='+visibility;
-  if (date)       url += '&date='+date;
+  if (result)         url += '&result='+encodeURIComponent(result);
+  if (visibility)     url += '&visibility='+encodeURIComponent(visibility);
+  if (date)           url += '&date='+encodeURIComponent(date);
+  if (market)         url += '&market='+encodeURIComponent(market);
+  if (tip)            url += '&tip='+encodeURIComponent(tip);
+  if (confidence_min) url += '&confidence_min='+encodeURIComponent(confidence_min);
   document.getElementById('pred-loading').style.display='block';
   document.getElementById('pred-table').style.display='none';
   const json = await Admin.api('GET', url);
@@ -890,7 +899,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('apply-filters').addEventListener('click', () => loadPredictions(1));
   // Auto-apply when any filter changes (e.g. picking a date shows that date immediately)
-  ['f-result', 'f-visibility', 'f-date'].forEach(id => {
+  ['f-result', 'f-visibility', 'f-date', 'f-market', 'f-tip', 'f-confidence'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', () => { predPage = 1; loadPredictions(1); });
   });

@@ -69,13 +69,16 @@ async function getStats(req, res) {
 // ── List predictions with filters
 async function getPredictions(req, res) {
   try {
-    const { page=1, limit=20, result, visibility, league, date } = req.query;
+    const { page=1, limit=20, result, visibility, league, date, tip, market, confidence_min } = req.query;
     const offset = (parseInt(page)-1) * parseInt(limit);
     const conditions = [], filterArgs = [];
-    if (result)     { conditions.push('p.result=?');           filterArgs.push(result); }
-    if (visibility) { conditions.push('p.visibility=?');       filterArgs.push(visibility); }
-    if (league)     { conditions.push('p.league_id=?');        filterArgs.push(league); }
-    if (date)       { conditions.push('DATE(p.match_date)=?'); filterArgs.push(date); }
+    if (result)          { conditions.push('p.result=?');                    filterArgs.push(result); }
+    if (visibility)      { conditions.push('p.visibility=?');                filterArgs.push(visibility); }
+    if (league)          { conditions.push('p.league_id=?');                 filterArgs.push(league); }
+    if (date)            { conditions.push('DATE(p.match_date)=?');          filterArgs.push(date); }
+    if (tip)             { conditions.push('p.tip LIKE ?');                  filterArgs.push('%'+tip+'%'); }
+    if (market)          { conditions.push('p.market=?');                    filterArgs.push(market); }
+    if (confidence_min)  { conditions.push('p.confidence_score >= ?');       filterArgs.push(parseInt(confidence_min)); }
     const WHERE = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
     const [[{total}]] = await db.query(
       `SELECT COUNT(*) as total FROM predictions p LEFT JOIN leagues l ON p.league_id=l.id${WHERE}`,
