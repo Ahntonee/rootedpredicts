@@ -94,6 +94,26 @@ async function getPredictions(req, res) {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 
+// ── Multi-tip review queue: upcoming predictions with alternative tip candidates
+async function getMultiTipReview(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT p.id, p.home_team, p.away_team, p.match_date, p.tip, p.market,
+              p.confidence_score, p.alt_tips, p.published_at, p.visibility, p.result,
+              l.name AS league_name
+       FROM predictions p
+       LEFT JOIN leagues l ON p.league_id = l.id
+       WHERE p.alt_tips IS NOT NULL
+         AND JSON_LENGTH(p.alt_tips) > 0
+         AND p.match_date >= NOW()
+         AND p.result = 'pending'
+       ORDER BY p.match_date ASC
+       LIMIT 50`
+    );
+    res.json({ success: true, data: rows });
+  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
 // ── Get single prediction by ID
 async function getPrediction(req, res) {
   try {
@@ -189,6 +209,7 @@ async function updatePrediction(req, res) {
     if (h2h_summary)      { updates.push('h2h_summary=?');      args.push(h2h_summary); }
     if (published===true) { updates.push('published_at=COALESCE(published_at,NOW())'); }
     if (published===false){ updates.push('published_at=NULL'); }
+    if (req.body.clear_alt_tips === true) { updates.push('alt_tips=NULL'); }
     if (!updates.length)  return res.status(400).json({ success:false, message:'Nothing to update' });
     updates.push('updated_by=?'); args.push(req.user.id);
     updates.push('updated_at=NOW()'); args.push(id);
@@ -667,6 +688,7 @@ module.exports = {
   scorePrediction, scoreAllPredictions, previewScore,
   getUsers, updateUser, getLeagues, updateLeague,
   getBlogPosts, getBlogPost, createBlogPost, updateBlogPost, deleteBlogPost,
+  getMultiTipReview,
   getSeoSettings, updateSeoSettings,
   getSiteStats, updateSiteStats,
   getFormLeagues, getLeagueFixtures, getFixtureOdds,

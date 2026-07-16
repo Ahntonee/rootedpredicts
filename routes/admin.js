@@ -18,6 +18,8 @@ router.get('/stats', asyncHandler(admin.getStats));
 // ── Predictions ────────────────────────────────────────────────
 // Read: all admin roles
 router.get ('/predictions',               asyncHandler(admin.getPredictions));
+// multi-tip MUST be before /:id so Express doesn't match "multi-tip" as an id
+router.get ('/predictions/multi-tip',     asyncHandler(admin.getMultiTipReview));
 router.get ('/predictions/:id',           asyncHandler(admin.getPrediction));
 // Write: superadmin + editor
 router.post('/predictions',               requireAdminRole('superadmin','editor'), asyncHandler(admin.createPrediction));

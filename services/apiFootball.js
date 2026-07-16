@@ -504,7 +504,7 @@ function poissonPMF(lambda, k) {
 /**
  * Compute goal-market probabilities using a joint Poisson model.
  * Home goals ~ Poisson(lambda_h), Away goals ~ Poisson(lambda_a), independent.
- * Returns: { home, draw, away, over05, over15, over25, over35, under25, under15, btts }
+ * Returns: { home, draw, away, over05, over15, over25, over35, under15, under25, under35, btts }
  */
 function goalProbabilities(lambda_h, lambda_a, maxG = 10) {
   const ph = Array.from({ length: maxG + 1 }, (_, k) => poissonPMF(lambda_h, k));
@@ -526,8 +526,9 @@ function goalProbabilities(lambda_h, lambda_a, maxG = 10) {
     over15:  1 - pTotal[0] - pTotal[1],
     over25:  1 - pTotal[0] - pTotal[1] - pTotal[2],
     over35:  1 - pTotal[0] - pTotal[1] - pTotal[2] - pTotal[3],
-    under25: pTotal[0] + pTotal[1] + pTotal[2],
     under15: pTotal[0] + pTotal[1],
+    under25: pTotal[0] + pTotal[1] + pTotal[2],
+    under35: pTotal[0] + pTotal[1] + pTotal[2] + pTotal[3],
     btts:    (1 - ph[0]) * (1 - pa[0]),  // P(home≥1) × P(away≥1)
   };
 }
@@ -579,18 +580,34 @@ function generateTipSuggestion(homeForm, awayForm, h2hData, homeStats, awayStats
       if (probs.over35 >= 0.45)
         candidates.push({ tip: 'Over 3.5',  market: 'Over/Under', conf: probs.over35,
           reason: `Poisson: P(>3.5g)=${pct(probs.over35)}% (${lambdaStr})` });
+      if (probs.under35 >= 0.62)
+        candidates.push({ tip: 'Under 3.5', market: 'Over/Under', conf: probs.under35,
+          reason: `Poisson: P(<3.5g)=${pct(probs.under35)}% (${lambdaStr})` });
       if (probs.over25 >= 0.55)
         candidates.push({ tip: 'Over 2.5',  market: 'Over/Under', conf: probs.over25,
           reason: `Poisson: P(>2.5g)=${pct(probs.over25)}% (${lambdaStr})` });
-      if (probs.over15 >= 0.72)
-        candidates.push({ tip: 'Over 1.5',  market: 'Over/Under', conf: probs.over15,
-          reason: `Poisson: P(>1.5g)=${pct(probs.over15)}% (${lambdaStr})` });
       if (probs.under25 >= 0.58)
         candidates.push({ tip: 'Under 2.5', market: 'Over/Under', conf: probs.under25,
           reason: `Poisson: P(<2.5g)=${pct(probs.under25)}% (${lambdaStr})` });
-      if (probs.btts >= 0.60)
+      if (probs.over15 >= 0.72)
+        candidates.push({ tip: 'Over 1.5',  market: 'Over/Under', conf: probs.over15,
+          reason: `Poisson: P(>1.5g)=${pct(probs.over15)}% (${lambdaStr})` });
+      if (probs.btts >= 0.55)
         candidates.push({ tip: 'BTTS - Yes', market: 'BTTS', conf: probs.btts,
           reason: `Poisson: P(BTTS)=${pct(probs.btts)}% (${lambdaStr})` });
+      if ((1 - probs.btts) >= 0.68)
+        candidates.push({ tip: 'BTTS - No', market: 'BTTS', conf: 1 - probs.btts,
+          reason: `Poisson: P(BTTS No)=${pct(1-probs.btts)}% (${lambdaStr})` });
+
+      // Double Chance — only when home/away is credible but not a runaway favourite
+      const dc1X = probs.home + probs.draw;
+      const dcX2 = probs.away + probs.draw;
+      if (dc1X >= 0.68 && probs.home >= 0.30 && probs.home < 0.52)
+        candidates.push({ tip: '1X (Home or Draw)', market: 'Double Chance', conf: dc1X,
+          reason: `Poisson: P(1X)=${pct(dc1X)}% – home favoured but not dominant (${lambdaStr})` });
+      if (dcX2 >= 0.62 && probs.away >= 0.25 && probs.away < 0.47)
+        candidates.push({ tip: 'X2 (Away or Draw)', market: 'Double Chance', conf: dcX2,
+          reason: `Poisson: P(X2)=${pct(dcX2)}% – away credible, draw possible (${lambdaStr})` });
 
       // Poisson 1X2
       if (probs.home >= 0.48)
@@ -632,10 +649,22 @@ function generateTipSuggestion(homeForm, awayForm, h2hData, homeStats, awayStats
     candidates.push({ tip: 'Draw', market: '1X2', conf: 0.35,
       reason: `Evenly matched: home ${pct(hFS)}% away ${pct(aFS)}%` });
 
-  // Return highest-confidence candidate
-  candidates.sort((a, b) => b.conf - a.conf);
-  const best = candidates[0] || { tip: 'Home Win', market: '1X2', conf: 0.45, reason: 'Fallback' };
-  return { tip: best.tip, market: best.market, reason: best.reason };
+  // Deduplicate by tip (keep highest confidence per tip), then rank
+  const seen = new Map();
+  for (const c of candidates) {
+    if (!seen.has(c.tip) || seen.get(c.tip).conf < c.conf) seen.set(c.tip, c);
+  }
+  const ranked = [...seen.values()].sort((a, b) => b.conf - a.conf);
+  const significant = ranked.filter(c => c.conf >= 0.45);
+
+  const best = significant[0] || { tip: 'Home Win', market: '1X2', conf: 0.45, reason: 'Fallback' };
+  const alternatives = significant.slice(1).map(c => ({
+    tip: c.tip, market: c.market,
+    confidence: Math.round(c.conf * 100),
+    reason: c.reason,
+  }));
+
+  return { tip: best.tip, market: best.market, reason: best.reason, confidence: Math.round(best.conf * 100), alternatives };
 }
 
 function pct(v) { return Math.round((v || 0) * 100); }
@@ -954,19 +983,25 @@ async function autoPredictFixtures(db, options = {}) {
 
       // Derive category from tip — or use admin-specified forceCategory
       const TIP_TO_CATEGORY = {
-        'Over 3.5':   '3.5 Goals',
-        'Under 3.5':  '3.5 Goals',
-        'Over 2.5':   '2.5 Goals',
-        'Under 2.5':  '2.5 Goals',
-        'Over 1.5':   '1.5 Goals',
-        'Under 1.5':  '1.5 Goals',
-        'BTTS - Yes': 'BTTS',
-        'BTTS - No':  'BTTS',
-        'Home Win':   'Home Win',
-        'Away Win':   'Away Win',
-        'Draw':       'Free Pick',
+        'Over 3.5':           '3.5 Goals',
+        'Under 3.5':          '3.5 Goals',
+        'Over 2.5':           '2.5 Goals',
+        'Under 2.5':          '2.5 Goals',
+        'Over 1.5':           '1.5 Goals',
+        'Under 1.5':          '1.5 Goals',
+        'BTTS - Yes':         'BTTS',
+        'BTTS - No':          'BTTS',
+        'Home Win':           'Home Win',
+        'Away Win':           'Away Win',
+        'Draw':               'Free Pick',
+        '1X (Home or Draw)':  'Double Chance',
+        'X2 (Away or Draw)':  'Double Chance',
+        '12 (Home or Away)':  'Double Chance',
       };
       const derivedCategory = forceCategory || TIP_TO_CATEGORY[suggestion.tip] || 'Free Pick';
+
+      const altTipsJson = suggestion.alternatives && suggestion.alternatives.length
+        ? JSON.stringify(suggestion.alternatives) : null;
 
       await db.query(
         `UPDATE predictions SET
@@ -980,6 +1015,7 @@ async function autoPredictFixtures(db, options = {}) {
            h2h_summary      = ?,
            confidence_score = ?,
            analysis         = ?,
+           alt_tips         = ?,
            published_at     = COALESCE(?, published_at),
            updated_at       = NOW()
          WHERE id = ?`,
@@ -994,6 +1030,7 @@ async function autoPredictFixtures(db, options = {}) {
           h2hSummary || null,
           confScore,
           suggestion.reason || null,
+          altTipsJson,
           shouldPublish ? new Date() : null,
           row.id,
         ]

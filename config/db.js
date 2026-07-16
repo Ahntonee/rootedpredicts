@@ -45,4 +45,21 @@ async function testConnection() {
 
 testConnection();
 
+// Safe migration: add alt_tips column if it doesn't exist yet
+async function runMigrations() {
+  try {
+    const [[{count}]] = await pool.query(
+      `SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'predictions' AND COLUMN_NAME = 'alt_tips'`
+    );
+    if (!count) {
+      await pool.query(`ALTER TABLE predictions ADD COLUMN alt_tips JSON NULL DEFAULT NULL`);
+      console.log('[DB] Migration: added alt_tips column to predictions table');
+    }
+  } catch(e) {
+    console.warn('[DB] Migration check failed:', e.message);
+  }
+}
+runMigrations();
+
 module.exports = pool;

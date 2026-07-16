@@ -36,6 +36,19 @@
     <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(233,69,96,0.1);"><span class="material-icons-round" style="color:var(--red);">cancel</span></div><div><div class="admin-stat-value" id="s-lost">—</div><div class="admin-stat-label">Lost</div></div></div>
   </div>
 
+  <!-- Multi-Tip Review Queue -->
+  <div class="card" id="mtr-card" style="padding:0;margin-bottom:24px;overflow:hidden;display:none;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="material-icons-round" style="color:var(--red);">tips_and_updates</span>
+        <span style="font-family:var(--font-head);font-weight:700;font-size:1rem;">Multi-Tip Review</span>
+        <span id="mtr-badge" style="background:var(--red);color:#fff;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:999px;"></span>
+      </div>
+      <span style="font-size:0.78rem;color:var(--muted);">Engine flagged multiple strong tips — choose which to publish</span>
+    </div>
+    <div id="mtr-list" style="padding:0;"></div>
+  </div>
+
   <!-- Homepage stats (live + editable overrides) -->
   <div class="card" style="padding:20px;margin-bottom:24px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -163,6 +176,75 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   loadSiteStats();
+
+  // ── Multi-Tip Review widget ─────────────────────────────────
+  async function loadMultiTipReview() {
+    const res = await Admin.api('GET', '/api/admin/predictions/multi-tip');
+    if (!res.success || !res.data.length) return;
+    const card = document.getElementById('mtr-card');
+    card.style.display = '';
+    document.getElementById('mtr-badge').textContent = res.data.length;
+
+    document.getElementById('mtr-list').innerHTML = res.data.map(p => {
+      const alts = (() => { try { return typeof p.alt_tips === 'string' ? JSON.parse(p.alt_tips) : (p.alt_tips || []); } catch(_){ return []; }})();
+      const matchDate = p.match_date ? new Date(p.match_date).toLocaleString('en-GB',{ day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+      const allTips = [
+        { tip: p.tip, market: p.market, confidence: p.confidence_score, isBest: true },
+        ...alts,
+      ];
+      const tipBtns = allTips.map(t => `
+        <button onclick="mtrPublish(${p.id},'${escHtml(t.tip)}','${escHtml(t.market)}',${t.confidence||0})" class="btn btn-sm" style="
+          background:${t.isBest?'var(--red)':'var(--surface-2)'};
+          color:${t.isBest?'#fff':'var(--text)'};
+          border:1px solid ${t.isBest?'var(--red)':'var(--border)'};
+          padding:4px 10px;font-size:0.78rem;gap:4px;">
+          <span style="font-weight:700;">${escHtml(t.tip)}</span>
+          <span style="opacity:0.7;font-size:0.72rem;">${t.confidence||0}%</span>
+          <span class="material-icons-round" style="font-size:0.8rem;margin-left:2px;">publish</span>
+        </button>`).join('');
+      return `
+        <div data-mtr-id="${p.id}" style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div style="min-width:180px;flex:1;">
+            <div style="font-size:0.88rem;font-weight:700;color:var(--text);">${escHtml(p.home_team)} vs ${escHtml(p.away_team)}</div>
+            <div style="font-size:0.74rem;color:var(--muted);">${escHtml(p.league_name||'')} &bull; ${matchDate}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            ${tipBtns}
+          </div>
+          <button onclick="mtrDismiss(${p.id})" title="Dismiss — keep engine tip unpublished" class="btn btn-sm" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 8px;">
+            <span class="material-icons-round" style="font-size:0.9rem;">close</span>
+          </button>
+        </div>`;
+    }).join('');
+  }
+
+  function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  window.mtrPublish = async function(id, tip, market, confidence) {
+    if (!confirm(`Publish "${tip}" for this fixture?`)) return;
+    const res = await Admin.api('PUT', `/api/admin/predictions/${id}`, {
+      tip, market, confidence_score: confidence, published: true, clear_alt_tips: true,
+    });
+    if (res.success) { Admin.toast('Published: ' + tip); reloadMtr(id); }
+    else Admin.toast(res.message || 'Failed', 'error');
+  };
+
+  window.mtrDismiss = async function(id) {
+    const res = await Admin.api('PUT', `/api/admin/predictions/${id}`, { clear_alt_tips: true });
+    if (res.success) { reloadMtr(id); Admin.toast('Dismissed'); }
+    else Admin.toast(res.message || 'Failed', 'error');
+  };
+
+  function reloadMtr(id) {
+    const row = document.querySelector(`[data-mtr-id="${id}"]`);
+    if (row) row.remove();
+    const list = document.getElementById('mtr-list');
+    const remaining = list.querySelectorAll('[data-mtr-id]').length;
+    if (!remaining) document.getElementById('mtr-card').style.display = 'none';
+    else document.getElementById('mtr-badge').textContent = remaining;
+  }
+
+  loadMultiTipReview();
 });
 </script>
 </body></html>
