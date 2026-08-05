@@ -616,6 +616,22 @@ function generateTipSuggestion(homeForm, awayForm, h2hData, homeStats, awayStats
       else if (probs.away >= 0.42)
         candidates.push({ tip: 'Away Win',  market: '1X2', conf: probs.away,
           reason: `Poisson: P(Away)=${pct(probs.away)}% (${lambdaStr})` });
+
+      // Draw — only when it's the outright most likely outcome
+      if (probs.draw >= 0.37 && probs.draw > probs.home && probs.draw > probs.away)
+        candidates.push({ tip: 'Draw', market: '1X2', conf: probs.draw,
+          reason: `Poisson: P(Draw)=${pct(probs.draw)}% – most likely outcome (${lambdaStr})` });
+
+      // Corners — proxy: expected total corners ≈ λ_total × 4.5 (conservative, flagged for admin review)
+      const expectedCorners = (lambda_h + lambda_a) * 4.5;
+      if (expectedCorners >= 11.0)
+        candidates.push({ tip: 'Over 9.5 Corners', market: 'Corners',
+          conf: Math.min(0.65, 0.50 + (expectedCorners - 11.0) * 0.033),
+          reason: `Corners proxy: ~${expectedCorners.toFixed(1)} exp. corners (λ=${(lambda_h+lambda_a).toFixed(2)})` });
+      else if (expectedCorners <= 7.5)
+        candidates.push({ tip: 'Under 8.5 Corners', market: 'Corners',
+          conf: Math.min(0.62, 0.50 + (7.5 - expectedCorners) * 0.040),
+          reason: `Corners proxy: ~${expectedCorners.toFixed(1)} exp. corners (λ=${(lambda_h+lambda_a).toFixed(2)})` });
     }
   }
 
@@ -639,15 +655,13 @@ function generateTipSuggestion(homeForm, awayForm, h2hData, homeStats, awayStats
   const formDiff = hFS * 0.6 - aFS * 0.6 + h2hAdv * 0.4;
   const formConf = 0.42 + Math.min(Math.abs(formDiff) * 0.55, 0.28);
 
-  if (formDiff > 0.12)
+  if (formDiff > 0.15)
     candidates.push({ tip: 'Home Win', market: '1X2', conf: formConf,
       reason: `Form: home ${pct(hFS)}% vs away ${pct(aFS)}% + H2H` });
-  else if (formDiff < -0.12)
+  else if (formDiff < -0.15)
     candidates.push({ tip: 'Away Win', market: '1X2', conf: formConf,
       reason: `Form: away ${pct(aFS)}% vs home ${pct(hFS)}% + H2H` });
-  else
-    candidates.push({ tip: 'Draw', market: '1X2', conf: 0.35,
-      reason: `Evenly matched: home ${pct(hFS)}% away ${pct(aFS)}%` });
+  // Evenly matched — form alone can't predict draws; Draw only comes from the Poisson model above
 
   // Deduplicate by tip (keep highest confidence per tip), then rank
   const seen = new Map();
@@ -657,7 +671,9 @@ function generateTipSuggestion(homeForm, awayForm, h2hData, homeStats, awayStats
   const ranked = [...seen.values()].sort((a, b) => b.conf - a.conf);
   const significant = ranked.filter(c => c.conf >= 0.45);
 
-  const best = significant[0] || { tip: 'Home Win', market: '1X2', conf: 0.45, reason: 'Fallback' };
+  if (!significant.length) return null; // no confident tip — caller should skip
+
+  const best = significant[0];
   const alternatives = significant.slice(1).map(c => ({
     tip: c.tip, market: c.market,
     confidence: Math.round(c.conf * 100),
@@ -755,22 +771,38 @@ async function researchFixture(fixtureId) {
     }));
   }
 
-  // ── Step 4: build H2H summary (local rows or API rows) ───────────────────
+  // ── Step 4: build H2H summary, display rows, and aggregate stats ─────────
   let h2hSummary = null;
   let h2hRecentDisplay = [];
+  let h2hStats = null;
 
   if (useLocalH2H) {
-    const r = localH2HCount(localH2H.slice(0, 5));
-    const older = localH2H.slice(5, 10);
+    const slice = localH2H.slice(0, 10);
+    const r5    = localH2HCount(slice.slice(0, 5));
+    const older = slice.slice(5);
     h2hSummary = older.length
-      ? `H${r.hw}-A${r.aw}-D${r.dw}|H${localH2HCount(older).hw}-A${localH2HCount(older).aw}-D${localH2HCount(older).dw}`
-      : `H${r.hw}-A${r.aw}-D${r.dw}`;
-    h2hRecentDisplay = localH2H.slice(0, 5).map(row => ({
-      date:  row.match_date ? new Date(row.match_date).toISOString().split('T')[0] : null,
-      home:  row.home_team,
-      away:  row.away_team,
-      score: `${row.home_score}-${row.away_score}`,
+      ? `H${r5.hw}-A${r5.aw}-D${r5.dw} (last5) | H${localH2HCount(older).hw}-A${localH2HCount(older).aw}-D${localH2HCount(older).dw} (prev5)`
+      : `H${r5.hw}-A${r5.aw}-D${r5.dw} (last ${slice.length})`;
+    h2hRecentDisplay = slice.map(row => ({
+      date:   row.match_date ? new Date(row.match_date).toISOString().split('T')[0] : null,
+      home:   row.home_team,
+      away:   row.away_team,
+      score:  `${row.home_score ?? '?'}-${row.away_score ?? '?'}`,
+      result: (row.home_score ?? -1) > (row.away_score ?? -1) ? 'H'
+            : (row.away_score ?? -1) > (row.home_score ?? -1) ? 'A' : 'D',
+      btts:   (row.home_score || 0) > 0 && (row.away_score || 0) > 0,
+      goals:  (row.home_score || 0) + (row.away_score || 0),
     }));
+    const bttsCount = h2hRecentDisplay.filter(r => r.btts).length;
+    const totalGoals = h2hRecentDisplay.reduce((s, r) => s + r.goals, 0);
+    h2hStats = {
+      total:      slice.length,
+      home_wins:  r5.hw + (older.length ? localH2HCount(older).hw : 0),
+      away_wins:  r5.aw + (older.length ? localH2HCount(older).aw : 0),
+      draws:      r5.dw + (older.length ? localH2HCount(older).dw : 0),
+      btts:       bttsCount,
+      avg_goals:  slice.length ? (totalGoals / slice.length).toFixed(1) : '0.0',
+    };
   } else if (h2hRaw.length) {
     function h2hCounts(fixtures) {
       let hw = 0, aw = 0, dw = 0;
@@ -781,17 +813,32 @@ async function researchFixture(fixtureId) {
       }
       return { hw, aw, dw };
     }
-    const r = h2hCounts(h2hRaw.slice(0, 5));
-    const o = h2hRaw.length > 5 ? h2hCounts(h2hRaw.slice(5, 10)) : null;
-    h2hSummary = o
-      ? `H${r.hw}-A${r.aw}-D${r.dw}|H${o.hw}-A${o.aw}-D${o.dw}`
-      : `H${r.hw}-A${r.aw}-D${r.dw}`;
-    h2hRecentDisplay = h2hRaw.slice(0, 5).map(f => ({
-      date:  f.fixture.date?.split('T')[0],
-      home:  f.teams.home.name,
-      away:  f.teams.away.name,
-      score: `${f.goals.home}-${f.goals.away}`,
+    const slice = h2hRaw.slice(0, 10);
+    const r5 = h2hCounts(slice.slice(0, 5));
+    const older = slice.length > 5 ? h2hCounts(slice.slice(5)) : null;
+    h2hSummary = older
+      ? `H${r5.hw}-A${r5.aw}-D${r5.dw} (last5) | H${older.hw}-A${older.aw}-D${older.dw} (prev5)`
+      : `H${r5.hw}-A${r5.aw}-D${r5.dw} (last ${slice.length})`;
+    h2hRecentDisplay = slice.map(f => ({
+      date:   f.fixture.date?.split('T')[0],
+      home:   f.teams.home.name,
+      away:   f.teams.away.name,
+      score:  `${f.goals.home ?? '?'}-${f.goals.away ?? '?'}`,
+      result: f.teams.home.winner ? 'H' : f.teams.away.winner ? 'A' : 'D',
+      btts:   (f.goals.home || 0) > 0 && (f.goals.away || 0) > 0,
+      goals:  (f.goals.home || 0) + (f.goals.away || 0),
     }));
+    const bttsCount  = h2hRecentDisplay.filter(r => r.btts).length;
+    const totalGoals = h2hRecentDisplay.reduce((s, r) => s + r.goals, 0);
+    const allCounts  = h2hCounts(slice);
+    h2hStats = {
+      total:      slice.length,
+      home_wins:  allCounts.hw,
+      away_wins:  allCounts.aw,
+      draws:      allCounts.dw,
+      btts:       bttsCount,
+      avg_goals:  slice.length ? (totalGoals / slice.length).toFixed(1) : '0.0',
+    };
   }
 
   // ── Step 5: standings, tip suggestion, Poisson ────────────────────────────
@@ -852,6 +899,7 @@ async function researchFixture(fixtureId) {
     away_recent:     awayRecent,
     h2h_summary:     h2hSummary,
     h2h_recent:      h2hRecentDisplay,
+    h2h_stats:       h2hStats,
     // Source labels help admin see which data came from where
     data_sources: {
       h2h:       useLocalH2H  ? 'local-db' : 'api',
@@ -932,6 +980,14 @@ async function autoPredictFixtures(db, options = {}) {
       const data = await researchFixture(row.fixture_id);
 
       const suggestion       = data.suggestion;
+
+      // Skip if the engine found no confident tip for this fixture
+      if (!suggestion) {
+        skipped++;
+        log.push({ id: row.id, match: `${row.home_team} vs ${row.away_team}`, skipped: 'No confident tip found' });
+        continue;
+      }
+
       const h2hSummary       = data.h2h_summary;
       const homeForm         = data.home_form;
       const awayForm         = data.away_form;
@@ -949,23 +1005,28 @@ async function autoPredictFixtures(db, options = {}) {
       const awayGoalsFor      = data.away_stats ? (parseFloat(data.away_stats.goals_for_avg_away  || data.away_stats.goals_for_avg)    || null) : null;
       const awayGoalsConceded = data.away_stats ? (parseFloat(data.away_stats.goals_against_away  || data.away_stats.goals_against_avg) || null) : null;
 
-      // Score with enriched data including venue-specific form and goals averages
-      const { score: confScore } = confidence.score({
-        tip:              suggestion.tip,
-        market:           suggestion.market,
-        odds:             null,
-        home_form:        homeForm,
-        away_form:        awayForm,
-        home_form_venue:  homeFormVenue,
-        away_form_venue:  awayFormVenue,
-        h2h_summary:      h2hSummary,
-        league_id:        row.league_id,
-        // Goals-based signals — null when stats unavailable (confidence.js falls back gracefully)
-        home_goals_avg:          homeGoalsFor,
-        home_goals_conceded_avg: homeGoalsConceded,
-        away_goals_avg:          awayGoalsFor,
-        away_goals_conceded_avg: awayGoalsConceded,
-      });
+      // Corners predictions use the engine's own calibrated confidence directly
+      // (the general scoring module doesn't have corner-specific logic)
+      let confScore;
+      if (suggestion.market === 'Corners') {
+        confScore = suggestion.confidence || 55;
+      } else {
+        ({ score: confScore } = confidence.score({
+          tip:              suggestion.tip,
+          market:           suggestion.market,
+          odds:             null,
+          home_form:        homeForm,
+          away_form:        awayForm,
+          home_form_venue:  homeFormVenue,
+          away_form_venue:  awayFormVenue,
+          h2h_summary:      h2hSummary,
+          league_id:        row.league_id,
+          home_goals_avg:          homeGoalsFor,
+          home_goals_conceded_avg: homeGoalsConceded,
+          away_goals_avg:          awayGoalsFor,
+          away_goals_conceded_avg: awayGoalsConceded,
+        }));
+      }
 
       // Only publish if confidence ≥ minConf AND match hasn't kicked off yet
       // Allow up to 1 minute after kick-off to cover clock drift; block after that
@@ -994,9 +1055,13 @@ async function autoPredictFixtures(db, options = {}) {
         'Home Win':           'Home Win',
         'Away Win':           'Away Win',
         'Draw':               'Free Pick',
-        '1X (Home or Draw)':  'Double Chance',
-        'X2 (Away or Draw)':  'Double Chance',
-        '12 (Home or Away)':  'Double Chance',
+        '1X (Home or Draw)':   'Double Chance',
+        'X2 (Away or Draw)':   'Double Chance',
+        '12 (Home or Away)':   'Double Chance',
+        'Over 9.5 Corners':    'Corners',
+        'Under 8.5 Corners':   'Corners',
+        'Over 10.5 Corners':   'Corners',
+        'Under 10.5 Corners':  'Corners',
       };
       const derivedCategory = forceCategory || TIP_TO_CATEGORY[suggestion.tip] || 'Free Pick';
 

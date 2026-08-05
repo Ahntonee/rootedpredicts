@@ -27,8 +27,8 @@
     <div class="admin-filters">
       <select class="admin-filter-select" id="f-result"><option value="">All Results</option><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option></select>
       <select class="admin-filter-select" id="f-visibility"><option value="">All Visibility</option><option value="free">Free</option><option value="vip">VIP</option></select>
-      <select class="admin-filter-select" id="f-market"><option value="">All Markets</option><option>1X2</option><option>Over/Under</option><option>BTTS</option><option>Double Chance</option><option>Draw No Bet</option><option>Correct Score</option><option>Accumulator</option></select>
-      <select class="admin-filter-select" id="f-tip"><option value="">All Tips</option><option>Home Win</option><option>Away Win</option><option>Draw</option><option>Over 2.5</option><option>Under 2.5</option><option>Over 1.5</option><option>Under 1.5</option><option>Over 3.5</option><option>Under 3.5</option><option>BTTS - Yes</option><option>BTTS - No</option></select>
+      <select class="admin-filter-select" id="f-market"><option value="">All Markets</option><option>1X2</option><option>Over/Under</option><option>BTTS</option><option>Double Chance</option><option>Draw No Bet</option><option>Correct Score</option><option>Accumulator</option><option>Corners</option></select>
+      <select class="admin-filter-select" id="f-tip"><option value="">All Tips</option><option>Home Win</option><option>Away Win</option><option>Draw</option><option>Over 2.5</option><option>Under 2.5</option><option>Over 1.5</option><option>Under 1.5</option><option>Over 3.5</option><option>Under 3.5</option><option>BTTS - Yes</option><option>BTTS - No</option><option>1X (Home or Draw)</option><option>X2 (Away or Draw)</option><option>Over 9.5 Corners</option><option>Under 8.5 Corners</option></select>
       <select class="admin-filter-select" id="f-confidence"><option value="">Any Confidence</option><option value="50">50%+</option><option value="60">60%+</option><option value="65">65%+</option><option value="70">70%+</option><option value="80">80%+</option></select>
       <input type="date" class="admin-filter-select" id="f-date">
     </div>
@@ -111,7 +111,7 @@
           <select class="form-control" id="m-market">
             <option>1X2</option><option>Over/Under</option><option>BTTS</option>
             <option>Double Chance</option><option>Correct Score</option>
-            <option>Draw No Bet</option><option>Accumulator</option>
+            <option>Draw No Bet</option><option>Accumulator</option><option>Corners</option>
           </select>
         </div>
 
@@ -365,6 +365,7 @@ const TIP_OPTIONS = {
   'BTTS':          ['BTTS - Yes', 'BTTS - No'],
   'Double Chance': ['1X (Home or Draw)', 'X2 (Away or Draw)', '12 (Home or Away)'],
   'Draw No Bet':   ['Home Win', 'Away Win'],
+  'Corners':       ['Over 9.5 Corners', 'Under 8.5 Corners', 'Over 10.5 Corners', 'Under 10.5 Corners'],
   'Correct Score': null,   // free text
   'Accumulator':   null,   // free text
 };
@@ -688,20 +689,68 @@ async function researchPred(fixtureId, matchName) {
       }).join('')}</tbody></table>`;
   }
 
+  function h2hTable(rows, homeTeam, awayTeam, stats) {
+    if (!rows || !rows.length) return '<p style="color:var(--muted);font-size:0.82rem;">No H2H data available</p>';
+    const homeFirst = (homeTeam || 'Home').split(' ')[0];
+    const awayFirst = (awayTeam || 'Away').split(' ')[0];
+    const barHTML = stats ? (() => {
+      return '<div style="display:flex;border-radius:6px;overflow:hidden;height:30px;margin-bottom:10px;">' +
+        (stats.home_wins ? `<div style="flex:${stats.home_wins};background:#16a34a;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.72rem;font-weight:700;">${homeFirst} ${stats.home_wins}W</div>` : '') +
+        (stats.draws     ? `<div style="flex:${stats.draws};background:#d97706;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.72rem;font-weight:700;">${stats.draws}D</div>` : '') +
+        (stats.away_wins ? `<div style="flex:${stats.away_wins};background:#e94560;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.72rem;font-weight:700;">${awayFirst} ${stats.away_wins}W</div>` : '') +
+        '</div>' +
+        `<div style="display:flex;gap:20px;font-size:0.78rem;color:var(--muted);margin-bottom:12px;">
+          <span>Avg goals: <strong style="color:var(--text);">${stats.avg_goals}</strong></span>
+          <span>BTTS: <strong style="color:var(--text);">${stats.btts}/${stats.total} (${stats.total ? Math.round(stats.btts/stats.total*100) : 0}%)</strong></span>
+        </div>`;
+    })() : '';
+    const tableRows = rows.map(r => {
+      const winner = r.result === 'H' ? r.home : r.result === 'A' ? r.away : 'Draw';
+      const wColor = r.result === 'H' ? '#16a34a' : r.result === 'A' ? '#e94560' : '#d97706';
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:5px 6px;color:var(--muted);white-space:nowrap;">${r.date||'–'}</td>
+        <td style="padding:5px 6px;font-size:0.77rem;">${r.home} vs ${r.away}</td>
+        <td style="padding:5px 6px;text-align:center;font-weight:700;">${r.score}</td>
+        <td style="padding:5px 6px;text-align:center;color:${wColor};font-weight:700;white-space:nowrap;">${winner}</td>
+        <td style="padding:5px 6px;text-align:center;">${r.btts ? '<span style="color:#16a34a;font-weight:700;">✓</span>' : '<span style="color:var(--muted);">✗</span>'}</td>
+      </tr>`;
+    }).join('');
+    return barHTML + `<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+      <thead><tr style="border-bottom:1px solid var(--border);">
+        <th style="text-align:left;padding:4px 6px;color:var(--muted);">Date</th>
+        <th style="text-align:left;padding:4px 6px;color:var(--muted);">Match</th>
+        <th style="text-align:center;padding:4px 6px;color:var(--muted);">Score</th>
+        <th style="text-align:center;padding:4px 6px;color:var(--muted);">Winner</th>
+        <th style="text-align:center;padding:4px 6px;color:var(--muted);">BTTS</th>
+      </tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>`;
+  }
+
   const hs = d.home_stats, as_ = d.away_stats;
   const hst = d.home_standing, ast = d.away_standing;
 
   document.getElementById('research-content').innerHTML = `
     <!-- Suggestion banner -->
     <div style="background:rgba(233,69,96,0.08);border:1px solid rgba(233,69,96,0.25);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-      <div>
-        <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Algorithm Suggestion</div>
-        <div style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--red);">${d.suggestion.tip}</div>
-        <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${d.suggestion.market} – ${d.suggestion.reason}</div>
+      <div style="flex:1;">
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Best Tip</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-family:var(--font-head);font-size:1.35rem;font-weight:800;color:var(--red);">${d.suggestion.tip}</span>
+          ${d.suggestion.confidence ? `<span style="background:rgba(22,163,74,0.15);color:#16a34a;font-size:0.8rem;font-weight:700;padding:3px 10px;border-radius:99px;border:1px solid rgba(22,163,74,0.3);">${d.suggestion.confidence}% confidence</span>` : ''}
+        </div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:3px;">${d.suggestion.market} — ${d.suggestion.reason}</div>
+        ${d.suggestion.alternatives && d.suggestion.alternatives.length ? `
+        <div style="margin-top:10px;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Other candidates</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${d.suggestion.alternatives.map(a => `<span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:0.76rem;"><strong>${a.tip}</strong> <span style="color:var(--muted);">${a.confidence}%</span></span>`).join('')}
+          </div>
+        </div>` : ''}
       </div>
-      <div style="text-align:right;">
-        ${d.h2h_summary ? `<div style="font-size:0.78rem;color:var(--muted);">H2H: <strong style="color:var(--text);">${d.h2h_summary}</strong></div>` : ''}
-        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">Home form: <strong>${d.home_form||'–'}</strong> &nbsp;|&nbsp; Away form: <strong>${d.away_form||'–'}</strong></div>
+      <div style="text-align:right;min-width:160px;">
+        <div style="font-size:0.78rem;color:var(--muted);">Home form: <strong style="color:var(--text);">${d.home_form||'–'}</strong></div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:3px;">Away form: <strong style="color:var(--text);">${d.away_form||'–'}</strong></div>
       </div>
     </div>
 
@@ -746,10 +795,13 @@ async function researchPred(fixtureId, matchName) {
 
     <!-- H2H -->
     ${d.h2h_recent && d.h2h_recent.length ? `
-    <div>
-      <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Head to Head – Last 5 Meetings</div>
-      ${recentTable(d.h2h_recent)}
-    </div>` : ''}
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+      <div style="font-weight:700;font-size:0.82rem;margin-bottom:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">
+        Head to Head — ${d.fixture.home.name} vs ${d.fixture.away.name}
+        <span style="font-weight:400;text-transform:none;letter-spacing:0;"> (last ${d.h2h_recent.length} meetings)</span>
+      </div>
+      ${h2hTable(d.h2h_recent, d.fixture.home.name, d.fixture.away.name, d.h2h_stats)}
+    </div>` : '<p style="color:var(--muted);font-size:0.82rem;margin-bottom:16px;">No H2H history found.</p>'}
   `;
 
   document.getElementById('research-content').style.display = 'block';
@@ -881,7 +933,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // â”€â”€ Category Manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const ALL_CATEGORIES = [
     'Free Pick','1.5 Goals','2.5 Goals','3.5 Goals',
-    'Home Win','Away Win','BTTS','Double Chance','Acca Tips','Banker of the Day',
+    'Home Win','Away Win','BTTS','Double Chance','Corners','Acca Tips','Banker of the Day',
   ];
 
   async function openCatManager() {
