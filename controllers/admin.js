@@ -220,6 +220,35 @@ async function updatePrediction(req, res) {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 
+// ── Batch publish or delete predictions
+async function batchPredictions(req, res) {
+  try {
+    const { action, ids } = req.body;
+    if (!Array.isArray(ids) || !ids.length) {
+      return res.status(400).json({ success: false, message: 'ids must be a non-empty array' });
+    }
+    if (!['publish', 'delete'].includes(action)) {
+      return res.status(400).json({ success: false, message: 'action must be publish or delete' });
+    }
+    const safeIds = ids.map(Number).filter(n => Number.isFinite(n) && n > 0);
+    if (!safeIds.length) return res.status(400).json({ success: false, message: 'No valid ids' });
+    const placeholders = safeIds.map(() => '?').join(',');
+    if (action === 'publish') {
+      const [result] = await db.query(
+        `UPDATE predictions SET published_at = COALESCE(published_at, NOW()), updated_at = NOW() WHERE id IN (${placeholders})`,
+        safeIds
+      );
+      writeAudit(req, 'batch_publish', 'prediction', null, null, { ids: safeIds });
+      return res.json({ success: true, affected: result.affectedRows, message: `${result.affectedRows} prediction(s) published` });
+    }
+    if (action === 'delete') {
+      const [result] = await db.query(`DELETE FROM predictions WHERE id IN (${placeholders})`, safeIds);
+      writeAudit(req, 'batch_delete', 'prediction', null, null, { ids: safeIds });
+      return res.json({ success: true, affected: result.affectedRows, message: `${result.affectedRows} prediction(s) deleted` });
+    }
+  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
 // ── Delete prediction
 async function deletePrediction(req, res) {
   try {
@@ -689,6 +718,7 @@ module.exports = {
   getUsers, updateUser, getLeagues, updateLeague,
   getBlogPosts, getBlogPost, createBlogPost, updateBlogPost, deleteBlogPost,
   getMultiTipReview,
+  batchPredictions,
   getSeoSettings, updateSeoSettings,
   getSiteStats, updateSiteStats,
   getFormLeagues, getLeagueFixtures, getFixtureOdds,

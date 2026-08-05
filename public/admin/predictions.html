@@ -34,11 +34,25 @@
     </div>
     <button class="btn btn-outline btn-sm" id="apply-filters"><span class="material-icons-round">filter_list</span>Apply</button>
   </div>
+  <!-- Batch action bar — hidden until rows are selected -->
+  <div id="batch-bar" style="display:none;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin-bottom:12px;">
+    <span class="material-icons-round" style="color:var(--red);">checklist</span>
+    <span id="batch-count" style="font-size:0.85rem;font-weight:600;flex:1;"></span>
+    <button id="batch-publish-btn" class="btn btn-primary btn-sm"><span class="material-icons-round">publish</span>Publish Selected</button>
+    <button id="batch-delete-btn" class="btn btn-sm" style="background:rgba(233,69,96,0.12);color:var(--red);border:1px solid rgba(233,69,96,0.3);"><span class="material-icons-round">delete</span>Delete Selected</button>
+    <button id="batch-cancel-btn" class="btn btn-outline btn-sm"><span class="material-icons-round">close</span>Cancel</button>
+  </div>
+
   <div class="card" style="overflow:hidden;">
     <div id="pred-loading" style="text-align:center;padding:40px;"><span class="material-icons-round" style="font-size:2rem;color:var(--border);display:block;margin-bottom:8px;">hourglass_empty</span><p style="color:var(--muted);">Loading...</p></div>
     <div id="pred-table" style="display:none;overflow-x:auto;">
       <table class="leaderboard-table">
-        <thead><tr><th>Match</th><th>League</th><th>Tip</th><th>Market</th><th>Confidence</th><th>Visibility</th><th>Result</th><th>Date</th><th>Actions</th></tr></thead>
+        <thead><tr>
+          <th style="width:36px;padding:10px 8px;">
+            <input type="checkbox" id="select-all-cb" title="Select all" style="cursor:pointer;width:15px;height:15px;">
+          </th>
+          <th>Match</th><th>League</th><th>Tip</th><th>Market</th><th>Confidence</th><th>Visibility</th><th>Result</th><th>Date</th><th>Actions</th>
+        </tr></thead>
         <tbody id="pred-tbody"></tbody>
       </table>
     </div>
@@ -313,8 +327,12 @@ async function loadPredictions(page) {
   if (!json.success) return;
   const d = json.data;
   document.getElementById('pred-table').style.display='block';
+  document.getElementById('select-all-cb').checked = false;
   document.getElementById('pred-tbody').innerHTML = d.predictions.map(p => `
-    <tr>
+    <tr data-pred-id="${p.id}">
+      <td style="padding:10px 8px;">
+        <input type="checkbox" class="pred-cb" data-id="${p.id}" style="cursor:pointer;width:15px;height:15px;" onchange="onRowCheck()">
+      </td>
       <td><div style="font-weight:600;font-size:0.85rem;">${p.home_team} vs ${p.away_team}</div></td>
       <td style="font-size:0.8rem;color:var(--muted);">${p.league_name||'–'}</td>
       <td style="font-weight:600;color:var(--red);font-size:0.85rem;">${p.tip||'TBD'}</td>
@@ -738,12 +756,88 @@ async function researchPred(fixtureId, matchName) {
   document.getElementById('research-footer').style.display = 'flex';
 }
 
+// ── Batch selection helpers ───────────────────────────────────────────────────
+function getSelectedIds() {
+  return [...document.querySelectorAll('.pred-cb:checked')].map(cb => parseInt(cb.dataset.id));
+}
+
+function onRowCheck() {
+  const all  = document.querySelectorAll('.pred-cb');
+  const checked = document.querySelectorAll('.pred-cb:checked');
+  document.getElementById('select-all-cb').checked = all.length && checked.length === all.length;
+  document.getElementById('select-all-cb').indeterminate = checked.length > 0 && checked.length < all.length;
+  updateBatchBar(checked.length);
+}
+
+function updateBatchBar(count) {
+  const bar = document.getElementById('batch-bar');
+  if (count > 0) {
+    bar.style.display = 'flex';
+    document.getElementById('batch-count').textContent = count + ' prediction' + (count > 1 ? 's' : '') + ' selected';
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function clearSelection() {
+  document.querySelectorAll('.pred-cb').forEach(cb => cb.checked = false);
+  const saCb = document.getElementById('select-all-cb');
+  if (saCb) { saCb.checked = false; saCb.indeterminate = false; }
+  updateBatchBar(0);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await Admin.requireAdmin();
   if (!user) return;
   Admin.buildSidebar(user);
   loadPredictions(1);
   document.getElementById('new-pred-btn').addEventListener('click', openNewModal);
+
+  // ── Select-all checkbox ──────────────────────────────────────────────────────
+  document.getElementById('select-all-cb').addEventListener('change', function () {
+    document.querySelectorAll('.pred-cb').forEach(cb => cb.checked = this.checked);
+    updateBatchBar(this.checked ? document.querySelectorAll('.pred-cb').length : 0);
+  });
+
+  // ── Batch cancel ─────────────────────────────────────────────────────────────
+  document.getElementById('batch-cancel-btn').addEventListener('click', clearSelection);
+
+  // ── Batch publish ────────────────────────────────────────────────────────────
+  document.getElementById('batch-publish-btn').addEventListener('click', async () => {
+    const ids = getSelectedIds();
+    if (!ids.length) return;
+    if (!confirm(`Publish ${ids.length} selected prediction(s)?`)) return;
+    const btn = document.getElementById('batch-publish-btn');
+    btn.disabled = true;
+    const json = await Admin.api('POST', '/api/admin/predictions/batch', { action: 'publish', ids });
+    btn.disabled = false;
+    if (json.success) {
+      Admin.toast(json.message || 'Published');
+      clearSelection();
+      loadPredictions(predPage);
+    } else {
+      Admin.toast(json.message || 'Batch publish failed', 'error');
+    }
+  });
+
+  // ── Batch delete ─────────────────────────────────────────────────────────────
+  document.getElementById('batch-delete-btn').addEventListener('click', async () => {
+    const ids = getSelectedIds();
+    if (!ids.length) return;
+    Admin.confirm(`Permanently delete ${ids.length} selected prediction(s)? This cannot be undone.`, async () => {
+      const btn = document.getElementById('batch-delete-btn');
+      btn.disabled = true;
+      const json = await Admin.api('POST', '/api/admin/predictions/batch', { action: 'delete', ids });
+      btn.disabled = false;
+      if (json.success) {
+        Admin.toast(json.message || 'Deleted');
+        clearSelection();
+        loadPredictions(predPage);
+      } else {
+        Admin.toast(json.message || 'Batch delete failed', 'error');
+      }
+    });
+  });
 
   document.getElementById('apply-suggestion-btn').addEventListener('click', async () => {
     if (!researchSuggestion || !researchData) return;

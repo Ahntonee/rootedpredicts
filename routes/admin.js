@@ -18,8 +18,9 @@ router.get('/stats', asyncHandler(admin.getStats));
 // ── Predictions ────────────────────────────────────────────────
 // Read: all admin roles
 router.get ('/predictions',               asyncHandler(admin.getPredictions));
-// multi-tip MUST be before /:id so Express doesn't match "multi-tip" as an id
+// literal sub-routes MUST be before /:id so Express doesn't match them as ids
 router.get ('/predictions/multi-tip',     asyncHandler(admin.getMultiTipReview));
+router.post('/predictions/batch',         requireAdminRole('superadmin','editor'), asyncHandler(admin.batchPredictions));
 router.get ('/predictions/:id',           asyncHandler(admin.getPrediction));
 // Write: superadmin + editor
 router.post('/predictions',               requireAdminRole('superadmin','editor'), asyncHandler(admin.createPrediction));
