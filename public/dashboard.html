@@ -18,13 +18,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/style.css">
   <style>
     .dash-stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
     @media (max-width:640px) {
       .dash-stats-grid { grid-template-columns:repeat(2,1fr); }
       .dash-stats-grid .card { text-align:center; }
+    }
+    @media (max-width:480px) {
+      .dash-stats-grid { grid-template-columns:1fr; }
     }
     /* Mobile subscription banner — only shows when sidebar is hidden */
     .dash-mob-sub {
@@ -94,7 +96,7 @@
         <!-- Quick nav -->
         <div class="card" style="padding:20px;margin-bottom:20px;">
           <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">dashboard</span>Quick Access</h2>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+          <div class="mob-1col" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
             <a href="/predictions.html" style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
               <span class="material-icons-round" style="color:var(--red);">sports_soccer</span>
               <span style="font-weight:600;font-size:0.875rem;">Today's Tips</span>
@@ -151,7 +153,7 @@
             <a href="/bet-history.html" style="font-size:0.82rem;color:var(--red);font-weight:600;">Full history</a>
           </div>
           <!-- Mini stats row -->
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;" id="record-stats">
+          <div class="mob-1col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;" id="record-stats">
             <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
               <div style="font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:var(--green);" id="rec-won">—</div>
               <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Won</div>

@@ -133,12 +133,12 @@ img { max-width: 100%; display: block; }
 .logo-text span { color: var(--red); }
 
 /* ── Main Nav ───────────────────────────────────────────────── */
-.main-nav { display: flex; align-items: center; gap: 4px; }
+.main-nav { display: flex; align-items: center; gap: 6px; }
 .nav-link {
   color: rgba(255,255,255,0.75);
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 500;
-  padding: 8px 14px;
+  padding: 8px 16px;
   border-radius: 6px;
   transition: all var(--transition);
   white-space: nowrap;
@@ -1262,6 +1262,10 @@ img { max-width: 100%; display: block; }
 @media (max-width: 768px) {
   /* ── Base ── */
   html { font-size: 15px; }
+
+  /* ── Layout utilities (apply to inline-styled grid containers) ── */
+  .mob-1col { grid-template-columns: 1fr !important; }
+  .mob-2col { grid-template-columns: 1fr 1fr !important; }
   .container { padding: 0 16px; }
   .section { padding: 32px 0; }
 
@@ -1404,6 +1408,9 @@ img { max-width: 100%; display: block; }
 /* Small mobile — 480px and below */
 @media (max-width: 480px) {
   html { font-size: 14px; }
+
+  /* ── Layout utilities — full collapse ── */
+  .mob-1col, .mob-2col { grid-template-columns: 1fr !important; }
   .container { padding: 0 12px; }
 
   /* ── Header ── */

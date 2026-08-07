@@ -26,7 +26,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -91,7 +90,7 @@
     }
     const [feat, ...rest] = posts;
     let html = `
-      <a href="/blog/${feat.slug}" style="text-decoration:none;"><div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:32px;overflow:hidden;">
+      <a href="/blog/${feat.slug}" style="text-decoration:none;"><div class="card mob-1col" style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:32px;overflow:hidden;">
         ${thumb(feat, 280)}
         <div style="padding:28px;">
           <div class="blog-category">Featured${feat.category?' · '+esc(feat.category):''}</div>
