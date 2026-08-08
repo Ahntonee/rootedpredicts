@@ -36,7 +36,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.tailwindcss.com', 'cdn.jsdelivr.net'],
+      scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.tailwindcss.com', 'cdn.jsdelivr.net', 'www.googletagmanager.com', 'www.google-analytics.com'],
       // Allow inline event handlers (onclick="...") used throughout the app.
       // Without this, Helmet defaults script-src-attr to 'none', silently
       // disabling every inline onclick (edit/delete buttons, modal closes, tabs).
@@ -44,7 +44,7 @@ app.use(helmet({
       styleSrc:    ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net'],
       fontSrc:     ["'self'", 'fonts.gstatic.com', 'fonts.googleapis.com'],
       imgSrc:      ["'self'", 'data:', 'https:', 'media.api-sports.io'],
-      connectSrc:  ["'self'"],
+      connectSrc:  ["'self'", 'www.googletagmanager.com', 'www.google-analytics.com', 'analytics.google.com', 'stats.g.doubleclick.net'],
       frameSrc:    ["'none'"],
       objectSrc:   ["'none'"],
       upgradeInsecureRequests: [],
