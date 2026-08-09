@@ -260,6 +260,48 @@ async function deletePrediction(req, res) {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 
+// ── Grade a prediction manually from score (no API required)
+async function gradeManual(req, res) {
+  try {
+    const id = parseInt(req.params.id);
+    const { home_score, away_score, status } = req.body;
+    const statusShort = (status || 'FT').toUpperCase();
+    const VOID_STATUSES = ['ABD', 'CANC', 'PST', 'SUSP', 'AWD', 'WO'];
+    const isVoid = VOID_STATUSES.includes(statusShort);
+
+    if (!isVoid && (home_score == null || away_score == null)) {
+      return res.status(400).json({ success: false, message: 'home_score and away_score are required' });
+    }
+    const hg = isVoid ? null : parseInt(home_score);
+    const ag = isVoid ? null : parseInt(away_score);
+    if (!isVoid && (isNaN(hg) || isNaN(ag) || hg < 0 || ag < 0)) {
+      return res.status(400).json({ success: false, message: 'Scores must be non-negative integers' });
+    }
+
+    const [[pred]] = await db.query('SELECT tip, market FROM predictions WHERE id=?', [id]);
+    if (!pred) return res.status(404).json({ success: false, message: 'Prediction not found' });
+
+    let result;
+    if (isVoid) {
+      result = 'void';
+    } else {
+      const { evaluateTip } = require('../services/apiFootball');
+      const goals   = { home: hg, away: ag };
+      const homeWon = hg > ag;
+      const awayWon = ag > hg;
+      const teams   = { home: { winner: homeWon }, away: { winner: awayWon } };
+      result = evaluateTip(pred.tip, pred.market, goals, teams) || 'pending';
+    }
+
+    await db.query(
+      `UPDATE predictions SET home_score=?, away_score=?, result=?, status_short=?, updated_at=NOW() WHERE id=?`,
+      [hg, ag, result, statusShort, id]
+    );
+    writeAudit(req, 'update', 'prediction', id, `Manual grade ${hg ?? 'void'}-${ag ?? 'void'}`, { result, status: statusShort });
+    res.json({ success: true, result, message: `Graded as ${result}${isVoid ? '' : ` (${hg}–${ag})`}` });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+}
+
 // ── Score a single prediction via algorithm
 async function scorePrediction(req, res) {
   try {
@@ -714,7 +756,7 @@ async function deleteAdminAccount(req, res) {
 
 module.exports = {
   getStats, getPredictions, getPrediction, createPrediction, updatePrediction, deletePrediction,
-  scorePrediction, scoreAllPredictions, previewScore,
+  scorePrediction, scoreAllPredictions, previewScore, gradeManual,
   getUsers, updateUser, getLeagues, updateLeague,
   getBlogPosts, getBlogPost, createBlogPost, updateBlogPost, deleteBlogPost,
   getMultiTipReview,

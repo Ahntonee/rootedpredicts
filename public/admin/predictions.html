@@ -192,6 +192,30 @@
           <input type="text" class="form-control" id="m-aform" placeholder="e.g. LWWWD">
         </div>
 
+        <!-- Manual Score Entry — visible in edit mode only -->
+        <div class="form-group" id="score-entry-section" style="margin:0;grid-column:1/-1;display:none;border-top:1px solid var(--border);padding-top:14px;">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+            Final Score &amp; Status
+            <button type="button" id="grade-manual-btn" class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:0.75rem;">
+              <span class="material-icons-round" style="font-size:0.85rem;">sports_score</span>Grade Result
+            </button>
+          </label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="number" min="0" max="30" class="form-control" id="m-home-score" placeholder="Home goals" style="text-align:center;max-width:110px;">
+            <span style="font-weight:800;font-size:1.1rem;color:var(--muted);flex-shrink:0;">–</span>
+            <input type="number" min="0" max="30" class="form-control" id="m-away-score" placeholder="Away goals" style="text-align:center;max-width:110px;">
+            <select class="form-control" id="m-status-short" style="max-width:130px;">
+              <option value="FT">FT – Full Time</option>
+              <option value="AET">AET – After Extra</option>
+              <option value="PEN">PEN – Penalties</option>
+              <option value="CANC">Cancelled</option>
+              <option value="PST">Postponed</option>
+              <option value="ABD">Abandoned</option>
+            </select>
+          </div>
+          <div id="grade-result-badge" style="display:none;margin-top:8px;font-size:0.78rem;font-weight:700;padding:5px 12px;border-radius:6px;"></div>
+        </div>
+
         <!-- Publish immediately – checked by default -->
         <div class="form-group" style="margin:0;grid-column:1/-1;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-user-select:text;user-select:text;">
@@ -409,8 +433,10 @@ function validateDate() {
 
 let editingId = null;
 function setModalMode(isEdit) {
-  document.getElementById('save-new-btn').style.display   = isEdit ? '' : 'none';
-  document.getElementById('save-pred-label').textContent  = isEdit ? 'Update Prediction' : 'Publish Prediction';
+  document.getElementById('save-new-btn').style.display        = isEdit ? '' : 'none';
+  document.getElementById('save-pred-label').textContent       = isEdit ? 'Update Prediction' : 'Publish Prediction';
+  document.getElementById('score-entry-section').style.display = isEdit ? '' : 'none';
+  document.getElementById('grade-result-badge').style.display  = 'none';
 }
 function openNewModal() {
   editingId = null;
@@ -424,8 +450,11 @@ function openNewModal() {
   document.getElementById('m-category').value = 'Free Pick';
   document.getElementById('m-result').value = 'pending';
   document.getElementById('m-published').checked = true;
-  document.getElementById('m-live-status').style.display = 'none';
+  document.getElementById('m-live-status').style.display  = 'none';
   document.getElementById('m-score-display').style.display = 'none';
+  document.getElementById('m-home-score').value  = '';
+  document.getElementById('m-away-score').value  = '';
+  document.getElementById('m-status-short').value = 'FT';
   setModalMode(false);
   setDateMin();
   renderTipField('1X2', '');
@@ -598,6 +627,11 @@ async function editPred(id) {
     statusEl.style.display = 'none';
     scoreEl.style.display  = 'none';
   }
+
+  // Score entry fields
+  document.getElementById('m-home-score').value   = p.home_score != null ? p.home_score : '';
+  document.getElementById('m-away-score').value   = p.away_score != null ? p.away_score : '';
+  document.getElementById('m-status-short').value = p.status_short && ['FT','AET','PEN','CANC','PST','ABD'].includes(p.status_short) ? p.status_short : 'FT';
 
   // Odds
   let oddsData = p.odds_data;
@@ -1202,6 +1236,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('save-pred-btn').addEventListener('click', () => savePrediction(false));
   document.getElementById('save-new-btn').addEventListener('click', () => savePrediction(true));
+
+  // ── Manual grade from score (no API required) ────────────────────────────────
+  document.getElementById('grade-manual-btn').addEventListener('click', async () => {
+    if (!editingId) return;
+    const statusShort = document.getElementById('m-status-short').value;
+    const VOID_STATUSES = ['CANC', 'PST', 'ABD'];
+    const isVoid = VOID_STATUSES.includes(statusShort);
+    const hs = document.getElementById('m-home-score').value;
+    const as = document.getElementById('m-away-score').value;
+    if (!isVoid && (hs === '' || as === '')) {
+      Admin.toast('Enter both scores first, or choose Cancelled / Postponed / Abandoned', 'error'); return;
+    }
+    const btn = document.getElementById('grade-manual-btn');
+    btn.disabled = true;
+    const json = await Admin.api('POST', `/api/admin/predictions/${editingId}/grade-manual`, {
+      home_score: isVoid ? null : parseInt(hs),
+      away_score: isVoid ? null : parseInt(as),
+      status: statusShort,
+    });
+    btn.disabled = false;
+    if (json.success) {
+      document.getElementById('m-result').value = json.result;
+      const badge = document.getElementById('grade-result-badge');
+      const colors = { won: ['rgba(16,185,129,0.12)', 'var(--green)'], lost: ['rgba(239,68,68,0.12)', 'var(--red)'], void: ['rgba(107,114,128,0.12)', 'var(--muted)'], pending: ['rgba(234,179,8,0.12)', 'var(--yellow)'] };
+      const [bg, fg] = colors[json.result] || colors.pending;
+      badge.textContent = `✓ Graded: ${json.result.toUpperCase()}${isVoid ? '' : ` — ${hs}–${as}`}`;
+      badge.style.cssText = `display:block;margin-top:8px;font-size:0.78rem;font-weight:700;padding:5px 12px;border-radius:6px;background:${bg};color:${fg};`;
+      Admin.toast(json.message);
+      loadPredictions(predPage);
+    } else {
+      Admin.toast(json.message || 'Grade failed', 'error');
+    }
+  });
 });
 </script>
 </body></html>

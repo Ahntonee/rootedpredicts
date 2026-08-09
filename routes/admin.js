@@ -25,7 +25,8 @@ router.get ('/predictions/:id',           asyncHandler(admin.getPrediction));
 // Write: superadmin + editor
 router.post('/predictions',               requireAdminRole('superadmin','editor'), asyncHandler(admin.createPrediction));
 router.put ('/predictions/:id',           requireAdminRole('superadmin','editor'), asyncHandler(admin.updatePrediction));
-router.post('/predictions/:id/score',     requireAdminRole('superadmin','editor'), asyncHandler(admin.scorePrediction));
+router.post('/predictions/:id/score',        requireAdminRole('superadmin','editor'), asyncHandler(admin.scorePrediction));
+router.post('/predictions/:id/grade-manual', requireAdminRole('superadmin','editor'), asyncHandler(admin.gradeManual));
 router.post('/predictions/score-all',     requireAdminRole('superadmin','editor'), asyncHandler(admin.scoreAllPredictions));
 router.post('/predictions/preview-score', requireAdminRole('superadmin','editor'), asyncHandler(admin.previewScore));
 // Delete: superadmin only
