@@ -75,10 +75,22 @@
       <input type="hidden" id="edit-id">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
 
-        <!-- League (all leagues from DB, synced from API-Football) -->
-        <div class="form-group" style="margin:0;">
+        <!-- League (searchable picker) -->
+        <div class="form-group" style="margin:0;position:relative;" id="league-picker-wrap">
           <label class="form-label">League</label>
-          <select class="form-control" id="m-league"><option value="">Loading leagues...</option></select>
+          <div style="position:relative;">
+            <input type="text" class="form-control" id="league-search"
+                   placeholder="Search leagues…" autocomplete="off"
+                   style="padding-right:30px;">
+            <span class="material-icons-round" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:1rem;color:var(--muted);pointer-events:none;">expand_more</span>
+          </div>
+          <div id="league-dropdown-list"
+               style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;
+                      background:var(--surface);border:1px solid var(--border);border-radius:8px;
+                      max-height:240px;overflow-y:auto;z-index:9999;box-shadow:var(--shadow-md);">
+          </div>
+          <!-- Hidden select keeps all existing JS (.value reads) working -->
+          <select id="m-league" style="display:none;"><option value="">Loading leagues...</option></select>
         </div>
 
         <!-- Match Date – min enforced to 2h from now to block past/live games -->
@@ -446,6 +458,8 @@ function openNewModal() {
   document.getElementById('m-home').value = '';
   document.getElementById('m-away').value = '';
   document.getElementById('m-league').value = '';
+  document.getElementById('league-search').value = '';
+  document.getElementById('league-dropdown-list').style.display = 'none';
   document.getElementById('m-market').value = '1X2';
   document.getElementById('m-category').value = 'Free Pick';
   document.getElementById('m-result').value = 'pending';
@@ -514,6 +528,44 @@ function collectOdds(market, tip) {
 // â”€â”€ New Prediction form: league dropdown + fixture-driven team datalists â”€â”€â”€â”€â”€â”€
 let formFixtures = [];
 
+// ── Searchable league picker ──────────────────────────────────────────────────
+let allLeagueOptions = [];
+
+function rebuildLeagueDropdown() {
+  const sel = document.getElementById('m-league');
+  allLeagueOptions = [...sel.options]
+    .filter(o => o.value)
+    .map(o => ({ id: o.value, label: o.text }));
+  renderLeagueList('');
+}
+
+function renderLeagueList(query) {
+  const list = document.getElementById('league-dropdown-list');
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? allLeagueOptions.filter(o => o.label.toLowerCase().includes(q))
+    : allLeagueOptions;
+  if (!filtered.length) {
+    list.innerHTML = '<div style="padding:12px 16px;color:var(--muted);font-size:0.82rem;">No leagues found</div>';
+    return;
+  }
+  list.innerHTML = filtered.slice(0, 120).map(o => {
+    const safe = o.label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<div class="league-opt" data-id="${o.id}" data-label="${safe}"
+                 style="padding:9px 14px;cursor:pointer;font-size:0.85rem;
+                        border-bottom:1px solid var(--border);transition:background 0.1s;"
+                 onmouseover="this.style.background='var(--card)'"
+                 onmouseout="this.style.background=''">${safe}</div>`;
+  }).join('');
+}
+
+function selectLeague(id, label) {
+  document.getElementById('m-league').value = id;
+  document.getElementById('league-search').value = label;
+  document.getElementById('league-dropdown-list').style.display = 'none';
+  loadLeagueFixtures();
+}
+
 async function loadFormLeagues() {
   const sel = document.getElementById('m-league');
   try {
@@ -526,6 +578,7 @@ async function loadFormLeagues() {
     });
     sel.innerHTML = '<option value="">Select a league...</option>' +
       sorted.map(l => `<option value="${l.id}" data-api-id="${l.api_league_id||''}">${l.name}${l.country?' · '+l.country:''}</option>`).join('');
+    rebuildLeagueDropdown();
   } catch (e) {}
 }
 
@@ -535,6 +588,7 @@ function ensureLeagueOption(id, label) {
     const o = document.createElement('option');
     o.value = id; o.textContent = label || ('League #' + id);
     sel.appendChild(o);
+    rebuildLeagueDropdown();
   }
 }
 
@@ -593,7 +647,9 @@ async function editPred(id) {
   setModalMode(true);
   document.getElementById('modal-title').textContent = 'Edit Prediction';
   ensureLeagueOption(p.league_id, (p.league_name||'League')+' #'+p.league_id);
-  document.getElementById('m-league').value   = p.league_id||'';
+  document.getElementById('m-league').value = p.league_id||'';
+  const _leagueSel = document.getElementById('m-league');
+  document.getElementById('league-search').value = _leagueSel.options[_leagueSel.selectedIndex]?.text || '';
   document.getElementById('m-date').value     = p.match_date ? p.match_date.replace(' ','T').slice(0,16) : '';
   document.getElementById('m-home').value     = p.home_team||'';
   document.getElementById('m-away').value     = p.away_team||'';
@@ -956,7 +1012,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const leagueSel = document.getElementById('m-league');
     if (leagueSel && d.fixture.league) {
       const opt = [...leagueSel.options].find(o => o.dataset && o.dataset.apiId == d.fixture.league.id);
-      if (opt) leagueSel.value = opt.value;
+      if (opt) {
+        leagueSel.value = opt.value;
+        document.getElementById('league-search').value = opt.text;
+      }
     }
     setDateMin();
     validateDate();
@@ -1091,7 +1150,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderTipField('1X2', '');
   renderOddsFields('1X2');
   setDateMin();
-  document.getElementById('m-league').addEventListener('change', () => loadLeagueFixtures());
+
+  // ── Searchable league picker events ─────────────────────────────────────────
+  const leagueSearchEl   = document.getElementById('league-search');
+  const leagueDropEl     = document.getElementById('league-dropdown-list');
+  const leaguePickerWrap = document.getElementById('league-picker-wrap');
+  leagueSearchEl.addEventListener('focus', () => {
+    renderLeagueList(leagueSearchEl.value);
+    leagueDropEl.style.display = 'block';
+  });
+  leagueSearchEl.addEventListener('input', () => {
+    renderLeagueList(leagueSearchEl.value);
+    leagueDropEl.style.display = 'block';
+  });
+  leagueDropEl.addEventListener('click', e => {
+    const opt = e.target.closest('.league-opt');
+    if (!opt) return;
+    selectLeague(opt.dataset.id, opt.dataset.label);
+  });
+  document.addEventListener('click', e => {
+    if (!leaguePickerWrap.contains(e.target)) leagueDropEl.style.display = 'none';
+  });
+  // m-league hidden select no longer needs a direct change listener
+  // (selectLeague() calls loadLeagueFixtures() explicitly)
   document.getElementById('m-date').addEventListener('change', () => { autofillAwayFromHome(); validateDate(); });
   document.getElementById('m-home').addEventListener('input', autofillAwayFromHome);
   document.getElementById('m-market').addEventListener('change', e => {
