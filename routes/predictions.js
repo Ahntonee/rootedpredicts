@@ -106,7 +106,8 @@ router.get('/leaderboard', asyncHandler(async (req, res) => {
      GROUP BY l.id, l.name, l.country HAVING total >= 1 ORDER BY total DESC, accuracy DESC LIMIT 12`
   );
   const [recent] = await db.query(
-    `SELECT home_team, away_team, tip, odds, result, home_score, away_score, match_date
+    `SELECT home_team, away_team, home_team_logo, away_team_logo,
+            tip, odds, result, home_score, away_score, match_date
      FROM predictions WHERE ${decided}
      ORDER BY match_date DESC LIMIT 30`
   );
