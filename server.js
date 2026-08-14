@@ -99,6 +99,8 @@ app.use((req, res, next) => {
   const large = req.originalUrl.startsWith('/api/admin/blog') ||
                 req.originalUrl.startsWith('/api/admin/pages') ||
                 req.originalUrl.startsWith('/api/pages')       ||
+                req.originalUrl.startsWith('/api/marketing/ads') ||
+                req.originalUrl.startsWith('/api/marketing/seo-pages') ||
                 req.originalUrl === '/api/subscriptions/manual/submit';
   express.json({ limit: large ? '10mb' : '10kb' })(req, res, next);
 });
@@ -210,6 +212,81 @@ app.get('/predictions.html', (req, res, next) => {
   return prerenderPage(req, res, next, 'predictions.html', 'picks-list');
 });
 
+// ── SEO Tips pages — served at /tips/:slug for every visitor (and bots)
+app.get('/tips/:slug', async (req, res) => {
+  try {
+    const [[page]] = await db.query(
+      `SELECT * FROM seo_pages WHERE slug = ? AND status = 'published'`,
+      [req.params.slug]
+    );
+    if (!page) return res.status(404).send('Page not found');
+
+    const [preds] = await db.query(`
+      SELECT p.id, p.slug, p.home_team, p.away_team, p.match_date,
+             p.tip, p.market, p.odds, p.confidence_score, p.league_id,
+             l.name AS league_name, l.country AS league_country
+      FROM predictions p
+      LEFT JOIN leagues l ON l.id = p.league_id
+      WHERE DATE(p.match_date) = CURDATE() AND p.published_at IS NOT NULL
+      ORDER BY p.confidence_score DESC LIMIT 30
+    `);
+    const BASE = process.env.SITE_URL || 'https://www.rootedpredict.com';
+    const predCardsHtml = preds.map(buildBotPredCard).join('\n');
+    const schema = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      'headline': page.title,
+      'description': page.meta_description || '',
+      'url': `${BASE}/tips/${page.slug}`,
+      'publisher': { '@type': 'Organization', 'name': 'Rooted Predictions', 'url': BASE },
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escHtml(page.title)}</title>
+  <meta name="description" content="${escHtml(page.meta_description || '')}">
+  ${page.meta_keywords ? `<meta name="keywords" content="${escHtml(page.meta_keywords)}">` : ''}
+  <link rel="canonical" href="${BASE}/tips/${escHtml(page.slug)}">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bai+Jamjuree:wght@400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script type="application/ld+json">${schema}</script>
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+<main>
+  <div class="container" style="padding-top:40px;padding-bottom:60px;">
+    <article style="max-width:820px;margin:0 auto 48px;">
+      <h1 style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--text);margin-bottom:20px;">${escHtml(page.title)}</h1>
+      <div style="font-family:'Open Sans',sans-serif;line-height:1.85;color:var(--text-soft);">
+        ${page.content || ''}
+      </div>
+    </article>
+    <div style="max-width:820px;margin:0 auto;">
+      <h2 style="font-family:var(--font-head);font-size:1.4rem;font-weight:700;margin-bottom:20px;color:var(--text);">Today's Free Football Predictions</h2>
+      <div id="picks-list">
+        ${predCardsHtml || '<p style="color:var(--muted);text-align:center;padding:40px 0;">No predictions today yet — check back soon.</p>'}
+      </div>
+    </div>
+  </div>
+</main>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/js/app.js"></script>
+</body>
+</html>`);
+  } catch (e) {
+    console.error('[SEO TIPS PAGE]', e.message);
+    res.status(500).send('Server error');
+  }
+});
+
 // ── Static files
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
@@ -270,6 +347,9 @@ app.get('/sitemap.xml', async (req, res) => {
     const [preds] = await db.query(
       `SELECT slug, updated_at FROM predictions WHERE published_at IS NOT NULL ORDER BY match_date DESC LIMIT 500`
     );
+    const [seoPages] = await db.query(
+      `SELECT slug, updated_at FROM seo_pages WHERE status = 'published' ORDER BY updated_at DESC LIMIT 200`
+    ).catch(() => [[]]);
 
     const urlTags = [
       ...staticPages.map(p => `
@@ -292,6 +372,13 @@ app.get('/sitemap.xml', async (req, res) => {
     <lastmod>${p.updated_at ? new Date(p.updated_at).toISOString().split('T')[0] : today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>`),
+      ...(seoPages || []).map(p => `
+  <url>
+    <loc>${BASE}/tips/${p.slug}</loc>
+    <lastmod>${p.updated_at ? new Date(p.updated_at).toISOString().split('T')[0] : today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>`),
     ];
 
@@ -325,6 +412,7 @@ app.use('/api/admin/analytics', require('./routes/analytics'));
 app.use('/api/newsletter',    require('./routes/newsletter'));
 app.use('/api/pages',         require('./routes/pages'));
 app.use('/api/webhooks',      require('./routes/webhooks'));
+app.use('/api/marketing',    require('./routes/marketing'));
 
 // ── Block invalid admin paths — only /admin/index.html is valid
 const VALID_ADMIN_PATHS = [
@@ -342,6 +430,10 @@ const VALID_ADMIN_PATHS = [
   '/admin/audit.html',
   '/admin/admins.html',
   '/admin/profile.html',
+  '/admin/seo-pages.html',
+  '/admin/backlinks.html',
+  '/admin/ads.html',
+  '/admin/announcements.html',
 ];
 app.get('/admin', (req, res) => res.status(404).send(adminErrorPage()));
 app.get('/admin/{*path}', (req, res, next) => {

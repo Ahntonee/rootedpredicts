@@ -810,6 +810,106 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `,
   },
+
+  // ----------------------------------------------------------
+  // 23. SEO PAGES
+  //     Admin-written landing pages crawlable by search engines.
+  //     Served at /tips/:slug with live predictions + article.
+  // ----------------------------------------------------------
+  {
+    name: 'Create seo_pages table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS seo_pages (
+        id               INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+        title            VARCHAR(255)  NOT NULL,
+        slug             VARCHAR(255)  NOT NULL UNIQUE,
+        meta_description TEXT          DEFAULT NULL,
+        meta_keywords    VARCHAR(500)  DEFAULT NULL,
+        content          LONGTEXT      DEFAULT NULL,
+        status           ENUM('draft','published') NOT NULL DEFAULT 'draft',
+        source_blog_id   INT UNSIGNED  DEFAULT NULL,
+        created_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_sp_slug   (slug),
+        INDEX idx_sp_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `,
+  },
+
+  // ----------------------------------------------------------
+  // 24. BACKLINKS
+  //     Partner / text links shown in the site footer.
+  //     Auto-marked expired when expires_at passes.
+  // ----------------------------------------------------------
+  {
+    name: 'Create backlinks table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS backlinks (
+        id          INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+        name        VARCHAR(255)  NOT NULL COMMENT 'Anchor text shown in footer',
+        url         VARCHAR(1000) NOT NULL,
+        expires_at  DATETIME      NOT NULL,
+        status      ENUM('active','expired') NOT NULL DEFAULT 'active',
+        created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_bl_status  (status),
+        INDEX idx_bl_expires (expires_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `,
+  },
+
+  // ----------------------------------------------------------
+  // 25. ADS
+  //     Banner / code / text ads with placement control and
+  //     impression + click tracking.
+  // ----------------------------------------------------------
+  {
+    name: 'Create ads table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS ads (
+        id          INT UNSIGNED   NOT NULL AUTO_INCREMENT,
+        name        VARCHAR(255)   NOT NULL,
+        type        ENUM('banner','code','text') NOT NULL,
+        content     LONGTEXT       DEFAULT NULL COMMENT 'HTML/JS for code; plain text for text ads',
+        image_data  LONGTEXT       DEFAULT NULL COMMENT 'Base64 data-URI for banner image',
+        link_url    VARCHAR(1000)  DEFAULT NULL COMMENT 'Click target for banner and text ads',
+        placement   JSON           DEFAULT NULL COMMENT 'Array: header|between-cards|sidebar|footer|blog',
+        status      ENUM('active','inactive') NOT NULL DEFAULT 'active',
+        impressions INT UNSIGNED   NOT NULL DEFAULT 0,
+        clicks      INT UNSIGNED   NOT NULL DEFAULT 0,
+        created_at  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_ads_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `,
+  },
+
+  // ----------------------------------------------------------
+  // 26. ANNOUNCEMENTS
+  //     Admin posts announcements visible in every user dashboard.
+  // ----------------------------------------------------------
+  {
+    name: 'Create announcements table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS announcements (
+        id           INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+        title        VARCHAR(255)  NOT NULL,
+        message      TEXT          NOT NULL,
+        type         ENUM('info','success','warning','alert') NOT NULL DEFAULT 'info',
+        status       ENUM('draft','published') NOT NULL DEFAULT 'draft',
+        published_at DATETIME      DEFAULT NULL,
+        expires_at   DATETIME      DEFAULT NULL COMMENT 'NULL = never expires',
+        created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_ann_status  (status),
+        INDEX idx_ann_expires (expires_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `,
+  },
 ];
 
 // ============================================================

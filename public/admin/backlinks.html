@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><link rel="icon" type="image/png" href="/favicon.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backlinks | Rooted Predictions Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar">
+  <span class="admin-topbar-title">Backlinks / Text Links</span>
+  <button class="btn btn-primary btn-sm" onclick="openNew()"><span class="material-icons-round">add</span>Add Backlink</button>
+</div>
+<main class="admin-main">
+  <div class="card" style="padding:16px 20px;margin-bottom:20px;background:rgba(15,52,96,0.08);border:1px solid rgba(15,52,96,0.2);">
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <span class="material-icons-round" style="color:var(--midnight);margin-top:2px;">info</span>
+      <div style="font-size:0.85rem;color:var(--text-soft);line-height:1.6;">
+        <strong style="color:var(--text);">Partner Links:</strong> Active backlinks appear in a "Partner Sites" column in the site footer on every page. Expired links remain visible here for your records but are hidden from the public site. Use the <strong>Renew</strong> button to extend a link's expiry.
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="overflow:hidden;">
+    <div id="bl-loading" style="text-align:center;padding:40px;"><p style="color:var(--muted);">Loading backlinks...</p></div>
+    <table class="leaderboard-table" id="bl-table" style="display:none;">
+      <thead><tr><th>Anchor Text</th><th>URL</th><th>Expires</th><th>Status</th><th>Days Left</th><th>Actions</th></tr></thead>
+      <tbody id="bl-tbody"></tbody>
+    </table>
+    <div id="bl-empty" style="display:none;text-align:center;padding:48px;color:var(--muted);">
+      <span class="material-icons-round" style="font-size:2.5rem;display:block;margin-bottom:8px;color:var(--border);">link_off</span>
+      <p style="font-size:0.9rem;">No backlinks yet. Add your first partner site link.</p>
+    </div>
+  </div>
+</main>
+
+<!-- Backlink Modal -->
+<div id="bl-modal" class="admin-modal-overlay" style="display:none;">
+  <div class="admin-modal" style="max-width:520px;">
+    <div class="admin-modal-header">
+      <span class="admin-modal-title" id="bl-modal-title">Add Backlink</span>
+      <button class="admin-close-btn" onclick="Admin.hideModal('bl-modal')"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="admin-modal-body">
+      <input type="hidden" id="bl-id">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Anchor Text (name displayed in footer) *</label>
+          <input type="text" class="form-control" id="bl-name" placeholder="e.g. BetWinner Tips">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">URL *</label>
+          <input type="url" class="form-control" id="bl-url" placeholder="https://example.com">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Expiry Date *</label>
+          <input type="date" class="form-control" id="bl-expires">
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="setExpiry(7)">+1 week</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="setExpiry(30)">+1 month</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="setExpiry(90)">+3 months</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="setExpiry(180)">+6 months</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="setExpiry(365)">+1 year</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="Admin.hideModal('bl-modal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="bl-save-btn" onclick="saveBacklink()"><span class="material-icons-round">save</span>Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Renew Modal -->
+<div id="renew-modal" class="admin-modal-overlay" style="display:none;">
+  <div class="admin-modal" style="max-width:420px;">
+    <div class="admin-modal-header">
+      <span class="admin-modal-title">Renew Backlink</span>
+      <button class="admin-close-btn" onclick="Admin.hideModal('renew-modal')"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="admin-modal-body">
+      <input type="hidden" id="renew-id">
+      <p style="font-size:0.88rem;color:var(--text-soft);margin-bottom:14px;">Choose a new expiry date for <strong id="renew-name"></strong>:</p>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">New Expiry Date *</label>
+        <input type="date" class="form-control" id="renew-expires">
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="setRenewExpiry(30)">+1 month</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="setRenewExpiry(90)">+3 months</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="setRenewExpiry(180)">+6 months</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="setRenewExpiry(365)">+1 year</button>
+        </div>
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="Admin.hideModal('renew-modal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitRenew()"><span class="material-icons-round">autorenew</span>Renew</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/admin.js"></script>
+<script>
+'use strict';
+var backlinks = [];
+
+Admin.requireAdmin().then(function(user) {
+  Admin.buildSidebar(user);
+
+  loadBacklinks();
+});
+
+function loadBacklinks() {
+  Admin.api('GET','/api/marketing/backlinks').then(function(j) {
+    document.getElementById('bl-loading').style.display = 'none';
+    if (!j.success) return;
+    backlinks = j.data || [];
+    if (!backlinks.length) { document.getElementById('bl-empty').style.display=''; return; }
+    document.getElementById('bl-table').style.display = '';
+    renderTable();
+  });
+}
+
+function renderTable() {
+  var tbody = document.getElementById('bl-tbody');
+  tbody.innerHTML = backlinks.map(function(bl) {
+    var now    = Date.now();
+    var exp    = new Date(bl.expires_at).getTime();
+    var days   = Math.ceil((exp - now) / 86400000);
+    var isExp  = bl.status === 'expired';
+    var badge  = isExp
+      ? '<span class="badge badge-lost">EXPIRED</span>'
+      : '<span class="badge badge-won">ACTIVE</span>';
+    var daysCell = isExp
+      ? '<span style="color:var(--red);font-size:0.82rem;">Expired</span>'
+      : '<span style="color:var(--green);font-size:0.82rem;">'+days+' day'+(days===1?'':'s')+'</span>';
+
+    return '<tr style="opacity:'+(isExp?'0.6':'1')+'">' +
+      '<td><strong>'+escHtml(bl.name)+'</strong></td>' +
+      '<td><a href="'+escHtml(bl.url)+'" target="_blank" rel="noopener" style="color:var(--red);font-size:0.82rem;word-break:break-all;">'+escHtml(bl.url.replace(/^https?:\/\//,'').slice(0,40))+'</a></td>' +
+      '<td style="font-size:0.82rem;color:var(--muted);">'+Admin.fmtDate(bl.expires_at)+'</td>' +
+      '<td>'+badge+'</td>' +
+      '<td>'+daysCell+'</td>' +
+      '<td><div style="display:flex;gap:6px;">' +
+        '<button class="btn btn-outline btn-sm" title="Renew" onclick="openRenew('+bl.id+')"><span class="material-icons-round">autorenew</span></button>' +
+        '<button class="btn btn-outline btn-sm" title="Edit" onclick="editBacklink('+bl.id+')"><span class="material-icons-round">edit</span></button>' +
+        '<button class="btn btn-outline btn-sm" style="color:var(--red);" title="Delete" onclick="deleteBacklink('+bl.id+')"><span class="material-icons-round">delete</span></button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function setExpiry(days) {
+  var d = new Date();
+  d.setDate(d.getDate() + days);
+  document.getElementById('bl-expires').value = d.toISOString().split('T')[0];
+}
+
+function setRenewExpiry(days) {
+  var d = new Date();
+  d.setDate(d.getDate() + days);
+  document.getElementById('renew-expires').value = d.toISOString().split('T')[0];
+}
+
+function openNew() {
+  document.getElementById('bl-id').value = '';
+  document.getElementById('bl-name').value = '';
+  document.getElementById('bl-url').value = '';
+  document.getElementById('bl-expires').value = '';
+  document.getElementById('bl-modal-title').textContent = 'Add Backlink';
+  Admin.showModal('bl-modal');
+}
+
+function editBacklink(id) {
+  var bl = backlinks.find(function(b){ return b.id===id; });
+  if (!bl) return;
+  document.getElementById('bl-id').value = bl.id;
+  document.getElementById('bl-name').value = bl.name;
+  document.getElementById('bl-url').value = bl.url;
+  document.getElementById('bl-expires').value = new Date(bl.expires_at).toISOString().split('T')[0];
+  document.getElementById('bl-modal-title').textContent = 'Edit Backlink';
+  Admin.showModal('bl-modal');
+}
+
+function saveBacklink() {
+  var id    = document.getElementById('bl-id').value;
+  var name  = document.getElementById('bl-name').value.trim();
+  var url   = document.getElementById('bl-url').value.trim();
+  var exp   = document.getElementById('bl-expires').value;
+  if (!name || !url || !exp) { Admin.toast('All fields are required','error'); return; }
+  var btn = document.getElementById('bl-save-btn');
+  btn.disabled = true;
+  var method = id ? 'PUT' : 'POST';
+  var endpoint = id ? '/api/marketing/backlinks/'+id : '/api/marketing/backlinks';
+  Admin.api(method, endpoint, { name, url, expires_at: exp+'T23:59:59' }).then(function(j) {
+    btn.disabled = false;
+    if (!j.success) { Admin.toast(j.message||'Save failed','error'); return; }
+    Admin.toast(id ? 'Backlink updated' : 'Backlink added');
+    Admin.hideModal('bl-modal');
+    loadBacklinks();
+  });
+}
+
+function openRenew(id) {
+  var bl = backlinks.find(function(b){ return b.id===id; });
+  if (!bl) return;
+  document.getElementById('renew-id').value = bl.id;
+  document.getElementById('renew-name').textContent = bl.name;
+  document.getElementById('renew-expires').value = '';
+  Admin.showModal('renew-modal');
+}
+
+function submitRenew() {
+  var id  = document.getElementById('renew-id').value;
+  var exp = document.getElementById('renew-expires').value;
+  if (!exp) { Admin.toast('Choose a new expiry date','error'); return; }
+  Admin.api('POST','/api/marketing/backlinks/'+id+'/renew',{ expires_at: exp+'T23:59:59' }).then(function(j) {
+    if (!j.success) { Admin.toast(j.message||'Renew failed','error'); return; }
+    Admin.toast('Backlink renewed');
+    Admin.hideModal('renew-modal');
+    loadBacklinks();
+  });
+}
+
+function deleteBacklink(id) {
+  var bl = backlinks.find(function(b){ return b.id===id; });
+  Admin.confirm('Delete backlink "'+((bl&&bl.name)||'this link')+'"? This cannot be undone.', function() {
+    Admin.api('DELETE','/api/marketing/backlinks/'+id).then(function(j) {
+      if (!j.success) { Admin.toast(j.message||'Delete failed','error'); return; }
+      Admin.toast('Backlink deleted');
+      loadBacklinks();
+    });
+  });
+}
+</script>
+</body>
+</html>

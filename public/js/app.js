@@ -213,6 +213,23 @@
       </div>
     `;
 
+    // Inject partner backlinks (if any active ones exist)
+    (async function injectBacklinks() {
+      try {
+        var r = await fetch('/api/marketing/backlinks/active');
+        var j = await r.json();
+        if (!j.success || !j.data || !j.data.length) return;
+        var col = document.createElement('div');
+        col.className = 'footer-col';
+        col.innerHTML = '<h4>Partner Sites</h4><ul class="footer-links">' +
+          j.data.map(function(bl) {
+            return '<li><a href="' + escUrl(bl.url) + '" target="_blank" rel="noopener sponsored">' + escText(bl.name) + '</a></li>';
+          }).join('') + '</ul>';
+        var footerTop = el.querySelector('.footer-top');
+        if (footerTop) footerTop.appendChild(col);
+      } catch (_) {}
+    })();
+
     // Wire up newsletter form
     var nlForm = document.getElementById('footer-newsletter-form');
     if (nlForm) {
@@ -723,6 +740,46 @@
     }
   }
 
+  // ── Escape helpers (used by backlinks + ad injection)
+  function escText(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escUrl(s)  { try { var u = new URL(String(s||'')); return ['http:','https:'].includes(u.protocol) ? u.href : '#'; } catch(_){ return '#'; } }
+
+  // ── Inject ads into placement slots on the current page
+  async function injectAds() {
+    var placements = ['header','between-cards','sidebar','footer','blog'];
+    var slots = placements.filter(function(p){ return !!document.getElementById('ad-slot-'+p); });
+    if (!slots.length) return;
+    try {
+      var allAds = [];
+      for (var i = 0; i < slots.length; i++) {
+        var r = await fetch('/api/marketing/ads/placement/' + slots[i]);
+        var j = await r.json();
+        if (j.success && j.data) {
+          j.data.forEach(function(ad) { ad._slot = slots[i]; allAds.push(ad); });
+        }
+      }
+      allAds.forEach(function(ad) {
+        var slot = document.getElementById('ad-slot-' + ad._slot);
+        if (!slot) return;
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'margin:12px 0;';
+        if (ad.type === 'banner' && ad.image_data) {
+          wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored">' +
+            '<img src="'+ad.image_data+'" alt="'+escText(ad.name)+'" style="max-width:100%;height:auto;display:block;border-radius:8px;"></a>';
+        } else if (ad.type === 'code' && ad.content) {
+          wrap.innerHTML = ad.content;
+        } else if (ad.type === 'text' && ad.link_url) {
+          wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored" ' +
+            'style="font-size:0.85rem;color:var(--text-soft);text-decoration:underline;">'+escText(ad.name)+'</a>';
+        }
+        if (wrap.innerHTML) {
+          slot.appendChild(wrap);
+          fetch('/api/marketing/ads/'+ad.id+'/impression', {method:'POST'}).catch(function(){});
+        }
+      });
+    } catch(_) {}
+  }
+
   // ── Init on DOM ready
   document.addEventListener('DOMContentLoaded', async () => {
     injectHeader();
@@ -765,6 +822,7 @@
     // Update stats bar + live "today" ticker from real data
     updateStatsBar();
     populateTicker();
+    injectAds();
 
     // Market tab filtering
     document.querySelectorAll('.market-tabs .market-tab').forEach(tab => {

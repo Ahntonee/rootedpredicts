@@ -195,6 +195,12 @@
         ${isEditor     ? `<a href="/admin/leagues.html"  class="admin-nav-link"><span class="material-icons-round">emoji_events</span>Leagues</a>` : ''}
         ${isSuperAdmin ? `<a href="/admin/admins.html"   class="admin-nav-link"><span class="material-icons-round">admin_panel_settings</span>Admin Accounts</a>` : ''}
 
+        <div class="admin-nav-section">Marketing</div>
+        ${isSuperAdmin ? `<a href="/admin/announcements.html" class="admin-nav-link"><span class="material-icons-round">campaign</span>Announcements</a>` : ''}
+        ${isEditor ? `<a href="/admin/seo-pages.html"  class="admin-nav-link"><span class="material-icons-round">manage_search</span>SEO Pages</a>` : ''}
+        ${isEditor ? `<a href="/admin/backlinks.html"  class="admin-nav-link"><span class="material-icons-round">link</span>Backlinks</a>` : ''}
+        ${isEditor ? `<a href="/admin/ads.html"        class="admin-nav-link"><span class="material-icons-round">ad_units</span>Ads</a>` : ''}
+
         <div class="admin-nav-section">Settings</div>
         ${isEditor ? `<a href="/admin/pages.html" class="admin-nav-link"><span class="material-icons-round">pages</span>Site Pages</a>
         <a href="/admin/seo.html"        class="admin-nav-link"><span class="material-icons-round">travel_explore</span>SEO Settings</a>

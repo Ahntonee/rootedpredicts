@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><link rel="icon" type="image/png" href="/favicon.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ads Management | Rooted Predictions Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .placement-chips { display:flex;flex-wrap:wrap;gap:8px;margin-top:6px; }
+    .placement-chip  { display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:0.82rem;color:var(--text-soft);transition:all 0.15s; }
+    .placement-chip input[type=checkbox] { accent-color:var(--red); }
+    .placement-chip.selected { border-color:var(--red);background:rgba(233,69,96,0.08);color:var(--text); }
+    .ad-type-tabs { display:flex;gap:6px;margin-bottom:14px; }
+    .ad-type-tab  { flex:1;padding:8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);text-align:center;cursor:pointer;font-size:0.82rem;color:var(--muted);transition:all 0.15s; }
+    .ad-type-tab.active { border-color:var(--red);background:rgba(233,69,96,0.08);color:var(--text);font-weight:600; }
+    .stat-pill { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:0.75rem;font-weight:600; }
+  </style>
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar">
+  <span class="admin-topbar-title">Ads Management</span>
+  <button class="btn btn-primary btn-sm" onclick="openNew()"><span class="material-icons-round">add</span>New Ad</button>
+</div>
+<main class="admin-main">
+
+  <!-- Stats overview -->
+  <div class="admin-stat-grid" style="margin-bottom:24px;" id="ads-stats" style="display:none;">
+    <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(22,163,74,0.1);"><span class="material-icons-round" style="color:var(--green);">visibility</span></div><div><div class="admin-stat-value" id="total-impressions">—</div><div class="admin-stat-label">Total Impressions</div></div></div>
+    <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(233,69,96,0.1);"><span class="material-icons-round" style="color:var(--red);">ads_click</span></div><div><div class="admin-stat-value" id="total-clicks">—</div><div class="admin-stat-label">Total Clicks</div></div></div>
+    <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(15,52,96,0.1);"><span class="material-icons-round" style="color:var(--midnight);">percent</span></div><div><div class="admin-stat-value" id="avg-ctr">—</div><div class="admin-stat-label">Avg CTR</div></div></div>
+    <div class="admin-stat-card"><div class="admin-stat-icon" style="background:rgba(22,163,74,0.1);"><span class="material-icons-round" style="color:var(--green);">toggle_on</span></div><div><div class="admin-stat-value" id="active-count">—</div><div class="admin-stat-label">Active Ads</div></div></div>
+  </div>
+
+  <div class="card" style="overflow:hidden;">
+    <div id="ads-loading" style="text-align:center;padding:40px;"><p style="color:var(--muted);">Loading ads...</p></div>
+    <table class="leaderboard-table" id="ads-table" style="display:none;">
+      <thead><tr><th>Name</th><th>Type</th><th>Placements</th><th>Status</th><th>Impressions</th><th>Clicks</th><th>CTR</th><th>Actions</th></tr></thead>
+      <tbody id="ads-tbody"></tbody>
+    </table>
+    <div id="ads-empty" style="display:none;text-align:center;padding:48px;color:var(--muted);">
+      <span class="material-icons-round" style="font-size:2.5rem;display:block;margin-bottom:8px;color:var(--border);">ad_units</span>
+      <p style="font-size:0.9rem;">No ads yet. Create your first ad to start monetising your traffic.</p>
+    </div>
+  </div>
+</main>
+
+<!-- Ad Modal -->
+<div id="ad-modal" class="admin-modal-overlay" style="display:none;">
+  <div class="admin-modal" style="max-width:620px;">
+    <div class="admin-modal-header">
+      <span class="admin-modal-title" id="ad-modal-title">New Ad</span>
+      <button class="admin-close-btn" onclick="Admin.hideModal('ad-modal')"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="admin-modal-body">
+      <input type="hidden" id="ad-id">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Ad Name (internal label) *</label>
+          <input type="text" class="form-control" id="ad-name" placeholder="e.g. BetWinner Header Banner Q3">
+        </div>
+
+        <!-- Type tabs -->
+        <div>
+          <label class="form-label">Ad Type *</label>
+          <div class="ad-type-tabs">
+            <div class="ad-type-tab active" data-type="banner" onclick="setAdType('banner')"><span class="material-icons-round" style="font-size:1rem;vertical-align:middle;">image</span> Banner</div>
+            <div class="ad-type-tab" data-type="code"   onclick="setAdType('code')"><span class="material-icons-round" style="font-size:1rem;vertical-align:middle;">code</span> Code</div>
+            <div class="ad-type-tab" data-type="text"   onclick="setAdType('text')"><span class="material-icons-round" style="font-size:1rem;vertical-align:middle;">text_fields</span> Text Link</div>
+          </div>
+        </div>
+
+        <!-- Banner fields -->
+        <div id="fields-banner">
+          <div class="form-group" style="margin:0 0 12px;">
+            <label class="form-label">Banner Image</label>
+            <input type="file" class="form-control" id="ad-image" accept="image/*" onchange="handleImageUpload(this)">
+            <div id="img-preview" style="margin-top:8px;display:none;"><img id="img-preview-el" style="max-width:100%;max-height:120px;border-radius:var(--radius);border:1px solid var(--border);" alt=""></div>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Click-through URL</label>
+            <input type="url" class="form-control" id="ad-link-banner" placeholder="https://advertiser-site.com">
+          </div>
+        </div>
+
+        <!-- Code fields -->
+        <div id="fields-code" style="display:none;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">HTML / Script Code</label>
+            <textarea class="form-control" id="ad-code" rows="6" placeholder="Paste your ad code here (AdSense, affiliate script, custom HTML, etc.)"></textarea>
+          </div>
+        </div>
+
+        <!-- Text link fields -->
+        <div id="fields-text" style="display:none;">
+          <div class="form-group" style="margin:0 0 12px;">
+            <label class="form-label">Anchor Text (displayed to users) *</label>
+            <input type="text" class="form-control" id="ad-text-name" placeholder="e.g. Best Football Betting Odds — BetWinner">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Destination URL *</label>
+            <input type="url" class="form-control" id="ad-link-text" placeholder="https://advertiser-site.com">
+          </div>
+        </div>
+
+        <!-- Placements -->
+        <div>
+          <label class="form-label">Placement(s) — where does this ad appear? *</label>
+          <div class="placement-chips">
+            <label class="placement-chip" data-p="header">
+              <input type="checkbox" value="header"> Header Banner
+            </label>
+            <label class="placement-chip" data-p="between-cards">
+              <input type="checkbox" value="between-cards"> Between Prediction Cards
+            </label>
+            <label class="placement-chip" data-p="sidebar">
+              <input type="checkbox" value="sidebar"> Sidebar
+            </label>
+            <label class="placement-chip" data-p="footer">
+              <input type="checkbox" value="footer"> Footer Area
+            </label>
+            <label class="placement-chip" data-p="blog">
+              <input type="checkbox" value="blog"> Blog Posts
+            </label>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Status</label>
+            <select class="form-control" id="ad-status">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="Admin.hideModal('ad-modal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="ad-save-btn" onclick="saveAd()"><span class="material-icons-round">save</span>Save Ad</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/admin.js"></script>
+<script>
+'use strict';
+var ads = [];
+var currentType = 'banner';
+var currentImageData = null;
+
+Admin.requireAdmin().then(function(user) {
+  Admin.buildSidebar(user);
+
+  loadAds();
+  initChips();
+});
+
+function initChips() {
+  document.querySelectorAll('.placement-chip').forEach(function(chip) {
+    var cb = chip.querySelector('input[type=checkbox]');
+    chip.addEventListener('click', function(e) {
+      if (e.target === cb) {
+        chip.classList.toggle('selected', cb.checked);
+      }
+    });
+    cb.addEventListener('change', function() {
+      chip.classList.toggle('selected', cb.checked);
+    });
+  });
+}
+
+function setAdType(type) {
+  currentType = type;
+  document.querySelectorAll('.ad-type-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.type === type);
+  });
+  document.getElementById('fields-banner').style.display = type==='banner' ? '' : 'none';
+  document.getElementById('fields-code').style.display   = type==='code'   ? '' : 'none';
+  document.getElementById('fields-text').style.display   = type==='text'   ? '' : 'none';
+}
+
+function handleImageUpload(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    currentImageData = e.target.result;
+    var preview = document.getElementById('img-preview');
+    var img     = document.getElementById('img-preview-el');
+    img.src = currentImageData;
+    preview.style.display = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function getSelectedPlacements() {
+  var result = [];
+  document.querySelectorAll('.placement-chip input[type=checkbox]:checked').forEach(function(cb) {
+    result.push(cb.value);
+  });
+  return result;
+}
+
+function setSelectedPlacements(arr) {
+  document.querySelectorAll('.placement-chip').forEach(function(chip) {
+    var cb = chip.querySelector('input[type=checkbox]');
+    var checked = arr && arr.includes(cb.value);
+    cb.checked = checked;
+    chip.classList.toggle('selected', checked);
+  });
+}
+
+function loadAds() {
+  Admin.api('GET','/api/marketing/ads').then(function(j) {
+    document.getElementById('ads-loading').style.display = 'none';
+    if (!j.success) return;
+    ads = j.data || [];
+    if (!ads.length) { document.getElementById('ads-empty').style.display=''; return; }
+    document.getElementById('ads-table').style.display = '';
+    updateStats();
+    renderTable();
+  });
+}
+
+function updateStats() {
+  var totalImp = ads.reduce(function(s,a){ return s+(a.impressions||0); },0);
+  var totalClk = ads.reduce(function(s,a){ return s+(a.clicks||0); },0);
+  var ctr = totalImp ? ((totalClk/totalImp)*100).toFixed(2)+'%' : '0%';
+  var active = ads.filter(function(a){ return a.status==='active'; }).length;
+  document.getElementById('total-impressions').textContent = totalImp.toLocaleString();
+  document.getElementById('total-clicks').textContent = totalClk.toLocaleString();
+  document.getElementById('avg-ctr').textContent = ctr;
+  document.getElementById('active-count').textContent = active;
+}
+
+function renderTable() {
+  var tbody = document.getElementById('ads-tbody');
+  tbody.innerHTML = ads.map(function(ad) {
+    var placements = [];
+    try { placements = Array.isArray(ad.placement) ? ad.placement : JSON.parse(ad.placement||'[]'); } catch(_){}
+    var plBadges = placements.map(function(p){ return '<span style="font-size:0.7rem;padding:2px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);">'+p+'</span>'; }).join(' ');
+    var statusBadge = ad.status==='active'
+      ? '<span class="badge badge-won">ACTIVE</span>'
+      : '<span class="badge badge-pending">INACTIVE</span>';
+    var ctr = ad.impressions ? ((ad.clicks/ad.impressions)*100).toFixed(1)+'%' : '—';
+    var typeIcon = { banner:'image', code:'code', text:'text_fields' }[ad.type] || 'ad_units';
+    return '<tr>' +
+      '<td><div style="font-weight:600;">'+escHtml(ad.name)+'</div></td>' +
+      '<td><span style="display:flex;align-items:center;gap:4px;font-size:0.82rem;color:var(--muted);"><span class="material-icons-round" style="font-size:1rem;">'+typeIcon+'</span>'+ad.type+'</span></td>' +
+      '<td><div style="display:flex;flex-wrap:wrap;gap:4px;">'+plBadges+'</div></td>' +
+      '<td>'+statusBadge+'</td>' +
+      '<td style="font-size:0.85rem;">'+((ad.impressions||0).toLocaleString())+'</td>' +
+      '<td style="font-size:0.85rem;">'+((ad.clicks||0).toLocaleString())+'</td>' +
+      '<td style="font-size:0.85rem;color:var(--muted);">'+ctr+'</td>' +
+      '<td><div style="display:flex;gap:6px;">' +
+        '<button class="btn btn-outline btn-sm" title="'+(ad.status==='active'?'Pause':'Activate')+'" onclick="toggleAd('+ad.id+')"><span class="material-icons-round">'+(ad.status==='active'?'pause':'play_arrow')+'</span></button>' +
+        '<button class="btn btn-outline btn-sm" title="Edit" onclick="editAd('+ad.id+')"><span class="material-icons-round">edit</span></button>' +
+        '<button class="btn btn-outline btn-sm" style="color:var(--red);" title="Delete" onclick="deleteAd('+ad.id+')"><span class="material-icons-round">delete</span></button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function openNew() {
+  document.getElementById('ad-id').value = '';
+  document.getElementById('ad-name').value = '';
+  document.getElementById('ad-link-banner').value = '';
+  document.getElementById('ad-code').value = '';
+  document.getElementById('ad-text-name').value = '';
+  document.getElementById('ad-link-text').value = '';
+  document.getElementById('ad-status').value = 'active';
+  document.getElementById('img-preview').style.display = 'none';
+  document.getElementById('ad-image').value = '';
+  document.getElementById('ad-modal-title').textContent = 'New Ad';
+  currentImageData = null;
+  setAdType('banner');
+  setSelectedPlacements([]);
+  Admin.showModal('ad-modal');
+}
+
+function editAd(id) {
+  Admin.api('GET','/api/marketing/ads/'+id).then(function(j) {
+    if (!j.success) { Admin.toast('Failed to load ad','error'); return; }
+    var ad = j.data;
+    document.getElementById('ad-id').value = ad.id;
+    document.getElementById('ad-name').value = ad.name || '';
+    document.getElementById('ad-status').value = ad.status || 'active';
+    document.getElementById('ad-modal-title').textContent = 'Edit Ad';
+
+    setAdType(ad.type || 'banner');
+
+    if (ad.type === 'banner') {
+      document.getElementById('ad-link-banner').value = ad.link_url || '';
+      currentImageData = ad.image_data || null;
+      if (currentImageData) {
+        document.getElementById('img-preview-el').src = currentImageData;
+        document.getElementById('img-preview').style.display = '';
+      } else {
+        document.getElementById('img-preview').style.display = 'none';
+      }
+    } else if (ad.type === 'code') {
+      document.getElementById('ad-code').value = ad.content || '';
+      currentImageData = null;
+    } else if (ad.type === 'text') {
+      document.getElementById('ad-text-name').value = ad.name || '';
+      document.getElementById('ad-link-text').value = ad.link_url || '';
+      currentImageData = null;
+    }
+
+    var placements = [];
+    try { placements = Array.isArray(ad.placement) ? ad.placement : JSON.parse(ad.placement||'[]'); } catch(_){}
+    setSelectedPlacements(placements);
+    Admin.showModal('ad-modal');
+  });
+}
+
+function saveAd() {
+  var id       = document.getElementById('ad-id').value;
+  var name     = document.getElementById('ad-name').value.trim();
+  var type     = currentType;
+  var status   = document.getElementById('ad-status').value;
+  var placement = getSelectedPlacements();
+
+  if (!name) { Admin.toast('Ad name is required','error'); return; }
+  if (!placement.length) { Admin.toast('Select at least one placement','error'); return; }
+
+  var body = { name, type, status, placement };
+
+  if (type === 'banner') {
+    body.image_data = currentImageData || null;
+    body.link_url   = document.getElementById('ad-link-banner').value.trim() || null;
+    body.content    = null;
+  } else if (type === 'code') {
+    var code = document.getElementById('ad-code').value.trim();
+    if (!code) { Admin.toast('Code content is required','error'); return; }
+    body.content  = code;
+    body.image_data = null;
+    body.link_url   = null;
+  } else if (type === 'text') {
+    var tname = document.getElementById('ad-text-name').value.trim();
+    var turl  = document.getElementById('ad-link-text').value.trim();
+    if (!tname || !turl) { Admin.toast('Anchor text and URL are required','error'); return; }
+    body.name     = tname;
+    body.link_url = turl;
+    body.content  = null;
+    body.image_data = null;
+  }
+
+  var btn = document.getElementById('ad-save-btn');
+  btn.disabled = true;
+  var method   = id ? 'PUT' : 'POST';
+  var endpoint = id ? '/api/marketing/ads/'+id : '/api/marketing/ads';
+
+  Admin.api(method, endpoint, body).then(function(j) {
+    btn.disabled = false;
+    if (!j.success) { Admin.toast(j.message||'Save failed','error'); return; }
+    Admin.toast(id ? 'Ad updated' : 'Ad created');
+    Admin.hideModal('ad-modal');
+    loadAds();
+  });
+}
+
+function toggleAd(id) {
+  Admin.api('POST','/api/marketing/ads/'+id+'/toggle').then(function(j) {
+    if (!j.success) { Admin.toast(j.message||'Toggle failed','error'); return; }
+    Admin.toast('Ad '+j.data.status);
+    loadAds();
+  });
+}
+
+function deleteAd(id) {
+  var ad = ads.find(function(a){ return a.id===id; });
+  Admin.confirm('Delete ad "'+(ad&&ad.name||'this ad')+'"? Analytics data will be lost.', function() {
+    Admin.api('DELETE','/api/marketing/ads/'+id).then(function(j) {
+      if (!j.success) { Admin.toast(j.message||'Delete failed','error'); return; }
+      Admin.toast('Ad deleted');
+      loadAds();
+    });
+  });
+}
+</script>
+</body>
+</html>
