@@ -1493,30 +1493,59 @@ img { max-width: 100%; display: block; }
   .header-inner { height: 58px; gap: 8px; }
   .logo-text { font-size: 1.2rem; }
   .logo-mark { font-size: 1rem; padding: 5px 8px; }
+
+  /* ── Mobile nav drawer ── */
   .main-nav {
-    display: none;
+    display: flex;
     flex-direction: column;
     position: fixed;
-    top: 58px;
+    top: 0;
     left: 0;
-    right: 0;
     bottom: 0;
-    background: var(--navy);
-    padding: 16px;
-    border-top: 1px solid var(--nav-border);
+    width: 272px;
+    max-width: 82vw;
+    background: rgba(8, 16, 34, 0.82);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 72px 12px 32px;
     overflow-y: auto;
-    z-index: 999;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.45);
   }
-  .main-nav.open { display: flex; }
+  .main-nav.open { transform: translateX(0); }
+
+  /* backdrop */
+  .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0);
+    transition: background 0.32s ease;
+    pointer-events: none;
+  }
+  .nav-backdrop.open {
+    background: rgba(0, 0, 0, 0.55);
+    pointer-events: all;
+  }
+
   .nav-link {
-    padding: 14px 16px;
+    padding: 13px 16px;
     font-size: 1rem;
-    border-radius: 8px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.18s ease, color 0.18s ease, padding-left 0.18s ease;
+  }
+  .nav-link:hover, .nav-link:focus-visible {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--yellow, #d4a017);
+    padding-left: 22px;
   }
   .nav-link:last-child { border-bottom: none; }
   .nav-toggle { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
-  /* Keep Login + Join visible on mobile; drop the redundant Telegram button (it's a CTA in the hero) */
   .header-actions .btn-telegram { display: none; }
   .header-actions .btn-login { padding: 7px 11px; font-size: 0.8rem; }
   .header-actions .btn-join  { padding: 7px 12px; font-size: 0.8rem; }

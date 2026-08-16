@@ -133,9 +133,39 @@
       updateThemeIcon(themeIcon);
     });
 
-    // Mobile nav
-    document.getElementById('nav-toggle').addEventListener('click', () => {
-      document.getElementById('main-nav').classList.toggle('open');
+    // Mobile nav — slide drawer
+    var navBackdrop = document.createElement('div');
+    navBackdrop.className = 'nav-backdrop';
+    navBackdrop.id = 'nav-backdrop';
+    document.body.appendChild(navBackdrop);
+
+    var mainNav = document.getElementById('main-nav');
+    var navToggle = document.getElementById('nav-toggle');
+    var navIcon = navToggle.querySelector('.material-icons-round');
+
+    function openNav() {
+      mainNav.classList.add('open');
+      navBackdrop.classList.add('open');
+      navIcon.textContent = 'close';
+      document.body.style.overflow = 'hidden';
+    }
+    function closeNav() {
+      mainNav.classList.remove('open');
+      navBackdrop.classList.remove('open');
+      navIcon.textContent = 'menu';
+      document.body.style.overflow = '';
+    }
+
+    navToggle.addEventListener('click', () => {
+      mainNav.classList.contains('open') ? closeNav() : openNav();
+    });
+
+    // Close on backdrop click
+    navBackdrop.addEventListener('click', closeNav);
+
+    // Close on any nav link click
+    mainNav.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', closeNav);
     });
   }
 
