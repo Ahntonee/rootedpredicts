@@ -134,6 +134,10 @@
 <main>
   <div class="container" style="padding-top:20px;padding-bottom:40px;">
 
+    <!-- ── Predictions + Sidebar layout ── -->
+    <div class="pred-layout">
+    <div class="pred-main">
+
     <!-- ── Picks table ── -->
     <div class="picks-wrap">
       <div class="picks-header">
@@ -162,6 +166,25 @@
         <span style="font-size:0.82rem;color:var(--muted);">Use the date bar above to browse predictions by day.</span>
       </div>
     </div>
+
+    </div><!-- /pred-main -->
+
+    <!-- ── Right sidebar ── -->
+    <aside class="pred-aside" id="pred-sidebar">
+      <div class="aside-card aside-ad-slot" id="aside-ad">
+        <div style="font-size:0.7rem;color:var(--muted);text-align:center;letter-spacing:0.06em;">ADVERTISEMENT</div>
+      </div>
+      <div class="aside-card" id="aside-blog">
+        <div class="aside-card-header">Latest Sports Insights</div>
+        <div id="aside-blog-list">
+          <div class="pick-skeleton" style="margin:0 0 10px;"><div class="skel" style="height:14px;width:70%;margin-bottom:6px;"></div><div class="skel" style="height:12px;width:50%;"></div></div>
+          <div class="pick-skeleton" style="margin:0 0 10px;"><div class="skel" style="height:14px;width:65%;margin-bottom:6px;"></div><div class="skel" style="height:12px;width:45%;"></div></div>
+          <div class="pick-skeleton" style="margin:0;"><div class="skel" style="height:14px;width:75%;margin-bottom:6px;"></div><div class="skel" style="height:12px;width:55%;"></div></div>
+        </div>
+      </div>
+    </aside>
+
+    </div><!-- /pred-layout -->
 
     <!-- ── SEO sections (one per category, toggled by JS) ── -->
 
@@ -910,6 +933,23 @@
   // ── Build picks HTML
   function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+  function formDots(formStr) {
+    if (!formStr) return '';
+    return String(formStr).slice(-5).split('').map(c => {
+      const cls = c==='W'?'form-dot-w':c==='L'?'form-dot-l':c==='D'?'form-dot-d':'form-dot-u';
+      return `<span class="form-dot ${cls}" title="${c}">${c}</span>`;
+    }).join('');
+  }
+
+  function teamLogo(logoUrl, teamName) {
+    const letter = esc((teamName || '?')[0].toUpperCase());
+    if (logoUrl) {
+      return `<img class="match-logo" src="${esc(logoUrl)}" alt="${esc(teamName)}"
+        onerror="this.outerHTML='<div class=\\'match-logo-fallback\\'>${letter}</div>'">`;
+    }
+    return `<div class="match-logo-fallback">${letter}</div>`;
+  }
+
   function buildPicksHTML(predictions) {
     if (!predictions.length) {
       return `<div style="padding:36px;text-align:center;color:var(--muted);font-size:0.875rem;">
@@ -926,7 +966,7 @@
     return Object.values(groups).map(g => {
       const lx = g.league;
       const img = lx.league_logo
-        ? `<img src="${esc(lx.league_logo)}" alt="" onerror="this.style.display='none'">`
+        ? `<img src="${esc(lx.league_logo)}" alt="" style="width:18px;height:18px;object-fit:contain;" onerror="this.style.display='none'">`
         : `<span class="material-icons-round" style="font-size:1rem;color:var(--muted);">sports_soccer</span>`;
       const country = lx.league_country ? esc(lx.league_country) + ': ' : '';
       const rows = g.preds.map(p => {
@@ -934,46 +974,63 @@
         const FIN_ST  = ['FT','AET','PEN'];
         const hasScore = p.home_score != null && p.away_score != null;
         const isPast   = p.match_date && new Date(p.match_date).getTime() < Date.now();
-        let timeDisplay;
-        if (LIVE_ST.includes(p.status_short) && hasScore) {
-          timeDisplay = `<span class="pick-time" style="color:var(--red);font-weight:700;">${p.home_score}–${p.away_score} ${p.elapsed ? p.elapsed+"'" : 'LIVE'}</span>`;
-        } else if (FIN_ST.includes(p.status_short) && hasScore) {
-          timeDisplay = `<span class="pick-time">${p.home_score}–${p.away_score} FT</span>`;
+        const isLive   = LIVE_ST.includes(p.status_short);
+        const isFin    = FIN_ST.includes(p.status_short) || (isPast && hasScore);
+
+        let timeLine, timeStyle = '';
+        if (isLive && hasScore) {
+          timeLine = `${p.home_score}–${p.away_score}<br><span style="font-size:0.65rem;">${p.elapsed ? p.elapsed+"'" : 'LIVE'}</span>`;
+          timeStyle = 'background:var(--red);color:#fff;';
+        } else if (isFin && hasScore) {
+          timeLine = `${p.home_score}–${p.away_score}<br><span style="font-size:0.65rem;">FT</span>`;
         } else if (isPast) {
-          timeDisplay = hasScore
-            ? `<span class="pick-time">${p.home_score}–${p.away_score} FT</span>`
-            : `<span class="pick-time" style="color:var(--muted);">FT</span>`;
+          timeLine = `—<br><span style="font-size:0.65rem;">FT</span>`;
         } else {
           const dt = p.match_date ? new Date(p.match_date) : null;
-          const timeStr = dt ? dt.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', timeZone:'UTC'}) + ' UTC' : '';
+          const timeStr = dt ? dt.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', timeZone:'UTC'}) : '--:--';
           const dateStr = dt ? dt.toLocaleDateString('en-GB', {day:'2-digit', month:'short', timeZone:'UTC'}) : '';
           const showDate = currentOffset !== 0;
-          timeDisplay = `<span class="pick-time">${showDate && dateStr ? esc(dateStr) + ' · ' : ''}${esc(timeStr)}</span>`;
+          timeLine = showDate && dateStr ? `${esc(dateStr)}<br><span style="font-size:0.65rem;">${esc(timeStr)}</span>` : esc(timeStr);
         }
+
         const odds = p.odds ? parseFloat(p.odds).toFixed(2) : '—';
         const tip  = p.tip || '—';
-        return `<div class="pick-row">
-          <div class="pick-match">
-            <span class="pick-home">${esc(p.home_team)}</span>
-            ${timeDisplay}
-            <span class="pick-away">${esc(p.away_team)}</span>
+        const resultIcon = p.result === 'won'
+          ? `<span class="match-won-badge material-icons-round" style="font-size:0.95rem;">check_circle</span>`
+          : p.result === 'lost'
+          ? `<span class="match-lost-badge material-icons-round" style="font-size:0.95rem;">cancel</span>`
+          : p.result === 'pending'
+          ? `<span class="material-icons-round" style="color:var(--muted);font-size:0.95rem;animation:spin 1.2s linear infinite;">hourglass_empty</span>`
+          : '';
+
+        return `<div class="match-card">
+          <div class="match-team-row">
+            <div class="match-team-home">
+              <div class="match-team-info-home">
+                <div class="match-team-name">${esc(p.home_team)}</div>
+                <div class="match-form-dots">${formDots(p.home_form)}</div>
+              </div>
+              ${teamLogo(p.home_team_logo, p.home_team)}
+            </div>
+            <div class="match-time-center">
+              <div class="match-time-pill" style="${timeStyle}">${timeLine}</div>
+            </div>
+            <div class="match-team-away">
+              ${teamLogo(p.away_team_logo, p.away_team)}
+              <div class="match-team-info-away">
+                <div class="match-team-name">${esc(p.away_team)}</div>
+                <div class="match-form-dots">${formDots(p.away_form)}</div>
+              </div>
+            </div>
           </div>
-          <div class="pick-odds-box">
-            <div class="pick-odds-label">ODDS</div>
-            <div class="pick-odds-val">${esc(odds)}</div>
-          </div>
-          <div class="pick-tip-box">
-            <div class="pick-tip-label">TIPS</div>
-            <div class="pick-tip-val">${
-              p.result === 'won'  ? `<span class="material-icons-round" style="color:#22c55e;font-size:1rem;">check_circle</span>` :
-              p.result === 'lost' ? `<span class="material-icons-round" style="color:#eab308;font-size:1rem;">close</span>` :
-              p.result === 'pending' ? `<span class="material-icons-round" style="color:var(--muted);font-size:1rem;animation:spin 1.2s linear infinite;">hourglass_empty</span>` :
-              `<span style="color:#f97316;">🔥</span>`
-            }${esc(tip)}</div>
+          <div class="match-pills-row">
+            ${resultIcon}
+            <div class="match-odds-pill">⊙ ${esc(odds)}</div>
+            <div class="match-tip-pill">🔥 ${esc(tip)}</div>
           </div>
         </div>`;
       }).join('');
-      return `<div>
+      return `<div class="match-league-group">
         <div class="pick-league-row">${img}<span>${country}<strong>${esc(lx.league_name || 'League')}</strong></span></div>
         ${rows}
       </div>`;
@@ -1021,6 +1078,32 @@
     applyMeta(currentCategory);
     updateDateLabel();
     loadPicks();
+  })();
+
+  // ── Sidebar: blog posts
+  (function loadSidebar() {
+    const blogList = document.getElementById('aside-blog-list');
+    if (!blogList) return;
+    fetch('/api/blog?limit=4')
+      .then(r => r.json())
+      .then(data => {
+        const posts = Array.isArray(data) ? data : (data.posts || []);
+        if (!posts.length) { blogList.innerHTML = ''; return; }
+        blogList.innerHTML = posts.map(post => {
+          const slug = post.slug || post.id;
+          const thumb = post.featured_image
+            ? `<img class="aside-blog-thumb" src="${esc(post.featured_image)}" alt="" onerror="this.outerHTML='<div class=\\'aside-blog-thumb-ph\\'></div>'">`
+            : `<div class="aside-blog-thumb-ph"></div>`;
+          const cat = post.category || 'Blog';
+          return `<a class="aside-blog-item" href="/blog/${slug}">
+            ${thumb}
+            <div class="aside-blog-body">
+              <div class="aside-blog-badge">${esc(cat)}</div>
+              <div class="aside-blog-title">${esc(post.title)}</div>
+            </div>
+          </a>`;
+        }).join('');
+      }).catch(() => { blogList.innerHTML = ''; });
   })();
 
 })();
