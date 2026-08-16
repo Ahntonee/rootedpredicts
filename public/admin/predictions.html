@@ -25,6 +25,10 @@
 <main class="admin-main">
   <div class="admin-table-header">
     <div class="admin-filters">
+      <div style="position:relative;display:flex;align-items:center;">
+        <span class="material-icons-round" style="position:absolute;left:8px;font-size:1rem;color:var(--muted);pointer-events:none;">search</span>
+        <input type="text" class="admin-filter-select" id="f-team" placeholder="Search team…" style="padding-left:30px;min-width:160px;" autocomplete="off">
+      </div>
       <select class="admin-filter-select" id="f-result"><option value="">All Results</option><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option></select>
       <select class="admin-filter-select" id="f-visibility"><option value="">All Visibility</option><option value="free">Free</option><option value="vip">VIP</option></select>
       <select class="admin-filter-select" id="f-market"><option value="">All Markets</option><option>1X2</option><option>Over/Under</option><option>BTTS</option><option>Double Chance</option><option>Draw No Bet</option><option>Correct Score</option><option>Accumulator</option><option>Corners</option></select>
@@ -341,6 +345,17 @@ function describeScore(s) {
   return 'Speculative';
 }
 
+const ADMIN_LEAGUE_PRIORITY = [2,3,848,39,140,135,78,61,94,88,203,307,253,292];
+const ADMIN_LEAGUE_NAME_PRIORITY = ['champions league','europa league','conference league','premier league','la liga','serie a','bundesliga','ligue 1','primeira liga','eredivisie','super lig','saudi pro league','mls','liga mx'];
+function adminLeaguePriority(p) {
+  const id = Number(p.league_id);
+  const idIdx = ADMIN_LEAGUE_PRIORITY.indexOf(id);
+  if (idIdx !== -1) return idIdx;
+  const name = (p.league_name || '').toLowerCase();
+  const nameIdx = ADMIN_LEAGUE_NAME_PRIORITY.findIndex(n => name.includes(n));
+  return nameIdx !== -1 ? ADMIN_LEAGUE_PRIORITY.length + nameIdx : 9999;
+}
+
 async function loadPredictions(page) {
   page = page||1;
   const result          = document.getElementById('f-result').value;
@@ -349,6 +364,7 @@ async function loadPredictions(page) {
   const market          = document.getElementById('f-market').value;
   const tip             = document.getElementById('f-tip').value;
   const confidence_min  = document.getElementById('f-confidence').value;
+  const team            = document.getElementById('f-team').value.trim();
   let url = `/api/admin/predictions?page=${page}&limit=20`;
   if (result)         url += '&result='+encodeURIComponent(result);
   if (visibility)     url += '&visibility='+encodeURIComponent(visibility);
@@ -356,6 +372,7 @@ async function loadPredictions(page) {
   if (market)         url += '&market='+encodeURIComponent(market);
   if (tip)            url += '&tip='+encodeURIComponent(tip);
   if (confidence_min) url += '&confidence_min='+encodeURIComponent(confidence_min);
+  if (team)           url += '&team='+encodeURIComponent(team);
   document.getElementById('pred-loading').style.display='block';
   document.getElementById('pred-table').style.display='none';
   const json = await Admin.api('GET', url);
@@ -364,7 +381,8 @@ async function loadPredictions(page) {
   const d = json.data;
   document.getElementById('pred-table').style.display='block';
   document.getElementById('select-all-cb').checked = false;
-  document.getElementById('pred-tbody').innerHTML = d.predictions.map(p => `
+  const sortedPreds = d.predictions.slice().sort((a, b) => adminLeaguePriority(a) - adminLeaguePriority(b));
+  document.getElementById('pred-tbody').innerHTML = sortedPreds.map(p => `
     <tr data-pred-id="${p.id}">
       <td style="padding:10px 8px;">
         <input type="checkbox" class="pred-cb" data-id="${p.id}" style="cursor:pointer;width:15px;height:15px;" onchange="onRowCheck()">
@@ -1137,11 +1155,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('apply-filters').addEventListener('click', () => loadPredictions(1));
-  // Auto-apply when any filter changes (e.g. picking a date shows that date immediately)
+  // Auto-apply when any filter changes
   ['f-result', 'f-visibility', 'f-date', 'f-market', 'f-tip', 'f-confidence'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', () => { predPage = 1; loadPredictions(1); });
   });
+  // Team search: debounce input so it fires 400ms after typing stops
+  (function() {
+    const el = document.getElementById('f-team');
+    if (!el) return;
+    let timer;
+    el.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { predPage = 1; loadPredictions(1); }, 400);
+    });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(timer); predPage = 1; loadPredictions(1); } });
+  })();
   document.getElementById('p-prev').addEventListener('click', () => loadPredictions(--predPage));
   document.getElementById('p-next').addEventListener('click', () => loadPredictions(++predPage));
 
