@@ -109,7 +109,7 @@
             </button>
             <a href="/login.html" class="btn-login">Log In</a>
             <a href="/register.html" class="btn-join">Join Free</a>
-            <a href="https://t.me/rootedpredict" target="_blank" rel="noopener noreferrer" class="btn-telegram">
+            <a href="https://t.me/rootedpredictsupport" target="_blank" rel="noopener noreferrer" class="btn-telegram">
               <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
               Telegram
             </a>
@@ -163,7 +163,7 @@
             </a>
             <p>Rooted Predictions is an online service that provides the most accurate football predictions, soccer betting tips and daily winning picks to users worldwide.</p>
             <div class="footer-social-row">
-              <a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="footer-social-btn tg">
+              <a href="https://t.me/rootedpredictsupport" target="_blank" rel="noopener" class="footer-social-btn tg">
                 <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;flex-shrink:0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
                 Telegram
               </a>
@@ -205,15 +205,15 @@
               </div>
             </div>
             <div class="footer-contact-item">
-              <span class="material-icons-round">send</span>
+              <svg viewBox="0 0 24 24" fill="#2AABEE" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
               <div>
                 <span class="footer-contact-label">Telegram</span>
-                <a href="https://t.me/rootedpredict" target="_blank" rel="noopener">@rootedpredict</a>
+                <a href="https://t.me/rootedpredictsupport" target="_blank" rel="noopener">@rootedpredictsupport</a>
               </div>
             </div>
             <div class="footer-tg-placement">
               <strong style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.07em;">Textlink / Guestpost Placement:</strong><br>
-              <a href="https://t.me/rootedpredict" target="_blank" rel="noopener">Contact via Telegram</a>
+              <a href="https://t.me/rootedpredictsupport" target="_blank" rel="noopener">Contact via Telegram</a>
             </div>
           </div>
 
