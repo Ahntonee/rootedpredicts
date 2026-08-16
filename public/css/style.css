@@ -965,7 +965,7 @@ img { max-width: 100%; display: block; }
   font-size: 0.79rem; font-weight: 700; color: var(--text-soft);
   white-space: nowrap; min-width: 68px; text-align: center; line-height: 1.4;
 }
-.match-pills-row { display: flex; gap: 6px; align-items: center; }
+.match-pills-row { display: flex; gap: 6px; align-items: center; justify-content: center; }
 .match-odds-pill {
   background: var(--navy, #0f3460); color: #fff;
   padding: 6px 13px; border-radius: 50px;
@@ -977,7 +977,7 @@ img { max-width: 100%; display: block; }
   padding: 6px 13px; border-radius: 50px;
   font-size: 0.79rem; font-weight: 700;
   display: inline-flex; align-items: center; gap: 4px;
-  white-space: nowrap; flex: 1;
+  white-space: nowrap;
 }
 .match-won-badge {
   font-size: 0.7rem; font-weight: 800; color: #16a34a;
