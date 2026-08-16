@@ -222,21 +222,6 @@
         <!-- Partner sites bar (populated dynamically) -->
         <div id="footer-partners-bar"></div>
 
-        <!-- Newsletter bar -->
-        <div style="padding:20px 0;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:220px;">
-            <p style="font-size:0.82rem;color:rgba(255,255,255,0.55);margin:0;">Get free tips and match previews straight to your inbox.</p>
-          </div>
-          <form id="footer-newsletter-form" style="display:flex;gap:8px;flex:2;min-width:280px;max-width:460px;">
-            <input type="email" id="footer-nl-email" placeholder="Your email address"
-              style="flex:1;padding:9px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#fff;font-size:0.83rem;outline:none;">
-            <button type="submit"
-              style="padding:9px 18px;border-radius:8px;background:var(--red);color:#fff;font-size:0.83rem;font-weight:700;border:none;cursor:pointer;white-space:nowrap;">
-              Subscribe
-            </button>
-          </form>
-          <p id="footer-nl-msg" style="font-size:0.78rem;margin:0;display:none;width:100%;"></p>
-        </div>
 
         <div class="footer-bottom">
           <p>&copy; ${new Date().getFullYear()} Rooted Predictions. All rights reserved. Predictions for informational purposes only. 18+ only.</p>
@@ -266,39 +251,6 @@
       } catch (_) {}
     })();
 
-    // Wire up newsletter form
-    var nlForm = document.getElementById('footer-newsletter-form');
-    if (nlForm) {
-      nlForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        var emailEl = document.getElementById('footer-nl-email');
-        var msgEl   = document.getElementById('footer-nl-msg');
-        var btn     = nlForm.querySelector('button[type="submit"]');
-        var email   = emailEl.value.trim();
-        if (!email) return;
-        btn.disabled = true;
-        btn.textContent = 'Subscribing...';
-        msgEl.style.display = 'none';
-        try {
-          var res  = await fetch('/api/newsletter/subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email }),
-          });
-          var json = await res.json();
-          msgEl.textContent   = json.message || (json.success ? 'Subscribed!' : 'Error, try again.');
-          msgEl.style.color   = json.success ? 'var(--green)' : 'var(--red)';
-          msgEl.style.display = 'block';
-          if (json.success) emailEl.value = '';
-        } catch (_) {
-          msgEl.textContent   = 'Network error. Please try again.';
-          msgEl.style.color   = 'var(--red)';
-          msgEl.style.display = 'block';
-        }
-        btn.disabled    = false;
-        btn.innerHTML   = '<span class="material-icons-round" style="font-size:1rem;">send</span>Subscribe';
-      });
-    }
   }
 
   // ── Cookie consent banner
