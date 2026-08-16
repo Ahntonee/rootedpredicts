@@ -348,10 +348,7 @@
           font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
           line-height:1;">✕</button>
         <div style="margin-bottom:16px;">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;margin:0 auto 8px;">
-            <circle cx="24" cy="24" r="24" fill="#2AABEE"/>
-            <path d="M34.6 14.4L10.8 23.5c-1.6.6-1.5 1.5-.3 1.9l6 1.9 13.9-8.8c.7-.4 1.3-.2.8.3l-11.3 10.2-.4 6.3c.6 0 .9-.3 1.2-.6l2.9-2.8 6.1 4.5c1.1.6 1.9.3 2.2-1l3.9-18.5c.4-1.7-.6-2.5-1.2-2z" fill="#fff"/>
-          </svg>
+          <img src="/images/logo.png" alt="Rooted Predictions" style="width:72px;height:72px;object-fit:contain;margin:0 auto 10px;display:block;border-radius:14px;">
           <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;color:#2AABEE;text-transform:uppercase;margin-bottom:6px;">Join Our Community</div>
           <h2 style="color:#fff;font-size:1.45rem;font-weight:800;margin:0 0 8px;line-height:1.2;">Get Free Daily Tips<br>on Telegram</h2>
           <p style="color:rgba(255,255,255,0.65);font-size:0.84rem;line-height:1.55;margin:0 0 20px;">
