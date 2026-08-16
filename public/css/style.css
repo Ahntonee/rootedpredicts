@@ -965,7 +965,7 @@ img { max-width: 100%; display: block; }
   font-size: 0.79rem; font-weight: 700; color: var(--text-soft);
   white-space: nowrap; min-width: 68px; text-align: center; line-height: 1.4;
 }
-.match-pills-row { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.match-pills-row { display: block; text-align: center; margin-top: 8px; }
 .match-odds-pill {
   background: var(--navy, #0f3460); color: #fff;
   padding: 6px 13px; border-radius: 50px;
