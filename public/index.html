@@ -808,6 +808,37 @@
       </div>`;
     }
 
+    const LEAGUE_PRIORITY = [
+      // UEFA competitions
+      2, 3, 848,
+      // Top 5 European leagues
+      39,   // Premier League
+      140,  // La Liga
+      135,  // Serie A
+      78,   // Bundesliga
+      61,   // Ligue 1
+      // Other top leagues
+      94,   // Primeira Liga
+      88,   // Eredivisie
+      203,  // Super Lig
+      307,  // Saudi Pro League
+      253,  // MLS
+      292,  // Liga MX
+    ];
+    const LEAGUE_NAME_PRIORITY = [
+      'champions league', 'europa league', 'conference league',
+      'premier league', 'la liga', 'serie a', 'bundesliga', 'ligue 1',
+      'primeira liga', 'eredivisie', 'super lig', 'saudi pro league', 'mls', 'liga mx',
+    ];
+    function leaguePriority(league) {
+      const id = Number(league.league_id);
+      const idIdx = LEAGUE_PRIORITY.indexOf(id);
+      if (idIdx !== -1) return idIdx;
+      const name = (league.league_name || '').toLowerCase();
+      const nameIdx = LEAGUE_NAME_PRIORITY.findIndex(n => name.includes(n));
+      return nameIdx !== -1 ? LEAGUE_PRIORITY.length + nameIdx : 9999;
+    }
+
     const groups = {};
     predictions.forEach(p => {
       const key = p.league_id || p.league_name || 'Other';
@@ -815,7 +846,7 @@
       groups[key].preds.push(p);
     });
 
-    return Object.values(groups).map(g => {
+    return Object.values(groups).sort((a, b) => leaguePriority(a.league) - leaguePriority(b.league)).map(g => {
       const league = g.league;
       const leagueImg = league.league_logo
         ? `<img src="${esc(league.league_logo)}" alt="" style="width:18px;height:18px;object-fit:contain;" onerror="this.style.display='none'">`
