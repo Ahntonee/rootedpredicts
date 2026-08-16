@@ -996,11 +996,9 @@
         const odds = p.odds ? parseFloat(p.odds).toFixed(2) : '—';
         const tip  = p.tip || '—';
         const resultIcon = p.result === 'won'
-          ? `<span class="match-won-badge material-icons-round" style="font-size:0.95rem;">check_circle</span>`
+          ? `<span class="match-won-badge">WON 🏆</span>`
           : p.result === 'lost'
-          ? `<span class="match-lost-badge material-icons-round" style="font-size:0.95rem;">cancel</span>`
-          : p.result === 'pending'
-          ? `<span class="material-icons-round" style="color:var(--muted);font-size:0.95rem;animation:spin 1.2s linear infinite;">hourglass_empty</span>`
+          ? `<span class="match-lost-badge">LOST</span>`
           : '';
 
         return `<div class="match-card">

@@ -980,12 +980,16 @@ img { max-width: 100%; display: block; }
   white-space: nowrap;
 }
 .match-won-badge {
-  font-size: 0.7rem; font-weight: 800; color: #16a34a;
-  display: flex; align-items: center; gap: 2px; margin-left: auto; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #16a34a; color: #fff;
+  padding: 6px 13px; border-radius: 50px;
+  font-size: 0.79rem; font-weight: 800; white-space: nowrap;
 }
 .match-lost-badge {
-  font-size: 0.7rem; font-weight: 800; color: #ef4444;
-  display: flex; align-items: center; gap: 2px; margin-left: auto; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #ef4444; color: #fff;
+  padding: 6px 13px; border-radius: 50px;
+  font-size: 0.79rem; font-weight: 800; white-space: nowrap;
 }
 .match-league-group { margin-bottom: 4px; }
 
