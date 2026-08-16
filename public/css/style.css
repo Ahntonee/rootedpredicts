@@ -982,14 +982,16 @@ img { max-width: 100%; display: block; }
 .match-won-badge {
   display: inline-flex; align-items: center; gap: 4px;
   background: #16a34a; color: #fff;
-  padding: 6px 13px; border-radius: 50px;
-  font-size: 0.79rem; font-weight: 800; white-space: nowrap;
+  padding: 8px 18px; border-radius: 50px;
+  font-size: 1rem; font-weight: 800; white-space: nowrap;
+  opacity: 0.6;
 }
 .match-lost-badge {
   display: inline-flex; align-items: center; gap: 4px;
   background: #ef4444; color: #fff;
-  padding: 6px 13px; border-radius: 50px;
-  font-size: 0.79rem; font-weight: 800; white-space: nowrap;
+  padding: 8px 18px; border-radius: 50px;
+  font-size: 1rem; font-weight: 800; white-space: nowrap;
+  opacity: 0.6;
 }
 .match-league-group { margin-bottom: 4px; }
 
