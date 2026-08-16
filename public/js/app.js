@@ -253,38 +253,110 @@
 
   }
 
-  // ── Cookie consent banner
+  // ── Cookie consent toast
   function initCookieConsent() {
     if (localStorage.getItem('rp_cookie_consent')) return;
-    var banner = document.createElement('div');
-    banner.id  = 'cookie-banner';
-    banner.style.cssText = [
-      'position:fixed', 'bottom:0', 'left:0', 'right:0', 'z-index:9000',
-      'background:var(--surface,#1a1a2e)', 'border-top:1px solid var(--border,#2a2a3e)',
-      'padding:16px 24px', 'display:flex', 'align-items:center', 'justify-content:space-between',
-      'gap:16px', 'flex-wrap:wrap', 'box-shadow:0 -4px 24px rgba(0,0,0,0.3)',
+    var toast = document.createElement('div');
+    toast.id = 'cookie-toast';
+    toast.style.cssText = [
+      'position:fixed','bottom:24px','left:50%','transform:translateX(-50%) translateY(20px)',
+      'z-index:9100','max-width:480px','width:calc(100% - 32px)',
+      'background:#1a2235','border:1px solid rgba(255,255,255,0.1)',
+      'border-radius:14px','padding:18px 20px',
+      'box-shadow:0 8px 32px rgba(0,0,0,0.45)',
+      'display:flex','align-items:center','gap:14px','flex-wrap:wrap',
+      'opacity:0','transition:opacity 0.35s ease,transform 0.35s ease',
     ].join(';');
-    banner.innerHTML = [
-      '<p style="margin:0;font-size:0.85rem;color:var(--text-soft,#aaa);flex:1;min-width:200px;">',
-        'We use cookies to improve your experience. By continuing, you agree to our ',
-        '<a href="/privacy.html" style="color:var(--red,#e94560);">Privacy Policy</a>.',
-      '</p>',
-      '<div style="display:flex;gap:8px;flex-shrink:0;">',
-        '<button id="cookie-decline" style="padding:8px 16px;border-radius:6px;border:1px solid var(--border,#2a2a3e);',
-          'background:transparent;color:var(--text-soft,#aaa);font-size:0.8rem;cursor:pointer;">Decline</button>',
-        '<button id="cookie-accept" style="padding:8px 18px;border-radius:6px;border:none;',
-          'background:var(--red,#e94560);color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;">Accept</button>',
-      '</div>',
-    ].join('');
-    document.body.appendChild(banner);
-    document.getElementById('cookie-accept').onclick = function() {
-      localStorage.setItem('rp_cookie_consent', 'accepted');
-      banner.remove();
-    };
-    document.getElementById('cookie-decline').onclick = function() {
-      localStorage.setItem('rp_cookie_consent', 'declined');
-      banner.remove();
-    };
+    toast.innerHTML = `
+      <span style="font-size:1.4rem;flex-shrink:0;">🍪</span>
+      <p style="margin:0;font-size:0.82rem;color:rgba(255,255,255,0.75);flex:1;min-width:180px;line-height:1.5;">
+        We use cookies to improve your experience. See our
+        <a href="/privacy.html" style="color:#e94560;text-decoration:underline;">Privacy Policy</a>.
+      </p>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <button id="cookie-decline" style="padding:7px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.6);font-size:0.78rem;cursor:pointer;white-space:nowrap;">Decline</button>
+        <button id="cookie-accept" style="padding:7px 16px;border-radius:8px;border:none;background:#e94560;color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">Accept All</button>
+      </div>`;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    function dismiss(val) {
+      localStorage.setItem('rp_cookie_consent', val);
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(20px)';
+      setTimeout(() => toast.remove(), 400);
+    }
+    document.getElementById('cookie-accept').onclick  = () => dismiss('accepted');
+    document.getElementById('cookie-decline').onclick = () => dismiss('declined');
+  }
+
+  // ── Telegram channel popup
+  function initTelegramPopup() {
+    var KEY = 'rp_tg_popup_dismissed';
+    if (localStorage.getItem(KEY)) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'tg-popup-overlay';
+    overlay.style.cssText = [
+      'position:fixed','inset:0','z-index:9200',
+      'background:rgba(0,0,0,0.65)','backdrop-filter:blur(4px)',
+      'display:flex','align-items:center','justify-content:center',
+      'padding:16px','opacity:0','transition:opacity 0.3s ease',
+    ].join(';');
+    overlay.innerHTML = `
+      <div id="tg-popup-card" style="
+        background:linear-gradient(160deg,#0d1f3c 0%,#0e2744 60%,#0a3060 100%);
+        border:1px solid rgba(42,171,238,0.3);
+        border-radius:20px;max-width:400px;width:100%;
+        padding:32px 28px 28px;text-align:center;position:relative;
+        box-shadow:0 20px 60px rgba(0,0,0,0.6);
+        transform:translateY(24px);transition:transform 0.35s ease;">
+        <button id="tg-popup-close" style="
+          position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.1);
+          border:none;color:#fff;width:30px;height:30px;border-radius:50%;
+          font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+          line-height:1;">✕</button>
+        <div style="margin-bottom:16px;">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;margin:0 auto 8px;">
+            <circle cx="24" cy="24" r="24" fill="#2AABEE"/>
+            <path d="M34.6 14.4L10.8 23.5c-1.6.6-1.5 1.5-.3 1.9l6 1.9 13.9-8.8c.7-.4 1.3-.2.8.3l-11.3 10.2-.4 6.3c.6 0 .9-.3 1.2-.6l2.9-2.8 6.1 4.5c1.1.6 1.9.3 2.2-1l3.9-18.5c.4-1.7-.6-2.5-1.2-2z" fill="#fff"/>
+          </svg>
+          <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;color:#2AABEE;text-transform:uppercase;margin-bottom:6px;">Join Our Community</div>
+          <h2 style="color:#fff;font-size:1.45rem;font-weight:800;margin:0 0 8px;line-height:1.2;">Get Free Daily Tips<br>on Telegram</h2>
+          <p style="color:rgba(255,255,255,0.65);font-size:0.84rem;line-height:1.55;margin:0 0 20px;">
+            Join <strong style="color:#fff;">thousands of winners</strong> getting our top football predictions, expert picks &amp; winning tips — free, every day.
+          </p>
+        </div>
+        <a href="https://t.me/rootedpredict" target="_blank" rel="noopener" id="tg-popup-join"
+          style="display:flex;align-items:center;justify-content:center;gap:10px;
+          background:#2AABEE;color:#fff;font-weight:800;font-size:0.95rem;
+          padding:14px 24px;border-radius:50px;text-decoration:none;margin-bottom:12px;
+          box-shadow:0 4px 18px rgba(42,171,238,0.4);transition:background 0.2s;">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;flex-shrink:0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
+          Join Free on Telegram
+        </a>
+        <button id="tg-popup-later" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:0.78rem;cursor:pointer;padding:4px;">Maybe later</button>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    function close(joined) {
+      if (joined) localStorage.setItem(KEY, '1');
+      else localStorage.setItem(KEY, '1');
+      overlay.style.opacity = '0';
+      document.getElementById('tg-popup-card').style.transform = 'translateY(24px)';
+      setTimeout(() => overlay.remove(), 350);
+    }
+
+    setTimeout(() => {
+      overlay.style.opacity = '1';
+      document.getElementById('tg-popup-card').style.transform = 'translateY(0)';
+    }, 50);
+
+    document.getElementById('tg-popup-close').onclick  = () => close();
+    document.getElementById('tg-popup-later').onclick  = () => close();
+    document.getElementById('tg-popup-join').onclick   = () => close(true);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   }
 
   // ── League filter dropdown component
@@ -773,6 +845,7 @@
     injectHeader();
     injectFooter();
     initCookieConsent();
+    setTimeout(initTelegramPopup, 3000);
 
     // Check auth state AFTER header is injected so updateHeaderForUser finds .header-actions
     ensureAuthLoaded(() => window.AfroAuth.checkAuthState());
