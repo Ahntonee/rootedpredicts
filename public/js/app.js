@@ -177,9 +177,7 @@
               <li><a href="/pricing.html">VIP Packages</a></li>
               <li><a href="/predictions.html?result=won&all_dates=1">Recent Winnings</a></li>
               <li><a href="/leaderboard.html">Leaderboard</a></li>
-              <li><a href="/about.html">About Us</a></li>
               <li><a href="/blog.html">Blog</a></li>
-              <li><a href="/contact.html">Contact Us</a></li>
             </ul>
           </div>
 
@@ -221,6 +219,9 @@
 
         </div>
 
+        <!-- Partner sites bar (populated dynamically) -->
+        <div id="footer-partners-bar"></div>
+
         <!-- Newsletter bar -->
         <div style="padding:20px 0;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
           <div style="flex:1;min-width:220px;">
@@ -247,20 +248,21 @@
       </div>
     `;
 
-    // Inject partner backlinks (if any active ones exist)
+    // Inject partner backlinks as a centred full-width bar
     (async function injectBacklinks() {
       try {
         var r = await fetch('/api/marketing/backlinks/active');
         var j = await r.json();
         if (!j.success || !j.data || !j.data.length) return;
-        var col = document.createElement('div');
-        col.className = 'footer-col';
-        col.innerHTML = '<h4>Partner Sites</h4><ul class="footer-links">' +
+        var slot = el.querySelector('#footer-partners-bar');
+        if (!slot) return;
+        slot.style.cssText = 'background:rgba(255,255,255,0.07);border-radius:8px;padding:16px 24px;margin-bottom:16px;text-align:center;';
+        slot.innerHTML = '<h4 style="font-family:var(--font-head);font-size:0.8rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--yellow);margin-bottom:10px;">Partner Sites</h4>' +
+          '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px 24px;">' +
           j.data.map(function(bl) {
-            return '<li><a href="' + escUrl(bl.url) + '" target="_blank" rel="noopener sponsored">' + escText(bl.name) + '</a></li>';
-          }).join('') + '</ul>';
-        var footerTop = el.querySelector('.footer-top');
-        if (footerTop) footerTop.appendChild(col);
+            return '<a href="' + escUrl(bl.url) + '" target="_blank" rel="noopener sponsored" style="font-size:0.82rem;color:rgba(255,255,255,0.55);transition:color 0.15s;" onmouseover="this.style.color=\'var(--yellow)\'" onmouseout="this.style.color=\'rgba(255,255,255,0.55)\'">' + escText(bl.name) + '</a>';
+          }).join('') +
+          '</div>';
       } catch (_) {}
     })();
 
