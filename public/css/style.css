@@ -828,6 +828,15 @@ img { max-width: 100%; display: block; }
 .date-btn.active .day-name { color: rgba(255,255,255,0.6); }
 .date-btn.active .day-num  { color: #fff; }
 
+/* ── Predictions page hero heading ── */
+.page-hero-h1 {
+  font-family: var(--font-head);
+  font-size: clamp(1.4rem, 5vw, 1.9rem);
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
 /* ── PREDICTIONS LAYOUT (main + sidebar) ────────────────────── */
 .pred-layout {
   display: grid;
@@ -1659,6 +1668,42 @@ img { max-width: 100%; display: block; }
   /* ── Ads ── */
   .ad-slot-header { min-height: 60px; }
   .ad-slot-sidebar { display: none; }
+
+  /* ── Category / market tabs — touch scroll ── */
+  .category-tabs-row, .market-tabs {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .category-tabs-row::-webkit-scrollbar, .market-tabs::-webkit-scrollbar { display: none; }
+
+  /* ── Picks header (league label + day nav) — wrap cleanly ── */
+  .picks-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 16px 10px;
+  }
+
+  /* ── Match card ── */
+  .match-card { margin-bottom: 10px; padding: 12px 14px; }
+  .match-team-name {
+    max-width: 110px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .match-team-row { gap: 6px; }
+  .match-time-pill { font-size: 0.72rem; padding: 3px 8px; }
+  .match-pills-left, .match-pills-right { min-width: 80px; }
+
+  /* ── Form dots ── */
+  .form-dot { width: 12px; height: 12px; font-size: 0; }
+
+  /* ── WON / LOST badges ── */
+  .match-won-badge, .match-lost-badge { font-size: 0.72rem; padding: 3px 8px; }
+
+  /* ── Day-switcher buttons ── */
+  .day-switcher-btn { padding: 6px 10px; font-size: 0.78rem; }
+  .day-switcher-row { gap: 4px; }
 }
 
 /* Small mobile — 480px and below */
@@ -1708,7 +1753,92 @@ img { max-width: 100%; display: block; }
   /* ── Tabs ── */
   .market-tab { padding: 7px 10px; font-size: 0.75rem; }
 
+  /* ── Match card — 480px ── */
+  .match-card { padding: 10px 12px; border-radius: 10px; }
+  .match-team-logo { width: 30px; height: 30px; }
+  .match-team-name {
+    font-size: 0.78rem;
+    max-width: 90px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .match-team-row { gap: 4px; margin-bottom: 10px; }
+  .match-time-pill { font-size: 0.68rem; padding: 3px 7px; }
+
+  /* ── Pills row — tighter left/right min-width ── */
+  .match-pills-left, .match-pills-right { min-width: 72px; }
+  .match-odds-pill { font-size: 0.72rem; padding: 4px 8px; }
+  .match-tip-pill  { font-size: 0.72rem; padding: 4px 8px; }
+
+  /* ── WON / LOST badges ── */
+  .match-won-badge, .match-lost-badge {
+    font-size: 0.68rem;
+    padding: 3px 7px;
+  }
+
+  /* ── Form dots ── */
+  .form-dot { width: 11px; height: 11px; }
+  .form-dots-wrap { gap: 2px; }
+
+  /* ── Header auth buttons — hide join at very small ── */
+  .header-actions .btn-join { display: none; }
+  .header-actions .btn-login { padding: 6px 10px; font-size: 0.75rem; }
+
   /* ── Footer ── */
   .footer-col h4 { font-size: 0.85rem; }
   .footer-links a { font-size: 0.8rem; }
+}
+
+/* Very small phones — 360px and below */
+@media (max-width: 360px) {
+  html { font-size: 13px; }
+  .container { padding: 0 10px; }
+
+  /* ── Header ── */
+  .header-inner { height: 50px; }
+  .logo-img { height: 30px; }
+  .header-actions .btn-login { display: none; }
+
+  /* ── Hero ── */
+  .hero h1 { font-size: clamp(1.5rem, 10vw, 1.9rem); }
+  .hero-sub { font-size: 0.8rem; }
+
+  /* ── Match card ── */
+  .match-card { padding: 8px 10px; }
+  .match-team-logo { width: 26px; height: 26px; }
+  .match-team-name { max-width: 72px; font-size: 0.72rem; }
+  .match-pills-left, .match-pills-right { min-width: 60px; }
+  .match-odds-pill, .match-tip-pill { font-size: 0.65rem; padding: 3px 6px; }
+  .match-won-badge, .match-lost-badge { font-size: 0.62rem; padding: 2px 6px; }
+
+  /* ── Form dots ── */
+  .form-dot { width: 9px; height: 9px; }
+
+  /* ── Day switcher ── */
+  .date-btn { min-width: 44px; padding: 6px 6px; }
+  .date-btn .day-num { font-size: 0.88rem; }
+  .date-btn .day-name { font-size: 0.55rem; }
+  .day-switcher-btn { padding: 5px 8px; font-size: 0.72rem; }
+
+  /* ── Tabs ── */
+  .market-tab { padding: 6px 8px; font-size: 0.7rem; }
+
+  /* ── Category tabs — abbreviate on tiny screens ── */
+  .category-tab-label { font-size: 0.7rem; }
+
+  /* ── Section title ── */
+  .section-title { font-size: 1.1rem; }
+
+  /* ── Stat bar ── */
+  .stat-value { font-size: 1rem; }
+  .stat-label { font-size: 0.55rem; }
+
+  /* ── Nav mobile drawer ── */
+  .main-nav { width: 200px; }
+  .nav-link { padding: 11px 14px; font-size: 0.9rem; }
+
+  /* ── Footer ── */
+  .footer-social { gap: 10px; }
+  .footer-social a { width: 34px; height: 34px; font-size: 0.85rem; }
 }
