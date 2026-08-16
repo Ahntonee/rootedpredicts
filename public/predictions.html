@@ -1022,9 +1022,12 @@
             </div>
           </div>
           <div class="match-pills-row">
-            ${resultIcon}
-            <div class="match-odds-pill">⊙ ${esc(odds)}</div>
-            <div class="match-tip-pill">🔥 ${esc(tip)}</div>
+            <div class="match-pills-left">${resultIcon}</div>
+            <div class="match-pills-center">
+              <div class="match-odds-pill">⊙ ${esc(odds)}</div>
+              <div class="match-tip-pill">🔥 ${esc(tip)}</div>
+            </div>
+            <div class="match-pills-right"></div>
           </div>
         </div>`;
       }).join('');
