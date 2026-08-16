@@ -155,54 +155,88 @@
           <p><strong>Responsible Gambling Notice:</strong> Rooted Predictions provides football predictions for informational and entertainment purposes only. We do not guarantee any results. Please gamble responsibly. Only bet what you can afford to lose. If gambling is causing you problems, visit <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" style="color:var(--red);">BeGambleAware.org</a> or call <strong style="color:#fff;">0808 8020 133</strong>.</p>
         </div>
         <div class="footer-top">
+
+          <!-- Brand -->
           <div class="footer-brand">
             <a href="/" class="site-logo" style="margin-bottom:0;">
               <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img">
             </a>
-            <p>Precision football predictions powered by data. Free daily tips for the Premier League, La Liga, and Champions League. Bet smarter. Every single day.</p>
+            <p>Rooted Predictions is an online service that provides the most accurate football predictions, soccer betting tips and daily winning picks to users worldwide.</p>
+            <div class="footer-social-row">
+              <a href="https://t.me/rootedpredict" target="_blank" rel="noopener" class="footer-social-btn tg">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;flex-shrink:0;"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.695l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.864z"/></svg>
+                Telegram
+              </a>
+            </div>
           </div>
+
+          <!-- Business Links -->
           <div class="footer-col">
-            <h4>Predictions</h4>
+            <h4>Business Links</h4>
+            <ul class="footer-links">
+              <li><a href="/pricing.html">VIP Packages</a></li>
+              <li><a href="/predictions.html?result=won&all_dates=1">Recent Winnings</a></li>
+              <li><a href="/leaderboard.html">Leaderboard</a></li>
+              <li><a href="/about.html">About Us</a></li>
+              <li><a href="/blog.html">Blog</a></li>
+              <li><a href="/contact.html">Contact Us</a></li>
+            </ul>
+          </div>
+
+          <!-- Other Links -->
+          <div class="footer-col">
+            <h4>Other Links</h4>
             <ul class="footer-links">
               <li><a href="/predictions.html">Today's Tips</a></li>
               <li><a href="/predictions.html?market=over-2-5">Over 2.5 Goals</a></li>
               <li><a href="/predictions.html?market=btts">BTTS Tips</a></li>
-              <li><a href="/predictions.html?market=1x2">1X2 Predictions</a></li>
-              <li><a href="/predictions.html?market=correct-score">Correct Score</a></li>
-            </ul>
-          </div>
-          <div class="footer-col">
-            <h4>Company</h4>
-            <ul class="footer-links">
-              <li><a href="/about.html">About Rooted Predictions</a></li>
-              <li><a href="/blog.html">Blog</a></li>
-              <li><a href="/contact.html">Contact Us</a></li>
-              <li><a href="https://t.me/rootedpredict" target="_blank" rel="noopener">Telegram Channel</a></li>
-            </ul>
-          </div>
-          <div class="footer-col">
-            <h4>Legal</h4>
-            <ul class="footer-links">
               <li><a href="/privacy.html">Privacy Policy</a></li>
-              <li><a href="/terms.html">Terms of Service</a></li>
+              <li><a href="/terms.html">Terms &amp; Conditions</a></li>
               <li><a href="/register.html" id="footer-register-link">Create Account</a></li>
-              <li><a href="/login.html" id="footer-login-link">Login</a></li>
             </ul>
           </div>
+
+          <!-- Contact -->
           <div class="footer-col">
-            <h4>Stay Updated</h4>
-            <p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:12px;line-height:1.5;">Get free tips and match previews straight to your inbox.</p>
-            <form id="footer-newsletter-form" style="display:flex;flex-direction:column;gap:8px;">
-              <input type="email" id="footer-nl-email" placeholder="Your email address"
-                style="padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:0.85rem;outline:none;width:100%;">
-              <button type="submit"
-                style="padding:10px 14px;border-radius:8px;background:var(--red);color:#fff;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
-                <span class="material-icons-round" style="font-size:1rem;">send</span>Subscribe
-              </button>
-              <p id="footer-nl-msg" style="font-size:0.78rem;margin:0;display:none;"></p>
-            </form>
+            <h4>Contact</h4>
+            <div class="footer-contact-item">
+              <span class="material-icons-round">email</span>
+              <div>
+                <span class="footer-contact-label">Email Us</span>
+                <a href="/contact.html">Send a Message</a>
+              </div>
+            </div>
+            <div class="footer-contact-item">
+              <span class="material-icons-round">send</span>
+              <div>
+                <span class="footer-contact-label">Telegram</span>
+                <a href="https://t.me/rootedpredict" target="_blank" rel="noopener">@rootedpredict</a>
+              </div>
+            </div>
+            <div class="footer-tg-placement">
+              <strong style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.07em;">Textlink / Guestpost Placement:</strong><br>
+              <a href="https://t.me/rootedpredict" target="_blank" rel="noopener">Contact via Telegram</a>
+            </div>
           </div>
+
         </div>
+
+        <!-- Newsletter bar -->
+        <div style="padding:20px 0;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:220px;">
+            <p style="font-size:0.82rem;color:rgba(255,255,255,0.55);margin:0;">Get free tips and match previews straight to your inbox.</p>
+          </div>
+          <form id="footer-newsletter-form" style="display:flex;gap:8px;flex:2;min-width:280px;max-width:460px;">
+            <input type="email" id="footer-nl-email" placeholder="Your email address"
+              style="flex:1;padding:9px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#fff;font-size:0.83rem;outline:none;">
+            <button type="submit"
+              style="padding:9px 18px;border-radius:8px;background:var(--red);color:#fff;font-size:0.83rem;font-weight:700;border:none;cursor:pointer;white-space:nowrap;">
+              Subscribe
+            </button>
+          </form>
+          <p id="footer-nl-msg" style="font-size:0.78rem;margin:0;display:none;width:100%;"></p>
+        </div>
+
         <div class="footer-bottom">
           <p>&copy; ${new Date().getFullYear()} Rooted Predictions. All rights reserved. Predictions for informational purposes only. 18+ only.</p>
           <p style="display:flex;align-items:center;gap:6px;">
