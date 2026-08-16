@@ -973,7 +973,7 @@ img { max-width: 100%; display: block; }
   display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
 }
 .match-tip-pill {
-  background: linear-gradient(135deg, #d97706, #f59e0b); color: #fff;
+  background: linear-gradient(135deg, #16a34a, #22c55e); color: #fff;
   padding: 6px 13px; border-radius: 50px;
   font-size: 0.79rem; font-weight: 700;
   display: inline-flex; align-items: center; gap: 4px;
