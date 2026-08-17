@@ -1805,15 +1805,45 @@ img { max-width: 100%; display: block; }
   .hero-sub { font-size: 0.8rem; }
 
   /* ── Match card ── */
-  .match-card { padding: 8px 10px; }
-  .match-team-logo { width: 26px; height: 26px; }
-  .match-team-name { max-width: 72px; font-size: 0.72rem; }
-  .match-pills-left, .match-pills-right { min-width: 60px; }
-  .match-odds-pill, .match-tip-pill { font-size: 0.65rem; padding: 3px 6px; }
-  .match-won-badge, .match-lost-badge { font-size: 0.62rem; padding: 2px 6px; }
+  .match-card { padding: 8px 10px; border-radius: 10px; }
 
-  /* ── Form dots ── */
-  .form-dot { width: 9px; height: 9px; }
+  /* Team row grid — tighter gap so both teams fit */
+  .match-team-row { gap: 4px; margin-bottom: 8px; }
+
+  /* Team logos — shrink so info columns have room */
+  .match-logo,
+  .match-logo-fallback { width: 24px; height: 24px; font-size: 0.6rem; }
+
+  /* Team name — clamp + ellipsis to stay in column */
+  .match-team-name {
+    font-size: 0.68rem;
+    max-width: 62px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+
+  /* Home/away gaps */
+  .match-team-home,
+  .match-team-away { gap: 5px; }
+
+  /* Form dots — small enough to fit 5 dots in ~60px */
+  .form-dot { width: 8px; height: 8px; font-size: 0; }
+  .match-form-dots { gap: 2px; }
+
+  /* Time pill */
+  .match-time-pill {
+    font-size: 0.62rem;
+    padding: 3px 5px;
+    min-width: 50px;
+    line-height: 1.3;
+  }
+
+  /* Pills row */
+  .match-pills-left, .match-pills-right { min-width: 54px; }
+  .match-odds-pill, .match-tip-pill { font-size: 0.63rem; padding: 4px 7px; }
+  .match-won-badge, .match-lost-badge { font-size: 0.6rem; padding: 2px 5px; }
 
   /* ── Day switcher ── */
   .date-btn { min-width: 44px; padding: 6px 6px; }
@@ -1823,9 +1853,6 @@ img { max-width: 100%; display: block; }
 
   /* ── Tabs ── */
   .market-tab { padding: 6px 8px; font-size: 0.7rem; }
-
-  /* ── Category tabs — abbreviate on tiny screens ── */
-  .category-tab-label { font-size: 0.7rem; }
 
   /* ── Section title ── */
   .section-title { font-size: 1.1rem; }
