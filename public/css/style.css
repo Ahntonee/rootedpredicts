@@ -828,6 +828,9 @@ img { max-width: 100%; display: block; }
 .date-btn.active .day-name { color: rgba(255,255,255,0.6); }
 .date-btn.active .day-num  { color: #fff; }
 
+/* ── Day-nav row: prevent cal icon from ever wrapping to next line ── */
+.day-nav-row { flex-wrap: nowrap !important; }
+
 /* ── Predictions page hero heading ── */
 .page-hero-h1 {
   font-family: var(--font-head);
@@ -1785,6 +1788,16 @@ img { max-width: 100%; display: block; }
   .header-actions .btn-join { display: none; }
   .header-actions .btn-login { padding: 6px 10px; font-size: 0.75rem; }
 
+  /* ── Header: hide VIP/FREE badge, shrink avatar + theme toggle ── */
+  #user-menu-wrap > span { display: none !important; }
+  #user-avatar-btn { width: 28px !important; height: 28px !important; font-size: 0.7rem !important; }
+  .theme-toggle { width: 28px !important; height: 28px !important; min-width: unset; padding: 0; }
+  .theme-toggle .material-icons-round { font-size: 1.05rem; }
+
+  /* ── Day switcher — smaller buttons so cal icon stays on same row ── */
+  .day-btn { padding: 5px 10px !important; font-size: 0.75rem !important; }
+  .day-nav-row { gap: 6px; }
+
   /* ── Footer ── */
   .footer-col h4 { font-size: 0.85rem; }
   .footer-links a { font-size: 0.8rem; }
@@ -1850,6 +1863,10 @@ img { max-width: 100%; display: block; }
   .date-btn .day-num { font-size: 0.88rem; }
   .date-btn .day-name { font-size: 0.55rem; }
   .day-switcher-btn { padding: 5px 8px; font-size: 0.72rem; }
+  .day-btn { padding: 4px 8px !important; font-size: 0.7rem !important; }
+  .day-nav-row { gap: 4px; }
+  #user-avatar-btn { width: 26px !important; height: 26px !important; font-size: 0.65rem !important; }
+  .theme-toggle { width: 26px !important; height: 26px !important; }
 
   /* ── Tabs ── */
   .market-tab { padding: 6px 8px; font-size: 0.7rem; }
