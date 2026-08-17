@@ -39,12 +39,12 @@
     .cat-tab {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 8px 16px; border-radius: 50px;
-      border: 1px solid var(--border); background: var(--card);
-      color: var(--text-soft); font-size: 0.82rem; font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.8); font-size: 0.82rem; font-weight: 500;
       white-space: nowrap; cursor: pointer; transition: all 0.15s;
     }
-    .cat-tab:hover { border-color: var(--green); color: var(--green); }
-    .cat-tab.active { background: var(--green); border-color: var(--green); color: #fff; font-weight: 600; }
+    .cat-tab:hover { border-color: rgba(255,255,255,0.45); color: #fff; background: rgba(255,255,255,0.14); }
+    .cat-tab.active { background: #2ECC71; border-color: #2ECC71; color: #fff; font-weight: 600; }
 
     /* ── Picks table ── */
     .picks-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 24px; }
@@ -121,9 +121,9 @@
       <button class="cat-tab" data-category="1-5-goals" data-label="1.5 Goals">1.5 Goals</button>
       <button class="cat-tab" data-category="2-5-goals" data-label="2.5 Goals">2.5 Goals</button>
       <button class="cat-tab" data-category="3-5-goals" data-label="3.5 Goals">3.5 Goals</button>
-      <button class="cat-tab" data-category="acca" data-label="Acca Tips">Acca tips</button>
+      <button class="cat-tab" data-category="acca" data-label="Acca Tips">Acca Tips</button>
       <button class="cat-tab" data-category="away-win" data-label="Away Win">Away Win</button>
-      <button class="cat-tab" data-category="btts" data-label="BTTS">Btts</button>
+      <button class="cat-tab" data-category="btts" data-label="Both Teams To Score">Both Teams To Score</button>
       <button class="cat-tab" data-category="double-chance" data-label="Double Chance">Double Chance</button>
       <button class="cat-tab" data-category="home-win" data-label="Home Win">Home Win</button>
       <button class="cat-tab" data-category="banker" data-label="Banker of the Day"><span class="material-icons-round" style="font-size:0.85rem;">local_fire_department</span>Banker of the Day</button>
