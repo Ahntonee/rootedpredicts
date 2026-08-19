@@ -323,6 +323,7 @@ app.get('/tips/:slug', async (req, res) => {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="p:domain_verify" content="2c1d89fb46ea0935171c081295db273c"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escHtml(page.title)}</title>
   <meta name="description" content="${escHtml(page.meta_description || '')}">
