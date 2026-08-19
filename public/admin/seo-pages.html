@@ -25,6 +25,11 @@
     .ql-snow .ql-tooltip { background:var(--surface-2);border-color:var(--border);color:var(--text); }
     .ql-snow .ql-tooltip input[type=text] { background:var(--surface);border-color:var(--border);color:var(--text); }
     .seo-slug { font-size:0.78rem;color:var(--muted);font-family:monospace; }
+    /* Restore list indentation stripped by the global CSS reset */
+    .ql-editor ol, .ql-editor ul { padding-left: 1.5em !important; margin: 0.4em 0 !important; }
+    .ql-editor li { margin-bottom: 3px; }
+    .ql-editor ol > li { list-style-type: decimal; }
+    .ql-editor ul > li { list-style-type: disc; }
   </style>
 </head>
 <body>
@@ -224,9 +229,11 @@ function openNew() {
 }
 
 function editPage(id) {
-  var page = pages.find(function(p){ return p.id === id; });
-  if (!page) return Admin.api('GET','/api/marketing/seo-pages/'+id).then(function(j){ if(j.success) fillForm(j.data); });
-  fillForm(page);
+  // Always fetch full record — the list query omits the content column
+  Admin.api('GET', '/api/marketing/seo-pages/'+id).then(function(j) {
+    if (j.success) fillForm(j.data);
+    else Admin.toast('Failed to load page', 'error');
+  });
 }
 
 function fillForm(page) {

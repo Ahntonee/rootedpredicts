@@ -343,6 +343,10 @@ app.get('/tips/:slug', async (req, res) => {
     .seo-article-content { background: #fff; color: #1a2332; border-radius: 12px; padding: 24px 28px; line-height: 1.85; font-family: 'Open Sans', sans-serif; margin-bottom: 24px; }
     .seo-article-content h2, .seo-article-content h3 { color: #0B2A1A; margin: 1.2em 0 0.5em; }
     .seo-article-content a { color: #1A8A44; }
+    .seo-article-content ol, .seo-article-content ul { padding-left: 1.5em; margin: 0.5em 0 0.8em; }
+    .seo-article-content li { margin-bottom: 4px; }
+    .seo-article-content ol > li { list-style-type: decimal; }
+    .seo-article-content ul > li { list-style-type: disc; }
     .seo-picks-header { font-family: var(--font-head); font-size: 1.5rem; font-weight: 900; color: var(--text); letter-spacing: 0.04em; padding: 18px 20px 12px; border-bottom: 1px solid var(--border); }
   </style>
 </head>
