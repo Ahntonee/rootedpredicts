@@ -231,7 +231,8 @@
               <span class="material-icons-round">email</span>
               <div>
                 <span class="footer-contact-label">Email Us</span>
-                <a href="/contact.html">Send a Message</a>
+                <a href="mailto:support@rootedpredict.com">support@rootedpredict.com</a>
+                <a href="mailto:rootedpredict@gmail.com" style="display:block;margin-top:2px;">rootedpredict@gmail.com</a>
               </div>
             </div>
             <div class="footer-contact-item">
