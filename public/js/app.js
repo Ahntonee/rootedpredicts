@@ -94,7 +94,7 @@
       <div class="container">
         <div class="header-inner">
           <a href="/" class="site-logo">
-            <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img">
+            <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img" fetchpriority="high" decoding="async">
           </a>
           <nav class="main-nav" id="main-nav">
             <a href="/"           class="nav-link ${active('/index.html')}">Home</a>
@@ -189,7 +189,7 @@
           <!-- Brand -->
           <div class="footer-brand">
             <a href="/" class="site-logo" style="margin-bottom:0;">
-              <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img">
+              <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img" fetchpriority="high" decoding="async">
             </a>
             <p>Rooted Predictions is an online service that provides the most accurate football predictions, soccer betting tips and daily winning picks to users worldwide.</p>
             <div class="footer-social-row">
@@ -324,8 +324,6 @@
 
   // ── Telegram channel popup
   function initTelegramPopup() {
-    var KEY = 'rp_tg_popup_dismissed';
-    if (localStorage.getItem(KEY)) return;
     var overlay = document.createElement('div');
     overlay.id = 'tg-popup-overlay';
     overlay.style.cssText = [
@@ -367,9 +365,7 @@
       </div>`;
     document.body.appendChild(overlay);
 
-    function close(joined) {
-      if (joined) localStorage.setItem(KEY, '1');
-      else localStorage.setItem(KEY, '1');
+    function close() {
       overlay.style.opacity = '0';
       document.getElementById('tg-popup-card').style.transform = 'translateY(24px)';
       setTimeout(() => overlay.remove(), 350);
@@ -382,7 +378,7 @@
 
     document.getElementById('tg-popup-close').onclick  = () => close();
     document.getElementById('tg-popup-later').onclick  = () => close();
-    document.getElementById('tg-popup-join').onclick   = () => close(true);
+    document.getElementById('tg-popup-join').onclick   = () => close();
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   }
 
@@ -832,6 +828,21 @@
   function escUrl(s)  { try { var u = new URL(String(s||'')); return ['http:','https:'].includes(u.protocol) ? u.href : '#'; } catch(_){ return '#'; } }
 
   // ── Inject ads into placement slots on the current page
+  function buildAdWrap(ad) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin:12px 0;';
+    if (ad.type === 'banner' && ad.image_data) {
+      wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored">' +
+        '<img src="'+ad.image_data+'" alt="'+escText(ad.name)+'" loading="lazy" decoding="async" style="max-width:100%;height:auto;display:block;border-radius:8px;"></a>';
+    } else if (ad.type === 'code' && ad.content) {
+      wrap.innerHTML = ad.content;
+    } else if (ad.type === 'text' && ad.link_url) {
+      wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored" ' +
+        'style="font-size:0.85rem;color:var(--text-soft);text-decoration:underline;">'+escText(ad.name)+'</a>';
+    }
+    return wrap;
+  }
+
   async function injectAds() {
     var placements = ['header','between-cards','sidebar','footer','blog'];
     var slots = placements.filter(function(p){ return !!document.getElementById('ad-slot-'+p); });
@@ -848,22 +859,20 @@
       allAds.forEach(function(ad) {
         var slot = document.getElementById('ad-slot-' + ad._slot);
         if (!slot) return;
-        var wrap = document.createElement('div');
-        wrap.style.cssText = 'margin:12px 0;';
-        if (ad.type === 'banner' && ad.image_data) {
-          wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored">' +
-            '<img src="'+ad.image_data+'" alt="'+escText(ad.name)+'" style="max-width:100%;height:auto;display:block;border-radius:8px;"></a>';
-        } else if (ad.type === 'code' && ad.content) {
-          wrap.innerHTML = ad.content;
-        } else if (ad.type === 'text' && ad.link_url) {
-          wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored" ' +
-            'style="font-size:0.85rem;color:var(--text-soft);text-decoration:underline;">'+escText(ad.name)+'</a>';
-        }
+        var wrap = buildAdWrap(ad);
         if (wrap.innerHTML) {
           slot.appendChild(wrap);
           fetch('/api/marketing/ads/'+ad.id+'/impression', {method:'POST'}).catch(function(){});
         }
       });
+      // Mirror sidebar ads to the mobile-only slot (sidebar is hidden on small screens)
+      var mobileSlot = document.getElementById('ad-slot-mobile');
+      if (mobileSlot) {
+        allAds.filter(function(ad){ return ad._slot === 'sidebar'; }).forEach(function(ad) {
+          var wrap = buildAdWrap(ad);
+          if (wrap.innerHTML) mobileSlot.appendChild(wrap);
+        });
+      }
     } catch(_) {}
   }
 

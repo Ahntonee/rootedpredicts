@@ -381,7 +381,7 @@ app.get('/tips/:slug', async (req, res) => {
 
       <!-- Right sidebar -->
       <aside class="pred-aside" id="pred-sidebar">
-        <div class="aside-card aside-ad-slot" id="aside-ad">
+        <div class="aside-card aside-ad-slot" id="ad-slot-sidebar">
           <div style="font-size:0.7rem;color:var(--muted);text-align:center;letter-spacing:0.06em;">ADVERTISEMENT</div>
         </div>
         <div class="aside-card" id="aside-blog">
@@ -430,8 +430,9 @@ app.get('/tips/:slug', async (req, res) => {
 
 // ── Static files
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+  maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
   etag: true,
+  lastModified: true,
 }));
 
 // ── API Routes
