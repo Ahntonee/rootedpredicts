@@ -213,6 +213,81 @@ app.get('/predictions.html', (req, res, next) => {
 });
 
 // ── SEO Tips pages — served at /tips/:slug for every visitor (and bots)
+
+function buildSeoFormDots(formStr) {
+  if (!formStr) return '';
+  return formStr.split('').slice(0, 5).map(c => {
+    const cls = c === 'W' ? 'form-dot-w' : c === 'L' ? 'form-dot-l' : c === 'D' ? 'form-dot-d' : 'form-dot-u';
+    return `<div class="form-dot ${cls}"></div>`;
+  }).join('');
+}
+
+function buildSeoTeamLogo(logoUrl, teamName) {
+  const letter = escHtml((teamName || '?')[0].toUpperCase());
+  if (logoUrl) {
+    return `<img class="match-logo" src="${escHtml(logoUrl)}" alt="${escHtml(teamName)}" onerror="this.outerHTML='<div class=\\'match-logo-fallback\\'>${letter}</div>'">`;
+  }
+  return `<div class="match-logo-fallback">${letter}</div>`;
+}
+
+function buildSeoMatchCard(p) {
+  const matchTime = p.match_date
+    ? new Date(p.match_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
+    : '--:--';
+  const oddsPill  = p.odds ? `<div class="match-odds-pill">${parseFloat(p.odds).toFixed(2)}</div>` : '';
+  const tipPill   = p.tip  ? `<div class="match-tip-pill">🔥 ${escHtml(p.tip)}</div>` : '';
+  return `<div class="match-card">
+  <div class="match-team-row">
+    <div class="match-team-home">
+      <div class="match-team-info-home">
+        <div class="match-team-name">${escHtml(p.home_team)}</div>
+        <div class="match-form-dots">${buildSeoFormDots(p.home_form)}</div>
+      </div>
+      ${buildSeoTeamLogo(p.home_team_logo, p.home_team)}
+    </div>
+    <div class="match-time-center">
+      <div class="match-time-pill">${escHtml(matchTime)} UTC</div>
+    </div>
+    <div class="match-team-away">
+      ${buildSeoTeamLogo(p.away_team_logo, p.away_team)}
+      <div class="match-team-info-away">
+        <div class="match-team-name">${escHtml(p.away_team)}</div>
+        <div class="match-form-dots">${buildSeoFormDots(p.away_form)}</div>
+      </div>
+    </div>
+  </div>
+  <div class="match-pills-row">
+    <div class="match-pills-left"></div>
+    <div class="match-pills-center">${oddsPill}${tipPill}</div>
+    <div class="match-pills-right"></div>
+  </div>
+</div>`;
+}
+
+function buildSeoPicksHtml(preds) {
+  const LEAGUE_PRIORITY = [2, 3, 848, 39, 140, 135, 78, 61, 94, 88, 203, 307, 253, 292];
+  const leagueMap = {};
+  preds.forEach(p => {
+    const key = p.league_id || p.league_name || 'Other';
+    if (!leagueMap[key]) leagueMap[key] = { id: p.league_id, name: p.league_name, country: p.league_country, preds: [] };
+    leagueMap[key].preds.push(p);
+  });
+  const sorted = Object.values(leagueMap).sort((a, b) => {
+    const ai = LEAGUE_PRIORITY.indexOf(a.id), bi = LEAGUE_PRIORITY.indexOf(b.id);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+  return sorted.map(lg => {
+    const country = lg.country ? `<span style="color:var(--muted);margin-right:4px;">${escHtml(lg.country)}:</span>` : '';
+    return `<div class="match-league-group">
+  <div class="pick-league-row">${country}<strong>${escHtml(lg.name || 'League')}</strong></div>
+  ${lg.preds.map(buildSeoMatchCard).join('\n')}
+</div>`;
+  }).join('\n');
+}
+
 app.get('/tips/:slug', async (req, res) => {
   try {
     const [[page]] = await db.query(
@@ -222,8 +297,9 @@ app.get('/tips/:slug', async (req, res) => {
     if (!page) return res.status(404).send('Page not found');
 
     const [preds] = await db.query(`
-      SELECT p.id, p.slug, p.home_team, p.away_team, p.match_date,
+      SELECT p.id, p.home_team, p.away_team, p.match_date,
              p.tip, p.market, p.odds, p.confidence_score, p.league_id,
+             p.home_team_logo, p.away_team_logo, p.home_form, p.away_form,
              l.name AS league_name, l.country AS league_country
       FROM predictions p
       LEFT JOIN leagues l ON l.id = p.league_id
@@ -231,7 +307,8 @@ app.get('/tips/:slug', async (req, res) => {
       ORDER BY p.confidence_score DESC LIMIT 30
     `);
     const BASE = process.env.SITE_URL || 'https://www.rootedpredict.com';
-    const predCardsHtml = preds.map(buildBotPredCard).join('\n');
+    const picksHtml = buildSeoPicksHtml(preds);
+    const noPicksMsg = '<p style="color:var(--muted);text-align:center;padding:40px 0;">No predictions today yet — check back soon.</p>';
     const schema = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'Article',
@@ -258,27 +335,91 @@ app.get('/tips/:slug', async (req, res) => {
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <script type="application/ld+json">${schema}</script>
+  <style>
+    .seo-hero { background: var(--navy); padding: 28px 0 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .seo-hero-inner { max-width: 820px; }
+    .seo-hero h1 { font-family: var(--font-head); font-size: clamp(1.5rem,4vw,2.2rem); font-weight: 900; color: #fff; margin-bottom: 8px; line-height: 1.25; }
+    .seo-hero-sub { font-size: 0.9rem; color: rgba(255,255,255,0.55); margin-bottom: 24px; }
+    .seo-article-content { background: #fff; color: #1a2332; border-radius: 12px; padding: 24px 28px; line-height: 1.85; font-family: 'Open Sans', sans-serif; margin-bottom: 24px; }
+    .seo-article-content h2, .seo-article-content h3 { color: #0B2A1A; margin: 1.2em 0 0.5em; }
+    .seo-article-content a { color: #1A8A44; }
+    .seo-picks-header { font-family: var(--font-head); font-size: 1.5rem; font-weight: 900; color: var(--text); letter-spacing: 0.04em; padding: 18px 20px 12px; border-bottom: 1px solid var(--border); }
+  </style>
 </head>
 <body>
 <header class="site-header" id="site-header"></header>
-<main>
-  <div class="container" style="padding-top:40px;padding-bottom:60px;">
-    <article style="max-width:820px;margin:0 auto 48px;">
-      <h1 style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--text);margin-bottom:20px;">${escHtml(page.title)}</h1>
-      <div style="font-family:'Open Sans',sans-serif;line-height:1.85;color:var(--text-soft);">
-        ${page.content || ''}
-      </div>
-    </article>
-    <div style="max-width:820px;margin:0 auto;">
-      <h2 style="font-family:var(--font-head);font-size:1.4rem;font-weight:700;margin-bottom:20px;color:var(--text);">Today's Free Football Predictions</h2>
-      <div id="picks-list">
-        ${predCardsHtml || '<p style="color:var(--muted);text-align:center;padding:40px 0;">No predictions today yet — check back soon.</p>'}
-      </div>
+
+<!-- Hero banner matching predictions.html style -->
+<div class="seo-hero">
+  <div class="container">
+    <div class="seo-hero-inner">
+      <h1>${escHtml(page.title)}</h1>
+      <p class="seo-hero-sub">Free predictions across top leagues — updated daily</p>
     </div>
+  </div>
+</div>
+
+<main>
+  <div class="container" style="padding-top:24px;padding-bottom:60px;">
+
+    <!-- Two-column layout: picks + sidebar -->
+    <div class="pred-layout">
+      <div class="pred-main">
+
+        <!-- Article content -->
+        ${page.content ? `<div class="seo-article-content">${page.content}</div>` : ''}
+
+        <!-- Predictions -->
+        <div class="picks-wrap">
+          <div class="seo-picks-header">FREE PICKS</div>
+          <div id="seo-picks-list" style="padding:12px 16px 16px;">
+            ${picksHtml || noPicksMsg}
+          </div>
+        </div>
+
+      </div><!-- /pred-main -->
+
+      <!-- Right sidebar -->
+      <aside class="pred-aside" id="pred-sidebar">
+        <div class="aside-card aside-ad-slot" id="aside-ad">
+          <div style="font-size:0.7rem;color:var(--muted);text-align:center;letter-spacing:0.06em;">ADVERTISEMENT</div>
+        </div>
+        <div class="aside-card" id="aside-blog">
+          <div class="aside-card-header">Latest Sports Insights</div>
+          <div id="aside-blog-list">
+            <div class="pick-skeleton" style="margin:0 0 10px;"><div class="skel" style="height:14px;width:70%;margin-bottom:6px;"></div><div class="skel" style="height:12px;width:50%;"></div></div>
+            <div class="pick-skeleton" style="margin:0 0 10px;"><div class="skel" style="height:14px;width:65%;margin-bottom:6px;"></div><div class="skel" style="height:12px;width:45%;"></div></div>
+            <div class="pick-skeleton" style="margin:0;"><div class="skel" style="height:14px;width:75%;margin-bottom:6px;"></div><div class="skel" style="height:12px;width:55%;"></div></div>
+          </div>
+        </div>
+      </aside>
+
+    </div><!-- /pred-layout -->
+
   </div>
 </main>
 <footer class="site-footer" id="site-footer"></footer>
 <script src="/js/app.js"></script>
+<script>
+// Load sidebar blog posts
+(function() {
+  var blogList = document.getElementById('aside-blog-list');
+  if (!blogList) return;
+  fetch('/api/blog?limit=4')
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var posts = (data.data || data.posts || []);
+      if (!posts.length) { blogList.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;padding:8px 0;">No articles yet.</p>'; return; }
+      blogList.innerHTML = posts.map(function(post) {
+        var slug = post.slug || post.id;
+        var thumb = post.featured_image
+          ? '<img class="aside-blog-thumb" src="' + post.featured_image + '" alt="" onerror="this.outerHTML=\'<div class=\\\'aside-blog-thumb-ph\\\'></div>\'">'
+          : '<div class="aside-blog-thumb-ph"></div>';
+        return '<a class="aside-blog-item" href="/blog/' + slug + '">' + thumb + '<div class="aside-blog-body"><div class="aside-blog-badge">' + (post.category || 'Blog') + '</div><div class="aside-blog-title">' + post.title + '</div></div></a>';
+      }).join('');
+    }).catch(function(){});
+})();
+</script>
 </body>
 </html>`);
   } catch (e) {

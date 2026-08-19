@@ -37,11 +37,14 @@ async function getSeoPage(req, res) {
 }
 
 async function createSeoPage(req, res) {
-  const { title, meta_description, meta_keywords, content, status, source_blog_id } = req.body;
+  const { title, slug: rawSlug, meta_description, meta_keywords, content, status, source_blog_id } = req.body;
   if (!title || !title.trim()) return errorResponse(res, 'Title is required', 400);
 
-  let slug = makeSlug(title);
-  // ensure uniqueness
+  // Use editor-provided slug if given, otherwise auto-generate from title
+  let slug = rawSlug && rawSlug.trim() ? makeSlug(rawSlug.trim()) : makeSlug(title);
+  if (!slug) return errorResponse(res, 'Could not derive a valid slug from the provided value', 400);
+
+  // Ensure uniqueness
   const [[existing]] = await db.query('SELECT id FROM seo_pages WHERE slug = ?', [slug]);
   if (existing) slug = `${slug}-${Date.now()}`;
 
@@ -57,15 +60,26 @@ async function createSeoPage(req, res) {
 
 async function updateSeoPage(req, res) {
   const id = parseInt(req.params.id);
-  const { title, meta_description, meta_keywords, content, status } = req.body;
+  const { title, slug: rawSlug, meta_description, meta_keywords, content, status } = req.body;
   if (!title || !title.trim()) return errorResponse(res, 'Title is required', 400);
 
   const [[existing]] = await db.query('SELECT id FROM seo_pages WHERE id = ?', [id]);
   if (!existing) return errorResponse(res, 'SEO page not found', 404);
 
+  // If editor supplied a new slug, clean and validate uniqueness against other pages
+  let slug = existing.slug;
+  if (rawSlug && rawSlug.trim()) {
+    const candidate = makeSlug(rawSlug.trim());
+    if (candidate) {
+      const [[conflict]] = await db.query('SELECT id FROM seo_pages WHERE slug = ? AND id != ?', [candidate, id]);
+      if (conflict) return errorResponse(res, `Slug "${candidate}" is already taken by another page`, 409);
+      slug = candidate;
+    }
+  }
+
   await db.query(
-    `UPDATE seo_pages SET title=?, meta_description=?, meta_keywords=?, content=?, status=? WHERE id=?`,
-    [title.trim(), meta_description || null, meta_keywords || null, content || null, status || 'draft', id]
+    `UPDATE seo_pages SET title=?, slug=?, meta_description=?, meta_keywords=?, content=?, status=? WHERE id=?`,
+    [title.trim(), slug, meta_description || null, meta_keywords || null, content || null, status || 'draft', id]
   );
   const [[updated]] = await db.query('SELECT * FROM seo_pages WHERE id = ?', [id]);
   return successResponse(res, updated, 'SEO page updated');

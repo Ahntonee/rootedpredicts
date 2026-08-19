@@ -70,6 +70,13 @@
           <label class="form-label">Title *</label>
           <input type="text" class="form-control" id="sp-title" placeholder="e.g. Best Football Predictions Today — Premier League Tips">
         </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Slug <span style="color:var(--muted);font-weight:400;">(URL path after /tips/ — leave blank to auto-generate from title)</span></label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="color:var(--muted);font-size:0.82rem;white-space:nowrap;">/tips/</span>
+            <input type="text" class="form-control" id="sp-slug" placeholder="e.g. best-football-predictions-today" style="font-family:monospace;font-size:0.85rem;">
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div class="form-group" style="margin:0;">
             <label class="form-label">Status</label>
@@ -204,6 +211,7 @@ function initQuill() {
 function openNew() {
   document.getElementById('sp-id').value = '';
   document.getElementById('sp-title').value = '';
+  document.getElementById('sp-slug').value = '';
   document.getElementById('sp-status').value = 'draft';
   document.getElementById('sp-meta-desc').value = '';
   document.getElementById('sp-meta-kw').value = '';
@@ -224,6 +232,7 @@ function editPage(id) {
 function fillForm(page) {
   document.getElementById('sp-id').value = page.id;
   document.getElementById('sp-title').value = page.title || '';
+  document.getElementById('sp-slug').value = page.slug || '';
   document.getElementById('sp-status').value = page.status || 'draft';
   document.getElementById('sp-meta-desc').value = page.meta_description || '';
   document.getElementById('sp-meta-kw').value = page.meta_keywords || '';
@@ -244,6 +253,7 @@ function saveSeoPage() {
 
   var body = {
     title:            title,
+    slug:             document.getElementById('sp-slug').value.trim(),
     meta_description: document.getElementById('sp-meta-desc').value.trim(),
     meta_keywords:    document.getElementById('sp-meta-kw').value.trim(),
     content:          quill ? quill.root.innerHTML : '',
