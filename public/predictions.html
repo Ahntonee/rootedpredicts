@@ -1106,7 +1106,7 @@
   (function loadSidebar() {
     const blogList = document.getElementById('aside-blog-list');
     if (!blogList) return;
-    fetch('/api/blog?limit=4')
+    fetch('/api/blog?limit=1&category=Sponsored+Post')
       .then(r => r.json())
       .then(data => {
         const posts = Array.isArray(data) ? data : ((data.data && data.data.posts) || data.posts || []);

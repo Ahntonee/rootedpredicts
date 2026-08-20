@@ -410,7 +410,7 @@ app.get('/tips/:slug', async (req, res) => {
 (function() {
   var blogList = document.getElementById('aside-blog-list');
   if (!blogList) return;
-  fetch('/api/blog?limit=4')
+  fetch('/api/blog?limit=1&category=Sponsored+Post')
     .then(function(r){ return r.json(); })
     .then(function(data) {
       var posts = (data.data && data.data.posts) || data.posts || [];
