@@ -866,10 +866,7 @@
         const isFin    = FIN_ST.includes(p.status_short) || (isPast && hasScore);
 
         let timeLine, timeStyle = '';
-        if (isLive && hasScore) {
-          timeLine = `${p.home_score}–${p.away_score}<br><span style="font-size:0.65rem;">${p.elapsed ? p.elapsed+"'" : 'LIVE'}</span>`;
-          timeStyle = 'background:var(--red);color:#fff;';
-        } else if (isFin && hasScore) {
+        if (isFin && hasScore) {
           timeLine = `${p.home_score}–${p.away_score}<br><span style="font-size:0.65rem;">FT</span>`;
         } else if (isPast) {
           timeLine = `—<br><span style="font-size:0.65rem;">FT</span>`;
