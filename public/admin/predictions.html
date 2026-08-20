@@ -171,7 +171,7 @@
             <option value="BTTS">BTTS</option>
             <option value="Double Chance">Double Chance</option>
             <option value="Acca Tips">Acca Tips</option>
-            <option value="Banker of the Day">Banker of the Day ⭐ (VIP)</option>
+            <option value="Banker of the Day">Rooted Safe Tip of the Day ⭐ (VIP)</option>
           </select>
         </div>
 
@@ -722,7 +722,7 @@ async function editPred(id) {
 
 // Derive category from tip/market/visibility for legacy predictions
 function deriveCategoryFromTip(tip, market, visibility) {
-  if (visibility === 'vip') return 'Banker of the Day';
+  if (visibility === 'vip') return 'Rooted Safe Tip of the Day';
   const t = (tip||'').toLowerCase();
   if (market === 'BTTS' || t.includes('btts')) return 'BTTS';
   if (t.includes('home win') || t === '1' || t === 'home') return 'Home Win';
