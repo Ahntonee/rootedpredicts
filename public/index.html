@@ -479,8 +479,8 @@
     <!-- ── Hero Banner ── -->
     <div class="home-hero-banner">
       <div>
-        <h1>Best Football Prediction Site in the World</h1>
-        <p>Rooted Predictions provides daily accurate football tips for leagues worldwide with a proven winning rate for bettors.</p>
+        <h1 id="hero-heading">Best Football Prediction Site in the World</h1>
+        <p id="hero-subheading">Rooted Predictions provides daily accurate football tips for leagues worldwide with a proven winning rate for bettors.</p>
       </div>
       <div class="home-hero-actions">
         <a href="/pricing.html" class="btn btn-primary"><span class="material-icons-round" style="font-size:1rem;">workspace_premium</span>Join VIP</a>
@@ -1126,6 +1126,18 @@
         }).join('');
       }).catch(() => { blogList.innerHTML = ''; });
   }
+
+  // ── Load hero text from admin Site Pages
+  fetch('/api/pages/home')
+    .then(r => r.json())
+    .then(data => {
+      const p = data.page || data;
+      if (p.hero_title)    document.getElementById('hero-heading').textContent    = p.hero_title;
+      if (p.hero_subtitle) document.getElementById('hero-subheading').textContent = p.hero_subtitle;
+      if (p.page_title)    document.title = p.page_title;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (p.meta_description && metaDesc) metaDesc.setAttribute('content', p.meta_description);
+    }).catch(() => {});
 
   // ── Init
   updateDateLabel();
