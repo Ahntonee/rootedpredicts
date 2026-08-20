@@ -413,7 +413,7 @@ app.get('/tips/:slug', async (req, res) => {
   fetch('/api/blog?limit=4')
     .then(function(r){ return r.json(); })
     .then(function(data) {
-      var posts = (data.data || data.posts || []);
+      var posts = (data.data && data.data.posts) || data.posts || [];
       if (!posts.length) { blogList.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;padding:8px 0;">No articles yet.</p>'; return; }
       blogList.innerHTML = posts.map(function(post) {
         var slug = post.slug || post.id;
