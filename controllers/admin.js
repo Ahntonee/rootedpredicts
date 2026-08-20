@@ -412,9 +412,9 @@ async function getBlogPost(req, res) {
 
 async function createBlogPost(req, res) {
   try {
-    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published } = req.body;
+    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published,slug: manualSlug } = req.body;
     if (!title||!content) return res.status(400).json({ success:false, message:'Title and content required' });
-    let slug = generateBlogSlug(title);
+    let slug = manualSlug ? slugify(manualSlug, { lower:true, strict:true }) : generateBlogSlug(title);
     const [ex] = await db.query('SELECT id FROM blog_posts WHERE slug=?',[slug]);
     if (ex.length) slug = slug+'-'+Date.now();
     const [ins] = await db.query(
@@ -431,9 +431,15 @@ async function createBlogPost(req, res) {
 
 async function updateBlogPost(req, res) {
   try {
-    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published } = req.body;
+    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published,slug: manualSlug } = req.body;
     const updates=[]; const args=[];
     if (title)            { updates.push('title=?');            args.push(sanitiseText(title)); }
+    if (manualSlug) {
+      const newSlug = slugify(manualSlug, { lower:true, strict:true });
+      const [ex] = await db.query('SELECT id FROM blog_posts WHERE slug=? AND id!=?',[newSlug, req.params.id]);
+      if (ex.length) return res.status(400).json({ success:false, message:'Slug already in use by another post' });
+      updates.push('slug=?'); args.push(newSlug);
+    }
     if (content)          { updates.push('content=?');          args.push(content); }
     if (excerpt!==undefined)             { updates.push('excerpt=?');             args.push(excerpt||null); }
     if (category!==undefined)            { updates.push('category=?');            args.push(category||null); }

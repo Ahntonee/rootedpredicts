@@ -74,6 +74,13 @@
       <input type="hidden" id="blog-id">
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div class="form-group" style="margin:0;"><label class="form-label">Title *</label><input type="text" class="form-control" id="b-title" placeholder="Article title"></div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Slug <span style="font-weight:400;color:var(--muted);font-size:0.78rem;">(URL — leave blank to auto-generate from title)</span></label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="color:var(--muted);font-size:0.82rem;white-space:nowrap;">/blog/</span>
+            <input type="text" class="form-control" id="b-slug" placeholder="e.g. best-football-predictions-today" style="font-family:monospace;font-size:0.85rem;">
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div class="form-group" style="margin:0;"><label class="form-label">Category</label>
             <select class="form-control" id="b-cat">
@@ -182,7 +189,7 @@ async function loadPosts() {
 function openNew() {
   blogEditId = null;
   document.getElementById('blog-modal-title').textContent = 'New Blog Post';
-  ['b-title','b-excerpt','b-meta-title','b-meta-desc','b-keywords','b-image','b-image-alt'].forEach(id => document.getElementById(id).value = '');
+  ['b-title','b-slug','b-excerpt','b-meta-title','b-meta-desc','b-keywords','b-image','b-image-alt'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('b-cat').value = '';
   document.getElementById('b-published').checked = false;
   showImagePreview('');
@@ -199,6 +206,7 @@ async function editPost(id) {
   blogEditId = id;
   document.getElementById('blog-modal-title').textContent = 'Edit Post';
   document.getElementById('b-title').value       = p.title || '';
+  document.getElementById('b-slug').value        = p.slug || '';
   document.getElementById('b-cat').value          = p.category || '';
   document.getElementById('b-excerpt').value      = p.excerpt || '';
   document.getElementById('b-meta-title').value   = p.meta_title || '';
@@ -226,6 +234,7 @@ async function savePost() {
   const btn = document.getElementById('save-blog-btn');
   const body = {
     title:              document.getElementById('b-title').value.trim(),
+    slug:               document.getElementById('b-slug').value.trim() || undefined,
     content:            getContent(),
     excerpt:            document.getElementById('b-excerpt').value.trim(),
     category:           document.getElementById('b-cat').value.trim(),
