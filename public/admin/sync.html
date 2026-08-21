@@ -59,6 +59,34 @@
       <div id="sync-results-result" style="margin-top:10px;font-size:0.82rem;color:var(--muted);"></div>
     </div>
 
+    <!-- Odds Backfill -->
+    <div class="card" style="padding:20px;grid-column:1/-1;border:1px solid rgba(212,160,23,0.3);">
+      <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span class="material-icons-round" style="color:var(--yellow);">currency_exchange</span>Odds Backfill
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;color:var(--yellow);background:rgba(212,160,23,0.12);border:1px solid rgba(212,160,23,0.25);border-radius:4px;padding:2px 8px;text-transform:uppercase;">1 call / prediction</span>
+      </h3>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">Fetch bookmaker odds for published predictions that are missing odds. Skips minor leagues where no bookmaker publishes data.</p>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div>
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Date scope</label>
+          <select id="odds-date-mode" class="form-control" style="width:160px;">
+            <option value="today">Today only</option>
+            <option value="tomorrow">Tomorrow only</option>
+            <option value="all">All pending predictions</option>
+            <option value="specific">Specific date&hellip;</option>
+          </select>
+        </div>
+        <div id="odds-specific-wrap" style="display:none;">
+          <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Date</label>
+          <input type="date" id="odds-specific-date" class="form-control" style="width:150px;">
+        </div>
+        <button class="btn btn-sm" id="odds-backfill-btn" style="background:var(--yellow);color:#1a1a1a;border:none;">
+          <span class="material-icons-round">currency_exchange</span>Fetch Missing Odds
+        </button>
+      </div>
+      <div id="odds-backfill-result" style="margin-top:12px;font-size:0.82rem;color:var(--muted);"></div>
+    </div>
+
     <!-- Auto-Predict -->
     <div class="card" style="padding:20px;grid-column:1/-1;border:1px solid rgba(233,69,96,0.3);">
       <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
@@ -235,6 +263,69 @@ document.getElementById('sync-date-btn').addEventListener('click', function() {
 document.getElementById('sync-results-btn').addEventListener('click', function() {
   var date = document.getElementById('results-date').value || new Date().toISOString().split('T')[0];
   runSync('sync-results-btn', '/api/sync/results', 'sync-results-result', 'POST', { date: date });
+});
+
+// ── Odds Backfill ─────────────────────────────────────────────────────────────
+document.getElementById('odds-date-mode').addEventListener('change', function() {
+  document.getElementById('odds-specific-wrap').style.display = this.value === 'specific' ? '' : 'none';
+});
+
+document.getElementById('odds-backfill-btn').addEventListener('click', async function() {
+  var btn      = document.getElementById('odds-backfill-btn');
+  var res      = document.getElementById('odds-backfill-result');
+  var dateMode = document.getElementById('odds-date-mode').value;
+
+  function localToday() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function localTomorrow() {
+    var d = new Date(); d.setDate(d.getDate() + 1);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  var dateParam = null;
+  if (dateMode === 'today')    dateParam = localToday();
+  if (dateMode === 'tomorrow') dateParam = localTomorrow();
+  if (dateMode === 'all')      dateParam = 'all';
+  if (dateMode === 'specific') {
+    dateParam = document.getElementById('odds-specific-date').value;
+    if (!dateParam) { Admin.toast('Select a specific date first', 'error'); return; }
+  }
+
+  var originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round" style="animation:spin 1s linear infinite">sync</span>Fetching...';
+  log('Odds backfill started: date=' + (dateParam || 'today'), 'info');
+  res.textContent = '';
+
+  try {
+    var body = {};
+    if (dateParam) body.date = dateParam;
+    var json = await Admin.api('POST', '/api/sync/odds', body);
+    if (json.success) {
+      var d = json.data;
+      var parts = [
+        '<span style="color:var(--green);">&#10004; ' + d.updated + ' updated</span>',
+        d.skipped + ' no bookmaker data',
+        '<span style="color:' + (d.errors > 0 ? 'var(--red)' : 'var(--muted)') + ';">' + d.errors + ' errors</span>',
+        d.total + ' total checked'
+      ];
+      res.innerHTML = parts.join(' &nbsp;&middot;&nbsp; ');
+      log('Odds backfill done: ' + d.updated + ' updated, ' + d.skipped + ' skipped, ' + d.errors + ' errors', d.errors > 0 ? 'error' : 'success');
+      Admin.toast('Odds backfill: ' + d.updated + ' updated');
+    } else {
+      res.innerHTML = '<span style="color:var(--red);">&#10007; ' + (json.message || 'Failed') + '</span>';
+      log('Odds backfill error: ' + (json.message || 'Unknown'), 'error');
+      Admin.toast(json.message || 'Odds backfill failed', 'error');
+    }
+  } catch (e) {
+    log('Network error: ' + e.message, 'error');
+    Admin.toast('Network error', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = originalHTML;
 });
 
 document.getElementById('ap-date-mode').addEventListener('change', function() {
