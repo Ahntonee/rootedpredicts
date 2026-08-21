@@ -105,11 +105,10 @@ img { max-width: 100%; display: block; }
   flex-shrink: 0;
 }
 .site-logo-img {
-  height: 44px;
+  height: 58px;
   width: auto;
   display: block;
-  /* Slight brightness boost so logo pops on dark headers */
-  filter: brightness(1.05);
+  filter: brightness(1.1) drop-shadow(0 1px 4px rgba(0,0,0,0.25));
 }
 /* Keep .logo-mark for any remaining admin/standalone references */
 .logo-mark {
