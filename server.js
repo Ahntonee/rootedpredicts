@@ -36,7 +36,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.tailwindcss.com', 'cdn.jsdelivr.net', 'www.googletagmanager.com', 'www.google-analytics.com'],
+      scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net', 'www.googletagmanager.com', 'www.google-analytics.com'],
       // Allow inline event handlers (onclick="...") used throughout the app.
       // Without this, Helmet defaults script-src-attr to 'none', silently
       // disabling every inline onclick (edit/delete buttons, modal closes, tabs).
@@ -435,7 +435,7 @@ app.get('/tips/:slug', async (req, res) => {
 
 // ── Static files
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
+  maxAge: process.env.NODE_ENV === 'production' ? '30d' : 0,
   etag: true,
   lastModified: true,
 }));

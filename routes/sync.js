@@ -94,6 +94,75 @@ router.post('/teams/:leagueId', asyncHandler(async (req, res) => {
   return successResponse(res, { synced: count }, `${count} teams synced for league ${leagueId}`);
 }));
 
+// ── POST /api/sync/odds
+// Body: { date?: 'YYYY-MM-DD' }  (defaults to today; pass 'all' to cover every pending prediction)
+// Loops through published predictions that have a fixture_id but no odds, fetches bookmaker
+// odds from API-Football and writes them back. Uses 1 API call per prediction.
+router.post('/odds', asyncHandler(async (req, res) => {
+  if (!process.env.API_FOOTBALL_KEY) {
+    return errorResponse(res, 'API_FOOTBALL_KEY not configured in .env', 400);
+  }
+  const db = require('../config/db');
+  const dateParam = req.body.date || null;
+
+  let dateFilter = '';
+  const args = [];
+  if (dateParam && dateParam !== 'all') {
+    dateFilter = ' AND DATE(p.match_date) = ?';
+    args.push(dateParam);
+  } else if (!dateParam) {
+    // Default: today
+    dateFilter = ' AND DATE(p.match_date) = CURDATE()';
+  }
+
+  const [rows] = await db.query(
+    `SELECT id, fixture_id, tip, market FROM predictions p
+     WHERE p.published_at IS NOT NULL
+       AND p.fixture_id IS NOT NULL
+       AND p.odds IS NULL
+       AND p.result = 'pending'
+       ${dateFilter}
+     ORDER BY p.match_date ASC`,
+    args
+  );
+
+  if (!rows.length) {
+    return successResponse(res, { updated: 0, skipped: 0, errors: 0 },
+      'No predictions missing odds for this date');
+  }
+
+  let updated = 0, skipped = 0, errors = 0;
+  const log = [];
+
+  for (const row of rows) {
+    try {
+      await new Promise(r => setTimeout(r, 250)); // respect rate limit
+      const allOdds = await apiSvc.fetchFixtureOdds(row.fixture_id);
+      if (!allOdds) {
+        skipped++;
+        log.push({ id: row.id, fixture_id: row.fixture_id, status: 'no_odds' });
+        continue;
+      }
+      const marketOdds = allOdds[row.market] || null;
+      const primaryOdd = apiSvc.oddsForTip(row.tip, row.market, marketOdds);
+      const oddsJson   = marketOdds ? JSON.stringify(marketOdds) : null;
+
+      await db.query(
+        `UPDATE predictions SET odds = COALESCE(?, odds), odds_data = COALESCE(?, odds_data) WHERE id = ?`,
+        [primaryOdd, oddsJson, row.id]
+      );
+      updated++;
+      log.push({ id: row.id, fixture_id: row.fixture_id, status: 'updated', odds: primaryOdd });
+    } catch (e) {
+      errors++;
+      log.push({ id: row.id, fixture_id: row.fixture_id, status: 'error', error: e.message });
+    }
+  }
+
+  return successResponse(res, { updated, skipped, errors, total: rows.length, log },
+    `Odds backfill done: ${updated} updated, ${skipped} no bookmaker data, ${errors} errors`);
+}));
+
 // ── POST /api/sync/auto-predict
 // Body: { limit?: number, min_confidence?: number, auto_publish?: boolean }
 router.post('/auto-predict', asyncHandler(async (req, res) => {
