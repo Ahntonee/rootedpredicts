@@ -23,7 +23,7 @@
 <script src="/js/app.js"></script>
 <script src="/js/admin.js"></script>
 <script>
-const theme=localStorage.getItem('afro_theme')||'dark';document.documentElement.setAttribute('data-theme',theme);
+const theme=localStorage.getItem('afro_theme')||'light';document.documentElement.setAttribute('data-theme',theme);
 async function loadSeo(){
   const json=await Admin.api('GET','/api/admin/seo');
   document.getElementById('seo-loading').style.display='none';

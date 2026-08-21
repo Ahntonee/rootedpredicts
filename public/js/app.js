@@ -7,7 +7,7 @@
   'use strict';
 
   // ── Theme init (before DOM to prevent flash)
-  const saved = localStorage.getItem('afro_theme') || 'dark';
+  const saved = localStorage.getItem('afro_theme') || 'light';
   document.documentElement.setAttribute('data-theme', saved);
 
   // ── Continent icons

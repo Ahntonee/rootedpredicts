@@ -7,7 +7,7 @@
 
 /* ── Dark Mode ─────────────────────────────────────────────── */
 (function initTheme() {
-  const saved = localStorage.getItem('rp_theme') || 'dark';
+  const saved = localStorage.getItem('rp_theme') || 'light';
   document.documentElement.setAttribute('data-theme', saved);
 })();
 
