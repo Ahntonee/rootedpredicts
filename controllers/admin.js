@@ -389,7 +389,7 @@ async function updateLeague(req, res) {
 async function getBlogPosts(req, res) {
   try {
     const [rows] = await db.query(
-      `SELECT bp.id,bp.title,bp.slug,bp.category,bp.is_published,bp.published_at,
+      `SELECT bp.id,bp.title,bp.slug,bp.category,bp.is_published,bp.published_at,bp.scheduled_at,
               u.name as author_name FROM blog_posts bp
        LEFT JOIN users u ON bp.author_id=u.id ORDER BY bp.created_at DESC`
     );
@@ -412,26 +412,34 @@ async function getBlogPost(req, res) {
 
 async function createBlogPost(req, res) {
   try {
-    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published,slug: manualSlug } = req.body;
+    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published,slug: manualSlug,scheduled_at } = req.body;
     if (!title||!content) return res.status(400).json({ success:false, message:'Title and content required' });
     let slug = manualSlug ? slugify(manualSlug, { lower:true, strict:true }) : generateBlogSlug(title);
     const [ex] = await db.query('SELECT id FROM blog_posts WHERE slug=?',[slug]);
     if (ex.length) slug = slug+'-'+Date.now();
+
+    // Scheduling: if scheduled_at is set and in the future, save as draft with schedule
+    const schedDate = scheduled_at ? new Date(scheduled_at) : null;
+    const isScheduled = schedDate && schedDate > new Date();
+    const isPublished = !isScheduled && published ? 1 : 0;
+    const publishedAt = isPublished ? new Date() : null;
+
     const [ins] = await db.query(
       `INSERT INTO blog_posts (title,slug,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,
-        keywords,author_id,is_published,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        keywords,author_id,is_published,published_at,scheduled_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [sanitiseText(title),slug,content,excerpt||null,category||null,featured_image||null,featured_image_alt||null,
        meta_title||null,meta_description||null,keywords||null,req.user.id,
-       published?1:0, published?new Date():null]
+       isPublished, publishedAt, isScheduled ? schedDate : null]
     );
-    writeAudit(req, 'create', 'blog_post', ins.insertId, sanitiseText(title), { category, published });
-    res.status(201).json({ success:true, data:{ id:ins.insertId, slug }, message:'Post created' });
+    const status = isScheduled ? 'scheduled' : (isPublished ? 'published' : 'draft');
+    writeAudit(req, 'create', 'blog_post', ins.insertId, sanitiseText(title), { category, status });
+    res.status(201).json({ success:true, data:{ id:ins.insertId, slug, status }, message:`Post ${status}` });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 
 async function updateBlogPost(req, res) {
   try {
-    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published,slug: manualSlug } = req.body;
+    const { title,content,excerpt,category,featured_image,featured_image_alt,meta_title,meta_description,keywords,published,slug: manualSlug,scheduled_at } = req.body;
     const updates=[]; const args=[];
     if (title)            { updates.push('title=?');            args.push(sanitiseText(title)); }
     if (manualSlug) {
@@ -448,13 +456,29 @@ async function updateBlogPost(req, res) {
     if (meta_title)       { updates.push('meta_title=?');       args.push(meta_title); }
     if (meta_description) { updates.push('meta_description=?'); args.push(meta_description); }
     if (keywords)         { updates.push('keywords=?');         args.push(keywords); }
-    if (published===true) { updates.push('is_published=1','published_at=NOW()'); }
-    if (published===false){ updates.push('is_published=0'); }
+
+    // Scheduling logic
+    if (scheduled_at !== undefined) {
+      const schedDate = scheduled_at ? new Date(scheduled_at) : null;
+      const isScheduled = schedDate && schedDate > new Date();
+      if (isScheduled) {
+        // Set schedule, keep unpublished
+        updates.push('scheduled_at=?','is_published=0');
+        args.push(schedDate);
+      } else {
+        // Clear schedule
+        updates.push('scheduled_at=?');
+        args.push(null);
+      }
+    }
+    if (published===true)  { updates.push('is_published=1','published_at=COALESCE(published_at,NOW())','scheduled_at=NULL'); }
+    if (published===false) { updates.push('is_published=0','scheduled_at=NULL'); }
+
     if (!updates.length)  return res.status(400).json({ success:false, message:'Nothing to update' });
     updates.push('updated_at=NOW()'); args.push(req.params.id);
     await db.query(`UPDATE blog_posts SET ${updates.join(',')} WHERE id=?`,args);
     writeAudit(req, 'update', 'blog_post', parseInt(req.params.id), title || null,
-      { fields: updates.filter(u => !u.includes('NOW')).map(u => u.split('=')[0]) });
+      { fields: updates.filter(u => !u.includes('NOW') && !u.includes('NULL')).map(u => u.split('=')[0]) });
     res.json({ success:true, message:'Post updated' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }

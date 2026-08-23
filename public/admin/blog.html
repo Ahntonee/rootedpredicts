@@ -118,7 +118,21 @@
 
         <div class="form-group" style="margin:0;"><label class="form-label">Meta Description</label><textarea class="form-control" id="b-meta-desc" rows="2" placeholder="SEO meta description (max 160 chars)..."></textarea></div>
         <div class="form-group" style="margin:0;"><label class="form-label">Keywords</label><input type="text" class="form-control" id="b-keywords" placeholder="comma, separated, keywords"></div>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="b-published"><span class="form-label" style="margin:0;">Publish immediately</span></label>
+        <!-- Publish / Schedule controls -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;">Publishing</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;" id="publish-mode-btns">
+            <button type="button" class="btn btn-sm pub-mode-btn active" data-mode="draft" style="background:var(--border);color:var(--text);border:none;"><span class="material-icons-round" style="font-size:1rem;">draft</span>Draft</button>
+            <button type="button" class="btn btn-sm pub-mode-btn" data-mode="publish" style="background:transparent;color:var(--text);border:1px solid var(--border);"><span class="material-icons-round" style="font-size:1rem;">publish</span>Publish now</button>
+            <button type="button" class="btn btn-sm pub-mode-btn" data-mode="schedule" style="background:transparent;color:var(--text);border:1px solid var(--border);"><span class="material-icons-round" style="font-size:1rem;">schedule</span>Schedule</button>
+          </div>
+          <div id="schedule-picker-wrap" style="display:none;">
+            <label style="font-size:0.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Publish at</label>
+            <input type="datetime-local" class="form-control" id="b-scheduled-at" style="width:220px;">
+            <div style="font-size:0.74rem;color:var(--muted);margin-top:4px;">Server time is UTC — enter your local time.</div>
+          </div>
+          <input type="hidden" id="b-published">
+        </div>
       </div>
     </div>
     <div class="admin-modal-footer">
@@ -177,8 +191,8 @@ async function loadPosts() {
       <td style="font-weight:600;font-size:0.875rem;">${p.title}</td>
       <td style="font-size:0.82rem;color:var(--muted);">${p.category||'&mdash;'}</td>
       <td style="font-size:0.82rem;">${p.author_name||'&mdash;'}</td>
-      <td>${p.is_published?'<span class="badge badge-won">Published</span>':'<span class="badge badge-pending">Draft</span>'}</td>
-      <td style="font-size:0.78rem;color:var(--muted);">${Admin.fmtDate(p.published_at)}</td>
+      <td>${p.is_published ? '<span class="badge badge-won">Published</span>' : p.scheduled_at ? '<span class="badge" style="background:#7c3aed;color:#fff;"><span class="material-icons-round" style="font-size:0.75rem;vertical-align:middle;">schedule</span> Scheduled</span>' : '<span class="badge badge-pending">Draft</span>'}</td>
+      <td style="font-size:0.78rem;color:var(--muted);">${p.scheduled_at ? '🕐 ' + Admin.fmtDate(p.scheduled_at) : Admin.fmtDate(p.published_at)}</td>
       <td><div style="display:flex;gap:4px;">
         <button onclick="editPost(${p.id})" class="btn btn-outline btn-sm" style="padding:4px 8px;"><span class="material-icons-round" style="font-size:0.9rem;">edit</span></button>
         <button onclick="deletePost(${p.id})" class="btn btn-sm" style="padding:4px 8px;background:rgba(233,69,96,0.1);color:var(--red);border:1px solid rgba(233,69,96,0.2);"><span class="material-icons-round" style="font-size:0.9rem;">delete</span></button>
@@ -186,12 +200,24 @@ async function loadPosts() {
     </tr>`).join('');
 }
 
+function setPublishMode(mode) {
+  document.querySelectorAll('.pub-mode-btn').forEach(b => {
+    const active = b.dataset.mode === mode;
+    b.style.background = active ? 'var(--green)' : 'transparent';
+    b.style.color       = active ? '#fff' : 'var(--text)';
+    b.style.border      = active ? 'none' : '1px solid var(--border)';
+  });
+  document.getElementById('schedule-picker-wrap').style.display = mode === 'schedule' ? '' : 'none';
+  document.getElementById('b-published').value = mode;
+}
+
 function openNew() {
   blogEditId = null;
   document.getElementById('blog-modal-title').textContent = 'New Blog Post';
   ['b-title','b-slug','b-excerpt','b-meta-title','b-meta-desc','b-keywords','b-image','b-image-alt'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('b-cat').value = '';
-  document.getElementById('b-published').checked = false;
+  document.getElementById('b-scheduled-at').value = '';
+  setPublishMode('draft');
   showImagePreview('');
   // Show modal first so the editor div is visible before Quill initialises
   Admin.showModal('blog-modal');
@@ -215,7 +241,21 @@ async function editPost(id) {
   document.getElementById('b-image').value        = p.featured_image || '';
   document.getElementById('b-image-alt').value    = p.featured_image_alt || '';
   showImagePreview(p.featured_image || '');
-  document.getElementById('b-published').checked  = !!p.is_published;
+  // Restore publish mode
+  if (p.is_published) {
+    setPublishMode('publish');
+  } else if (p.scheduled_at) {
+    setPublishMode('schedule');
+    // Convert UTC scheduled_at to local datetime-local format
+    const localDt = new Date(p.scheduled_at);
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('b-scheduled-at').value =
+      localDt.getFullYear() + '-' + pad(localDt.getMonth()+1) + '-' + pad(localDt.getDate()) +
+      'T' + pad(localDt.getHours()) + ':' + pad(localDt.getMinutes());
+  } else {
+    setPublishMode('draft');
+    document.getElementById('b-scheduled-at').value = '';
+  }
   // Show modal first so editor div is visible before Quill initialises
   Admin.showModal('blog-modal');
   ensureQuill();
@@ -232,6 +272,14 @@ async function deletePost(id) {
 
 async function savePost() {
   const btn = document.getElementById('save-blog-btn');
+  const mode = document.getElementById('b-published').value || 'draft';
+
+  if (mode === 'schedule') {
+    const schedVal = document.getElementById('b-scheduled-at').value;
+    if (!schedVal) { Admin.toast('Pick a date and time to schedule', 'error'); return; }
+    if (new Date(schedVal) <= new Date()) { Admin.toast('Scheduled time must be in the future', 'error'); return; }
+  }
+
   const body = {
     title:              document.getElementById('b-title').value.trim(),
     slug:               document.getElementById('b-slug').value.trim() || undefined,
@@ -243,7 +291,8 @@ async function savePost() {
     meta_title:         document.getElementById('b-meta-title').value.trim(),
     meta_description:   document.getElementById('b-meta-desc').value.trim(),
     keywords:           document.getElementById('b-keywords').value.trim(),
-    published:          document.getElementById('b-published').checked,
+    published:          mode === 'publish',
+    scheduled_at:       mode === 'schedule' ? new Date(document.getElementById('b-scheduled-at').value).toISOString() : null,
   };
   if (!body.title || !body.content) { Admin.toast('Title and content are required', 'error'); return; }
   btn.disabled = true;
@@ -285,6 +334,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadPosts();
 
   document.getElementById('save-blog-btn').addEventListener('click', savePost);
+
+  // Publish mode buttons
+  document.getElementById('publish-mode-btns').addEventListener('click', e => {
+    const btn = e.target.closest('.pub-mode-btn');
+    if (btn) setPublishMode(btn.dataset.mode);
+  });
 
   document.getElementById('b-image').addEventListener('input', e => showImagePreview(e.target.value.trim()));
 

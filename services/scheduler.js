@@ -85,6 +85,24 @@ async function runTodayScores() {
   } catch (e) { console.error('[SCHEDULER] Today scores error:', e.message); }
 }
 
+// ── Publish scheduled blog posts whose scheduled_at has arrived ────────────────
+async function runScheduledBlogPosts() {
+  try {
+    const [rows] = await db.query(
+      `SELECT id, title FROM blog_posts
+       WHERE is_published = 0 AND scheduled_at IS NOT NULL AND scheduled_at <= NOW()`
+    );
+    if (!rows.length) return;
+    for (const post of rows) {
+      await db.query(
+        `UPDATE blog_posts SET is_published=1, published_at=NOW(), scheduled_at=NULL, updated_at=NOW() WHERE id=?`,
+        [post.id]
+      );
+      console.log(`[SCHEDULER] Blog post published: "${post.title}" (id=${post.id})`);
+    }
+  } catch(e) { console.error('[SCHEDULER] Blog publish check failed:', e.message); }
+}
+
 async function runSubscriptionExpiryCheck() {
   try {
     const [expired] = await db.query(
@@ -145,10 +163,12 @@ function startScheduler() {
   console.log('[SCHEDULER] Live score sync: every 3 minutes');
   cron.schedule('*/20 * * * *', runTodayScores,           { timezone: 'UTC' });
   console.log('[SCHEDULER] Today score/result sync: every 20 minutes');
+  cron.schedule('* * * * *', runScheduledBlogPosts,       { timezone: 'UTC' });
+  console.log('[SCHEDULER] Scheduled blog post publisher: every minute');
 }
 
 module.exports = {
   startScheduler, runDailySync, runResultsSync,
   runLiveSync, runTodayScores,
-  runSubscriptionExpiryCheck, runAccuracyTracking,
+  runSubscriptionExpiryCheck, runAccuracyTracking, runScheduledBlogPosts,
 };
