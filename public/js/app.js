@@ -882,7 +882,7 @@
     injectHeader();
     injectFooter();
     initCookieConsent();
-    setTimeout(initTelegramPopup, 3000);
+    setTimeout(initTelegramPopup, 8000);
 
     // Check auth state AFTER header is injected so updateHeaderForUser finds .header-actions
     ensureAuthLoaded(() => window.AfroAuth.checkAuthState());
