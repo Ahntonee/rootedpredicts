@@ -27,7 +27,24 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bai+Jamjuree:wght@400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bai+Jamjuree:wght@400;600;700&display=swap"></noscript>
   <link rel="preload" as="style" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round&display=swap"></noscript>
-  <link rel="stylesheet" href="/css/style.css">
+  <!-- Critical CSS inlined -->
+  <style>
+    :root{--navy:#0B2A1A;--red:#E74C3C;--midnight:#0D3D22;--surface:#F5F5F0;--white:#fff;--muted:#6B7280;--green:#1A8A44;--yellow:#D4A017;--border:#E5E7EB;--card-bg:#fff;--page-bg:#F5F5F0;--text:#0B2A1A;--text-soft:#4B5563;--header-bg:#0B2A1A;--nav-border:rgba(255,255,255,0.08);--shadow-sm:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 16px rgba(0,0,0,0.10);--shadow-lg:0 8px 32px rgba(0,0,0,0.14);--radius:10px;--radius-lg:16px;--font-head:'Inter',system-ui,-apple-system,sans-serif;--font-body:'Bai Jamjuree','Inter',system-ui,sans-serif;--transition:0.2s ease}
+    [data-theme="dark"]{--surface:#111827;--card-bg:#1F2937;--page-bg:#111827;--text:#F9FAFB;--text-soft:#9CA3AF;--border:#374151}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:16px;scroll-behavior:smooth}
+    body{font-family:var(--font-body);background:var(--page-bg);color:var(--text);line-height:1.6;min-height:100vh}
+    h1,h2,h3,h4,h5,h6{font-family:var(--font-head);font-weight:700;line-height:1.2;color:var(--text)}
+    a{color:var(--green);text-decoration:none}
+    img{max-width:100%;display:block}
+    .container{width:100%;max-width:1240px;margin:0 auto;padding:0 20px}
+    .site-header{background:var(--header-bg);position:sticky;top:0;z-index:1000;box-shadow:0 2px 20px rgba(0,0,0,0.3)}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px}
+    .site-logo{display:flex;align-items:center;text-decoration:none;flex-shrink:0}
+    .site-logo-img{height:58px;width:auto;display:block}
+  </style>
+  <link rel="preload" as="style" href="/css/style.css" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="/css/style.css"></noscript>
   <style>
     /* Blog articles use Open Sans for long-form readability */
     #post-body, #post-body p, #post-body li, #post-body blockquote { font-family: 'Open Sans', sans-serif; }
