@@ -417,8 +417,8 @@ app.get('/tips/:slug', async (req, res) => {
       if (!posts.length) { blogList.innerHTML = '<p style="color:var(--muted);font-size:0.82rem;padding:8px 0;">No articles yet.</p>'; return; }
       blogList.innerHTML = posts.map(function(post) {
         var slug = post.slug || post.id;
-        var thumb = post.featured_image
-          ? '<img class="aside-blog-thumb" src="' + post.featured_image + '" alt="" onerror="this.outerHTML=\'<div class=\\\'aside-blog-thumb-ph\\\'></div>\'">'
+        var thumb = post.has_image
+          ? '<img class="aside-blog-thumb" src="/api/blog/' + post.id + '/image" alt="" loading="lazy" width="80" height="80" onerror="this.outerHTML=\'<div class=\\\'aside-blog-thumb-ph\\\'></div>\'">'
           : '<div class="aside-blog-thumb-ph"></div>';
         return '<a class="aside-blog-item" href="/blog/' + slug + '">' + thumb + '<div class="aside-blog-body"><div class="aside-blog-badge">' + (post.category || 'Blog') + '</div><div class="aside-blog-title">' + post.title + '</div></div></a>';
       }).join('');

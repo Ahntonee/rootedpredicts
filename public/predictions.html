@@ -1108,8 +1108,8 @@
         if (!posts.length) { blogList.innerHTML = ''; return; }
         blogList.innerHTML = posts.map(post => {
           const slug = post.slug || post.id;
-          const thumb = post.featured_image
-            ? `<img class="aside-blog-thumb" src="${esc(post.featured_image)}" alt="" onerror="this.outerHTML='<div class=\\'aside-blog-thumb-ph\\'></div>'">`
+          const thumb = post.has_image
+            ? `<img class="aside-blog-thumb" src="/api/blog/${post.id}/image" alt="" loading="lazy" width="80" height="80" onerror="this.outerHTML='<div class=\\'aside-blog-thumb-ph\\'></div>'">`
             : `<div class="aside-blog-thumb-ph"></div>`;
           const cat = post.category || 'Blog';
           return `<a class="aside-blog-item" href="/blog/${slug}">

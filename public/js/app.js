@@ -834,7 +834,7 @@
     wrap.style.cssText = 'margin:12px 0;';
     if (ad.type === 'banner' && ad.image_data) {
       wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored">' +
-        '<img src="'+ad.image_data+'" alt="'+escText(ad.name)+'" loading="lazy" decoding="async" style="max-width:100%;height:auto;display:block;border-radius:8px;"></a>';
+        '<img src="'+ad.image_data+'" alt="'+escText(ad.name)+'" loading="lazy" decoding="async" width="400" height="200" style="max-width:100%;height:auto;display:block;border-radius:8px;aspect-ratio:2/1;"></a>';
     } else if (ad.type === 'code' && ad.content) {
       wrap.innerHTML = ad.content;
     } else if (ad.type === 'text' && ad.link_url) {

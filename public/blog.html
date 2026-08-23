@@ -80,8 +80,8 @@
   const ICONS = { 'Match Preview':'sports_soccer','Betting Guide':'school','League Analysis':'analytics','Tips Strategy':'lightbulb','Sport Talk':'forum' };
   const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
-  const thumb = (p, h) => p.featured_image
-    ? `<div style="height:${h}px;background:#0b2a1a url('${p.featured_image}') center/cover no-repeat;"></div>`
+  const thumb = (p, h) => p.has_image
+    ? `<div style="height:${h}px;background:#0b2a1a url('/api/blog/${p.id}/image') center/cover no-repeat;"></div>`
     : `<div style="height:${h}px;background:linear-gradient(135deg,var(--navy),var(--midnight));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:${h>200?'4rem':'3rem'};color:rgba(26,138,68,0.4);">${ICONS[p.category]||'article'}</span></div>`;
 
   function render(posts) {

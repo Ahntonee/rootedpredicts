@@ -132,6 +132,8 @@
       border-radius: 14px;
       overflow: hidden;
       margin-bottom: 24px;
+      min-height: 420px;
+      contain: layout;
     }
     .picks-header {
       display: flex;
@@ -1084,8 +1086,8 @@
     const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     grid.innerHTML = posts.map(p => `
       <a href="/blog/${p.slug}" class="blog-card" style="text-decoration:none;">
-        ${p.featured_image
-          ? `<div style="height:180px;background:#0b2a1a url('${p.featured_image}') center/cover no-repeat;"></div>`
+        ${p.has_image
+          ? `<div style="height:180px;background:#0b2a1a url('/api/blog/${p.id}/image') center/cover no-repeat;"></div>`
           : `<div style="height:180px;background:linear-gradient(135deg,var(--navy),var(--midnight));display:flex;align-items:center;justify-content:center;"><span class="material-icons-round" style="font-size:3rem;color:rgba(26,138,68,0.5);">article</span></div>`}
         <div class="blog-card-body">
           <div class="blog-category">${esc(p.category || 'Article')}</div>
@@ -1106,8 +1108,8 @@
         if (!posts.length) { blogList.innerHTML = ''; return; }
         blogList.innerHTML = posts.map(post => {
           const slug = post.slug || post.id;
-          const thumb = post.featured_image
-            ? `<img class="aside-blog-thumb" src="${esc(post.featured_image)}" alt="" onerror="this.outerHTML='<div class=\\'aside-blog-thumb-ph\\'></div>'">`
+          const thumb = post.has_image
+            ? `<img class="aside-blog-thumb" src="/api/blog/${post.id}/image" alt="" loading="lazy" width="80" height="80" onerror="this.outerHTML='<div class=\\'aside-blog-thumb-ph\\'></div>'">`
             : `<div class="aside-blog-thumb-ph"></div>`;
           const cat = post.category || 'Blog';
           return `<a class="aside-blog-item" href="/blog/${slug}">
@@ -1133,12 +1135,15 @@
       if (p.meta_description && metaDesc) metaDesc.setAttribute('content', p.meta_description);
     }).catch(() => {});
 
-  // ── Init
+  // ── Init — load critical above-fold content first, defer below-fold
   updateDateLabel();
   loadFreePicks();
-  buildPremiumCalendar();
-  loadRecentWinnings();
-  loadSidebar();
+  // Defer below-fold sections until after first paint
+  setTimeout(function() {
+    buildPremiumCalendar();
+    loadRecentWinnings();
+    loadSidebar();
+  }, 1500);
 
 })();
 </script>
