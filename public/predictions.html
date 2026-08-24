@@ -925,14 +925,15 @@
     if (!row || !btn) return;
     var STEP = 180;
     function syncBtn() {
-      var atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
-      btn.classList.toggle('hidden', atEnd);
+      var atEnd   = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+      var atStart = row.scrollLeft <= 0;
+      btn.classList.toggle('hidden', atStart && atEnd);
       var icon = btn.querySelector('.material-icons-round');
       if (icon) icon.textContent = atEnd ? 'chevron_left' : 'chevron_right';
     }
     btn.addEventListener('click', function () {
       var atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
-      row.scrollBy({ left: atEnd ? -row.scrollWidth : STEP, behavior: 'smooth' });
+      row.scrollBy({ left: atEnd ? -STEP * 5 : STEP, behavior: 'smooth' });
     });
     row.addEventListener('scroll', syncBtn, { passive: true });
     syncBtn();
