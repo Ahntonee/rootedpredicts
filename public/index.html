@@ -117,14 +117,44 @@
     .home-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
 
     /* ── Category tabs (scrollable pill row) ── */
+    .tabs-scroll-wrap {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .tabs-scroll-wrap::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 36px; bottom: 0;
+      width: 48px;
+      background: linear-gradient(to right, transparent, var(--page-bg) 90%);
+      pointer-events: none;
+    }
+    .tabs-scroll-btn {
+      position: absolute;
+      right: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text-soft);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow-sm);
+      z-index: 2;
+      transition: all 0.15s;
+      padding: 0;
+    }
+    .tabs-scroll-btn:hover { border-color: var(--green); color: var(--green); }
+    .tabs-scroll-btn.hidden { opacity: 0; pointer-events: none; }
     .category-tabs-row {
       display: flex;
       gap: 6px;
       overflow-x: auto;
       scrollbar-width: none;
       -ms-overflow-style: none;
-      padding-bottom: 4px;
-      margin-bottom: 16px;
+      padding-bottom: 6px;
+      padding-right: 44px;
     }
     .category-tabs-row::-webkit-scrollbar { display: none; }
     .cat-tab {
@@ -519,16 +549,21 @@
     <div class="pred-main">
 
     <!-- ── Category Tabs ── -->
-    <div class="category-tabs-row" id="category-tabs-home">
-      <button class="cat-tab active" data-category="free">Free Pick</button>
-      <button class="cat-tab" data-category="banker"><span class="material-icons-round" style="font-size:0.85rem;">local_fire_department</span>Rooted Safe Tips</button>
-      <button class="cat-tab" data-category="1-5-goals">1.5 Goals</button>
-      <button class="cat-tab" data-category="2-5-goals">2.5 Goals</button>
-      <button class="cat-tab" data-category="3-5-goals">3.5 Goals</button>
-      <button class="cat-tab" data-category="away-win">Away Win</button>
-      <button class="cat-tab" data-category="btts">Both Teams To Score</button>
-      <button class="cat-tab" data-category="double-chance">Double Chance</button>
-      <button class="cat-tab" data-category="home-win">Home Win</button>
+    <div class="tabs-scroll-wrap">
+      <div class="category-tabs-row" id="category-tabs-home">
+        <button class="cat-tab active" data-category="free">Free Pick</button>
+        <button class="cat-tab" data-category="banker"><span class="material-icons-round" style="font-size:0.85rem;">local_fire_department</span>Rooted Safe Tips</button>
+        <button class="cat-tab" data-category="1-5-goals">1.5 Goals</button>
+        <button class="cat-tab" data-category="2-5-goals">2.5 Goals</button>
+        <button class="cat-tab" data-category="3-5-goals">3.5 Goals</button>
+        <button class="cat-tab" data-category="away-win">Away Win</button>
+        <button class="cat-tab" data-category="btts">Both Teams To Score</button>
+        <button class="cat-tab" data-category="double-chance">Double Chance</button>
+        <button class="cat-tab" data-category="home-win">Home Win</button>
+      </div>
+      <button class="tabs-scroll-btn" id="tabs-scroll-btn" aria-label="Scroll tabs">
+        <span class="material-icons-round" style="font-size:1.1rem;">chevron_right</span>
+      </button>
     </div>
 
     <!-- ── Mobile-only ad banner (hidden on desktop where sidebar shows) ── -->
@@ -805,6 +840,27 @@
       loadFreePicks();
     });
   });
+
+  // ── Tab scroll button
+  (function () {
+    var row = document.getElementById('category-tabs-home');
+    var btn = document.getElementById('tabs-scroll-btn');
+    if (!row || !btn) return;
+    var STEP = 180;
+    function syncBtn() {
+      var atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+      btn.classList.toggle('hidden', atEnd);
+      // flip arrow direction when scrolled right
+      var icon = btn.querySelector('.material-icons-round');
+      if (icon) icon.textContent = atEnd ? 'chevron_left' : 'chevron_right';
+    }
+    btn.addEventListener('click', function () {
+      var atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+      row.scrollBy({ left: atEnd ? -row.scrollWidth : STEP, behavior: 'smooth' });
+    });
+    row.addEventListener('scroll', syncBtn, { passive: true });
+    syncBtn();
+  })();
 
   // ── Build pick HTML
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }

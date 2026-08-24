@@ -48,10 +48,26 @@
   <noscript><link rel="stylesheet" href="/css/style.css"></noscript>
   <style>
     /* ── Category tabs ── */
+    .tabs-scroll-wrap { position: relative; margin-bottom: 20px; }
+    .tabs-scroll-wrap::after {
+      content: ''; position: absolute; top: 0; right: 36px; bottom: 0; width: 48px;
+      background: linear-gradient(to right, transparent, var(--page-bg) 90%);
+      pointer-events: none;
+    }
+    .tabs-scroll-btn {
+      position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.8); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2; transition: all 0.15s; padding: 0;
+    }
+    .tabs-scroll-btn:hover { border-color: #2ECC71; color: #2ECC71; }
+    .tabs-scroll-btn.hidden { opacity: 0; pointer-events: none; }
     .category-tabs-row {
       display: flex; gap: 6px; overflow-x: auto;
       scrollbar-width: none; -ms-overflow-style: none;
-      padding-bottom: 4px; margin-bottom: 16px;
+      padding-bottom: 6px; padding-right: 44px;
     }
     .category-tabs-row::-webkit-scrollbar { display: none; }
     .cat-tab {
@@ -135,7 +151,8 @@
       </div>
     </div>
     <!-- Category tabs -->
-    <div class="category-tabs-row" id="category-tabs-pred" style="margin-bottom:0;padding-bottom:0;">
+    <div class="tabs-scroll-wrap">
+    <div class="category-tabs-row" id="category-tabs-pred">
       <button class="cat-tab active" data-category="free" data-label="Free Pick">Free Pick</button>
       <button class="cat-tab" data-category="banker" data-label="Rooted Safe Tips"><span class="material-icons-round" style="font-size:0.85rem;">local_fire_department</span>Rooted Safe Tips</button>
       <button class="cat-tab" data-category="1-5-goals" data-label="1.5 Goals">1.5 Goals</button>
@@ -146,6 +163,10 @@
       <button class="cat-tab" data-category="double-chance" data-label="Double Chance">Double Chance</button>
       <button class="cat-tab" data-category="home-win" data-label="Home Win">Home Win</button>
     </div>
+    <button class="tabs-scroll-btn" id="tabs-scroll-btn" aria-label="Scroll tabs">
+      <span class="material-icons-round" style="font-size:1.1rem;">chevron_right</span>
+    </button>
+    </div><!-- /.tabs-scroll-wrap -->
   </div>
 </div>
 
@@ -896,6 +917,26 @@
       loadPicks();
     });
   });
+
+  // ── Tab scroll button
+  (function () {
+    var row = document.getElementById('category-tabs-pred');
+    var btn = document.getElementById('tabs-scroll-btn');
+    if (!row || !btn) return;
+    var STEP = 180;
+    function syncBtn() {
+      var atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+      btn.classList.toggle('hidden', atEnd);
+      var icon = btn.querySelector('.material-icons-round');
+      if (icon) icon.textContent = atEnd ? 'chevron_left' : 'chevron_right';
+    }
+    btn.addEventListener('click', function () {
+      var atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+      row.scrollBy({ left: atEnd ? -row.scrollWidth : STEP, behavior: 'smooth' });
+    });
+    row.addEventListener('scroll', syncBtn, { passive: true });
+    syncBtn();
+  })();
 
   // ── Day switcher
   document.getElementById('day-yesterday').addEventListener('click', function () {
