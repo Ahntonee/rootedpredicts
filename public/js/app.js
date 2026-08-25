@@ -94,7 +94,7 @@
       <div class="container">
         <div class="header-inner">
           <a href="/" class="site-logo">
-            <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img" fetchpriority="high" decoding="async">
+            <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img" width="58" height="58" fetchpriority="high" decoding="async">
           </a>
           <nav class="main-nav" id="main-nav">
             <a href="/"           class="nav-link ${active('/index.html')}">Home</a>
@@ -189,7 +189,7 @@
           <!-- Brand -->
           <div class="footer-brand">
             <a href="/" class="site-logo" style="margin-bottom:0;">
-              <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img" fetchpriority="high" decoding="async">
+              <img src="/images/logo.png" alt="Rooted Predictions" class="site-logo-img" width="58" height="58" fetchpriority="high" decoding="async">
             </a>
             <p>Rooted Predictions is an online service that provides the most accurate football predictions, soccer betting tips and daily winning picks to users worldwide.</p>
             <div class="footer-social-row">
