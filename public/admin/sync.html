@@ -204,16 +204,20 @@ window.loadApiStatus = async function loadApiStatus() {
       var pct       = (typeof d.requests_used === 'number' && limit)
         ? Math.round(d.requests_used / limit * 100) : 0;
       var barColor  = pct > 80 ? 'var(--red)' : pct > 50 ? 'var(--warning, #f59e0b)' : 'var(--green)';
+      var warningHtml = (d.warning || remaining <= 10)
+        ? '<div style="margin-top:8px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:6px;padding:8px 10px;font-size:0.78rem;color:var(--red);"><strong>⚠ Quota Low</strong> — ' + (d.warning || 'Only ' + remaining + ' requests left today. Resets at UTC midnight.') + '</div>'
+        : '';
       el.innerHTML =
         '<div style="display:flex;flex-direction:column;gap:6px;">' +
-          '<div style="display:flex;justify-content:space-between;"><span>Requests Used Today</span><strong>' + used + '</strong></div>' +
-          '<div style="display:flex;justify-content:space-between;"><span>Remaining</span><strong style="color:var(--green);">' + remaining + '</strong></div>' +
-          '<div style="display:flex;justify-content:space-between;"><span>Daily Limit</span><strong>' + limit + '</strong></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Requests Used Today</span><strong>' + used + ' / ' + limit + '</strong></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Remaining</span><strong style="color:' + barColor + ';">' + remaining + '</strong></div>' +
           '<div style="display:flex;justify-content:space-between;"><span>Season</span><strong>' + season + '</strong></div>' +
-          '<div style="margin-top:6px;background:var(--border);border-radius:4px;height:6px;overflow:hidden;">' +
+          '<div style="margin-top:6px;background:var(--border);border-radius:4px;height:8px;overflow:hidden;">' +
             '<div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:4px;transition:width 0.4s;"></div>' +
           '</div>' +
-          '<div style="font-size:0.75rem;color:var(--muted);text-align:right;">' + pct + '% used</div>' +
+          '<div style="font-size:0.75rem;color:var(--muted);text-align:right;">' + pct + '% of daily quota used</div>' +
+          warningHtml +
+          '<div style="margin-top:8px;font-size:0.72rem;color:var(--muted);">Override limit with <code>API_FOOTBALL_DAILY_LIMIT</code> in .env. Default: 7500 (paid plan).</div>' +
         '</div>';
     } else {
       el.textContent = (json && json.message) ? json.message : 'Could not load API status. Check API key in .env';
@@ -233,8 +237,9 @@ async function runSync(btnId, url, resultId, method, body) {
   try {
     var json = await Admin.api(method || 'POST', url, body || undefined);
     if (json.success) {
-      res.textContent = JSON.stringify(json.data || json.message);
-      log('Success: ' + JSON.stringify(json.data || json.message), 'success');
+      var d = json.data;
+      res.textContent = JSON.stringify(d || json.message);
+      log('Success: ' + (json.message || JSON.stringify(d)), 'success');
       Admin.toast('Sync complete');
     } else {
       res.textContent = json.message || 'Sync failed';
@@ -312,8 +317,18 @@ document.getElementById('odds-backfill-btn').addEventListener('click', async fun
         d.total + ' total checked'
       ];
       res.innerHTML = parts.join(' &nbsp;&middot;&nbsp; ');
-      log('Odds backfill done: ' + d.updated + ' updated, ' + d.skipped + ' skipped, ' + d.errors + ' errors', d.errors > 0 ? 'error' : 'success');
-      Admin.toast('Odds backfill: ' + d.updated + ' updated');
+      var summaryType = d.errors > 0 ? 'error' : 'success';
+      var summaryMsg  = 'Odds backfill done: ' + d.updated + ' updated, ' + d.skipped + ' skipped, ' + d.errors + ' errors';
+      if (d.aborted) summaryMsg += ' (ABORTED EARLY)';
+      log(summaryMsg, summaryType);
+      // Surface first real error from log
+      if (d.errors > 0 && Array.isArray(d.log)) {
+        var firstErr = d.log.find(function(l){ return l.status === 'error' && l.error; });
+        if (firstErr) log('First error — fixture ' + firstErr.fixture_id + ': ' + firstErr.error, 'error');
+        var abortEntry = d.log.find(function(l){ return l.status === 'aborted'; });
+        if (abortEntry) log('Abort reason: ' + abortEntry.error, 'error');
+      }
+      Admin.toast('Odds backfill: ' + d.updated + ' updated' + (d.errors ? ', ' + d.errors + ' errors' : ''));
     } else {
       res.innerHTML = '<span style="color:var(--red);">&#10007; ' + (json.message || 'Failed') + '</span>';
       log('Odds backfill error: ' + (json.message || 'Unknown'), 'error');
@@ -398,6 +413,11 @@ document.getElementById('auto-predict-btn').addEventListener('click', async func
       }).join('');
 
       log('Auto-predict done: ' + data.enriched + ' generated, ' + data.errors + ' errors', data.errors > 0 ? 'error' : 'success');
+      // Surface first error so it's visible in sync log
+      if (data.errors > 0 && Array.isArray(data.log)) {
+        var firstErr = data.log.find(function(l){ return l.error; });
+        if (firstErr) log('First error (' + (firstErr.match||'?') + '): ' + firstErr.error, 'error');
+      }
       Admin.toast('Auto-predict: ' + data.enriched + ' predictions generated');
     } else {
       document.getElementById('ap-summary').innerHTML = '<span style="color:var(--red);">&#10007; ' + (combined.message || 'Failed') + '</span>';

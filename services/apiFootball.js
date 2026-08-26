@@ -26,17 +26,27 @@ function checkAndResetDaily() {
   if (today !== lastResetDate) { dailyRequestCount = 0; lastResetDate = today; }
 }
 
+const DAILY_LIMIT = parseInt(process.env.API_FOOTBALL_DAILY_LIMIT || '7500');
+
 async function request(endpoint, params = {}) {
   checkAndResetDaily();
   if (!API_KEY) throw new Error('[API-Football] API_FOOTBALL_KEY not set in .env');
-  if (dailyRequestCount >= 7400) throw new Error('[API-Football] Daily limit reached');
+  if (dailyRequestCount >= DAILY_LIMIT) {
+    throw new Error(`[API-Football] Daily request limit reached (${DAILY_LIMIT}). Resets at UTC midnight. Upgrade plan or set API_FOOTBALL_DAILY_LIMIT env var.`);
+  }
   try {
     dailyRequestCount++;
     counter.increment().catch(() => {}); // DB write — fire-and-forget, in-memory is the guard
-    console.log(`[API-Football] #${dailyRequestCount} GET ${endpoint}`, params);
+    console.log(`[API-Football] #${dailyRequestCount}/${DAILY_LIMIT} GET ${endpoint}`, params);
     const response = await apiClient.get(endpoint, { params });
     if (response.data.errors && Object.keys(response.data.errors).length > 0) {
-      throw new Error(`API error: ${JSON.stringify(response.data.errors)}`);
+      const errMsg = JSON.stringify(response.data.errors);
+      // API says we've hit the daily limit — pin local counter so no more calls go out
+      if (/request limit|requests.*limit|You have reached/i.test(errMsg)) {
+        dailyRequestCount = DAILY_LIMIT;
+        console.warn(`[API-Football] API daily limit confirmed by server. Pinning counter to ${DAILY_LIMIT}.`);
+      }
+      throw new Error(`API error: ${errMsg}`);
     }
     return { data: response.data.response || [], results: response.data.results || 0 };
   } catch (error) {
@@ -1115,7 +1125,8 @@ async function autoPredictFixtures(db, options = {}) {
 }
 
 function getRequestCount()   { return dailyRequestCount; }
-function getRemainingCount() { checkAndResetDaily(); return 7400 - dailyRequestCount; }
+function getRemainingCount() { checkAndResetDaily(); return Math.max(0, DAILY_LIMIT - dailyRequestCount); }
+function getDailyLimit()     { return DAILY_LIMIT; }
 
 // ── Fetch finished fixtures for a league (for rate/metric calculations)
 async function fetchLeagueFixtures(leagueId, season = CURRENT_SEASON, opts = {}) {
@@ -1322,7 +1333,7 @@ module.exports = {
   fetchH2H, fetchTeamForm, fetchStandings, fetchTeamStats,
   fetchLeagueFixtures, fetchFixturesByDate,
   calculateFormString, evaluateTip, mapCountryToContinent,
-  isPopularLeague, getRequestCount, getRemainingCount, CURRENT_SEASON,
+  isPopularLeague, getRequestCount, getRemainingCount, getDailyLimit, CURRENT_SEASON,
   researchFixture, autoPredictFixtures, gradeFromScores,
   fetchFixtureOdds, oddsForTip,
   goalProbabilities, poissonPMF, generateTipSuggestion, scoreForm,

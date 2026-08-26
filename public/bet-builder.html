@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6753CPHM2B"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-6753CPHM2B');</script>
+  <meta charset="UTF-8">
+  <meta name="p:domain_verify" content="2c1d89fb46ea0935171c081295db273c"><link rel="icon" type="image/png" href="/favicon.png"><link rel="apple-touch-icon" href="/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bet Builder — Build Your Accumulator | Rooted Predictions</title>
+  <meta name="description" content="Build your own football accumulator from today's predictions. Pick your legs, enter a stake and see your potential return — free bet builder by Rooted Predictions.">
+  <meta name="keywords" content="bet builder, football accumulator builder, acca builder, football prediction builder, bet slip">
+  <link rel="canonical" href="https://www.rootedpredict.com/bet-builder.html">
+  <meta property="og:title" content="Bet Builder | Rooted Predictions">
+  <meta property="og:description" content="Build your own football accumulator from today's expert predictions.">
+  <meta property="og:url" content="https://www.rootedpredict.com/bet-builder.html">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bai+Jamjuree:wght@400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bai+Jamjuree:wght@400;600;700&display=swap"></noscript>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round&display=swap"></noscript>
+  <style>
+    :root{--navy:#0B2A1A;--red:#E74C3C;--midnight:#0D3D22;--surface:#F5F5F0;--white:#fff;--muted:#6B7280;--green:#1A8A44;--yellow:#D4A017;--border:#E5E7EB;--card-bg:#fff;--page-bg:#F5F5F0;--text:#0B2A1A;--text-soft:#4B5563;--header-bg:#0B2A1A;--shadow-sm:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 16px rgba(0,0,0,0.10);--radius:10px;--font-head:'Inter',system-ui,-apple-system,sans-serif;--font-body:'Bai Jamjuree','Inter',system-ui,sans-serif}
+    [data-theme="dark"]{--surface:#111827;--card-bg:#1F2937;--page-bg:#111827;--text:#F9FAFB;--text-soft:#9CA3AF;--border:#374151}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:16px;scroll-behavior:smooth}body{font-family:var(--font-body);background:var(--page-bg);color:var(--text);line-height:1.6;min-height:100vh}
+    h1,h2,h3{font-family:var(--font-head);font-weight:700;line-height:1.2}
+    a{color:var(--green);text-decoration:none}img{max-width:100%;display:block}
+    .container{width:100%;max-width:1240px;margin:0 auto;padding:0 20px}
+    .site-header{background:var(--header-bg);position:sticky;top:0;z-index:1000;box-shadow:0 2px 20px rgba(0,0,0,0.3)}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px}
+    .site-logo{display:flex;align-items:center;text-decoration:none;flex-shrink:0}
+    .site-logo-img{height:58px;width:auto;display:block}
+  </style>
+  <link rel="preload" as="style" href="/css/style.min.css" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="/css/style.min.css"></noscript>
+  <style>
+    /* Bet Builder specific */
+    .builder-wrap { display:grid; grid-template-columns:1fr 340px; gap:24px; align-items:start; padding:28px 0 60px; }
+    @media(max-width:860px){ .builder-wrap{ grid-template-columns:1fr; } }
+
+    .filter-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px; }
+    .filter-pill { background:var(--card-bg); border:1px solid var(--border); border-radius:20px; padding:5px 14px; font-size:0.8rem; cursor:pointer; transition:0.15s; font-weight:500; }
+    .filter-pill.active { background:var(--green); border-color:var(--green); color:#fff; font-weight:700; }
+
+    .pred-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+    .pred-row:last-child { border:none; }
+    .pred-main { flex:1; min-width:0; }
+    .pred-teams { font-weight:700; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pred-meta  { font-size:0.75rem; color:var(--muted); margin-top:2px; }
+    .pred-tip   { display:inline-flex; align-items:center; gap:4px; background:rgba(26,138,68,0.1); color:var(--green); border-radius:8px; padding:3px 8px; font-size:0.78rem; font-weight:700; margin-top:4px; }
+    .pred-odds  { font-family:var(--font-head); font-weight:800; font-size:1rem; color:var(--text); white-space:nowrap; }
+    .add-btn { width:36px; height:36px; border-radius:50%; border:2px solid var(--border); background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.15s; flex-shrink:0; }
+    .add-btn:hover { border-color:var(--green); color:var(--green); }
+    .add-btn.in-slip { background:var(--green); border-color:var(--green); color:#fff; }
+
+    /* Bet slip */
+    .slip-panel { border-radius:12px; overflow:hidden; border:2px solid var(--green); position:sticky; top:80px; }
+    .slip-head { background:linear-gradient(135deg,var(--navy),var(--midnight)); padding:16px 18px; color:#fff; }
+    .slip-head h2 { font-size:1rem; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+    .slip-body { padding:16px; background:var(--card-bg); }
+    .leg-item { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .leg-item:last-child { border:none; }
+    .leg-num { width:22px; height:22px; background:var(--green); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:800; flex-shrink:0; margin-top:1px; }
+    .leg-content { flex:1; min-width:0; }
+    .leg-match { font-size:0.84rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .leg-tip   { font-size:0.75rem; color:var(--green); font-weight:600; margin-top:1px; }
+    .leg-odds  { font-family:var(--font-head); font-weight:800; font-size:0.9rem; color:var(--text); white-space:nowrap; flex-shrink:0; }
+    .remove-btn { background:none; border:none; cursor:pointer; color:var(--muted); padding:0; line-height:1; flex-shrink:0; }
+    .remove-btn:hover { color:var(--red); }
+    .combined-block { background:linear-gradient(135deg,var(--navy),var(--midnight)); border-radius:10px; padding:14px 16px; margin:14px 0; color:#fff; }
+    .combined-odds { font-family:var(--font-head); font-size:2.2rem; font-weight:900; color:var(--green); }
+    .potential-return { font-family:var(--font-head); font-size:1.6rem; font-weight:800; color:#fff; }
+    .stake-input { display:flex; align-items:center; border:2px solid var(--border); border-radius:8px; overflow:hidden; background:var(--card-bg); }
+    .stake-prefix { padding:10px 12px; background:var(--border); font-weight:700; color:var(--muted); font-size:0.9rem; }
+    .stake-field  { flex:1; border:none; padding:10px 12px; font-size:1rem; font-family:var(--font-head); font-weight:700; background:transparent; color:var(--text); outline:none; }
+    .safe-picks-banner { background:linear-gradient(135deg,var(--navy),var(--midnight)); border-radius:12px; padding:20px 24px; margin-bottom:24px; color:#fff; }
+    .safe-picks-banner h2 { font-size:1.1rem; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:4px; color:#fff; }
+    .safe-leg { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:0.82rem; }
+    .safe-leg:last-child { border:none; }
+    .mobile-slip-toggle { display:none; position:fixed; bottom:20px; right:20px; z-index:500; border-radius:50px; padding:12px 18px; background:var(--green); color:#fff; border:none; cursor:pointer; font-weight:700; font-size:0.9rem; box-shadow:0 4px 20px rgba(26,138,68,0.5); }
+    @media(max-width:860px){ .mobile-slip-toggle{ display:flex; align-items:center; gap:8px; } .slip-panel{ display:none; } .slip-panel.mobile-open{ display:block; position:fixed; top:0;left:0;right:0;bottom:0;z-index:600;border-radius:0;overflow:auto; } }
+  </style>
+</head>
+<body>
+<header class="site-header" id="site-header"></header>
+<main>
+  <div class="container">
+    <!-- Page hero -->
+    <div style="padding:28px 0 20px;">
+      <h1 style="font-size:1.6rem;font-weight:900;margin-bottom:4px;display:flex;align-items:center;gap:10px;">
+        <span class="material-icons-round" style="color:var(--green);font-size:1.6rem;">construction</span>Bet Builder
+      </h1>
+      <p style="color:var(--text-soft);font-size:0.9rem;">Pick your legs, set a stake, see your potential return. Based on today's expert predictions.</p>
+    </div>
+
+    <!-- Rooted Safe Picks banner -->
+    <div id="safe-picks-wrap" style="display:none;">
+      <div class="safe-picks-banner">
+        <h2><span class="material-icons-round" style="color:var(--green);">verified</span>🛡️ Rooted Safe Picks — Today</h2>
+        <p style="font-size:0.78rem;color:rgba(255,255,255,0.6);margin-bottom:12px;">Our analysts have built these accumulators. One-click to add all legs to your slip.</p>
+        <div id="safe-picks-list"></div>
+      </div>
+    </div>
+
+    <div class="builder-wrap">
+      <!-- Left: prediction browser -->
+      <div>
+        <div style="margin-bottom:16px;">
+          <input type="text" id="bb-search" class="form-control" placeholder="🔍  Search team, league or market…" style="width:100%;">
+        </div>
+
+        <div class="filter-bar" id="market-filters">
+          <button class="filter-pill active" data-market="">All Tips</button>
+          <button class="filter-pill" data-market="1X2">1X2</button>
+          <button class="filter-pill" data-market="BTTS">BTTS</button>
+          <button class="filter-pill" data-market="Over/Under">Over/Under</button>
+          <button class="filter-pill" data-market="Double Chance">Double Chance</button>
+        </div>
+
+        <div class="card" style="padding:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+            <h2 style="font-size:1.05rem;font-weight:700;display:flex;align-items:center;gap:6px;">
+              <span class="material-icons-round" style="color:var(--green);">sports_soccer</span>Today's Predictions
+              <span id="bb-count" style="font-size:0.75rem;font-weight:400;color:var(--muted);"></span>
+            </h2>
+            <button class="btn btn-outline btn-sm" onclick="addAllVisible()"><span class="material-icons-round">playlist_add</span>Add All Visible</button>
+          </div>
+          <div id="bb-list">
+            <div style="text-align:center;padding:40px;color:var(--muted);">
+              <span class="material-icons-round" style="font-size:2rem;display:block;margin-bottom:8px;animation:spin 1s linear infinite;">autorenew</span>Loading predictions…
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Bet Slip -->
+      <div>
+        <div class="slip-panel" id="slip-panel">
+          <div class="slip-head">
+            <h2><span class="material-icons-round" style="font-size:1.1rem;">receipt_long</span>My Bet Slip</h2>
+            <div style="font-size:0.75rem;opacity:0.6;" id="slip-count">0 selections</div>
+            <button onclick="closeMobileSlip()" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#fff;cursor:pointer;display:none;" id="slip-close"><span class="material-icons-round">close</span></button>
+          </div>
+          <div class="slip-body">
+            <div id="slip-legs-wrap">
+              <div id="slip-empty-msg" style="text-align:center;color:var(--muted);padding:24px;font-size:0.85rem;">
+                <span class="material-icons-round" style="font-size:2rem;display:block;margin-bottom:8px;color:var(--border);">add_circle_outline</span>
+                Add predictions from the left to build your accumulator
+              </div>
+            </div>
+
+            <div id="slip-calc" style="display:none;">
+              <div class="combined-block" style="text-align:center;">
+                <div style="font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;opacity:0.6;margin-bottom:2px;">Combined Odds</div>
+                <div class="combined-odds" id="slip-odds">—</div>
+              </div>
+
+              <div style="margin:12px 0;">
+                <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:6px;">Your stake</label>
+                <div class="stake-input">
+                  <span class="stake-prefix">$</span>
+                  <input type="number" id="stake-amount" class="stake-field" placeholder="0.00" min="0" step="0.5" oninput="updateReturn()">
+                </div>
+              </div>
+
+              <div style="background:rgba(26,138,68,0.08);border:1px solid rgba(26,138,68,0.2);border-radius:10px;padding:14px;margin-bottom:14px;text-align:center;">
+                <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Potential Return</div>
+                <div class="potential-return" id="potential-return">$—</div>
+                <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;" id="potential-profit"></div>
+              </div>
+
+              <div style="display:flex;gap:8px;margin-bottom:8px;">
+                <button class="btn btn-primary btn-sm" onclick="shareSlip()" style="flex:1;"><span class="material-icons-round">share</span>Share Slip</button>
+                <button class="btn btn-outline btn-sm" onclick="clearSlip()"><span class="material-icons-round">delete_sweep</span>Clear</button>
+              </div>
+              <p style="font-size:0.7rem;color:var(--muted);text-align:center;line-height:1.5;">Odds are indicative. Always verify with your bookmaker. Gamble responsibly.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Mobile slip toggle -->
+<button class="mobile-slip-toggle" id="mobile-slip-toggle" onclick="openMobileSlip()">
+  <span class="material-icons-round">receipt_long</span>
+  <span id="mobile-slip-label">Bet Slip (0)</span>
+</button>
+
+<footer class="site-footer" id="site-footer"></footer>
+<script src="/js/app.min.js" defer></script>
+<script src="/js/content-protection.min.js" defer></script>
+<script>
+(function(){
+  var slip  = JSON.parse(localStorage.getItem('bb_slip') || '[]');
+  var preds = [];
+  var activeMarket = '';
+  var searchTerm   = '';
+
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // ── Load today's predictions ────────────────────────────────────────────────
+  async function loadPreds() {
+    try {
+      const res  = await fetch('/api/predictions?limit=100', { credentials:'include' });
+      const json = await res.json();
+      preds = json.data || json.predictions || [];
+      renderList();
+    } catch(e) {
+      document.getElementById('bb-list').innerHTML = '<div style="color:var(--red);padding:20px;">Failed to load predictions.</div>';
+    }
+  }
+
+  function filtered() {
+    return preds.filter(p => {
+      if (activeMarket && p.market !== activeMarket) return false;
+      if (searchTerm) {
+        const hay = (p.home_team+' '+p.away_team+' '+(p.league_name||'')+' '+(p.tip||'')).toLowerCase();
+        if (!hay.includes(searchTerm)) return false;
+      }
+      if (p.locked) return false;
+      return true;
+    });
+  }
+
+  function renderList() {
+    const list   = document.getElementById('bb-list');
+    const items  = filtered();
+    const slipIds = new Set(slip.map(l => l.id));
+    document.getElementById('bb-count').textContent = '(' + items.length + ')';
+    if (!items.length) { list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">No predictions match your filter.</div>'; return; }
+    list.innerHTML = items.map(p => {
+      const inSlip = slipIds.has(p.id);
+      const conf = p.confidence_score || 0;
+      const confColor = conf >= 80 ? 'var(--green)' : conf >= 60 ? 'var(--yellow)' : 'var(--muted)';
+      return `<div class="pred-row">
+        <div class="pred-main">
+          <div class="pred-teams">${esc(p.home_team)} vs ${esc(p.away_team)}</div>
+          <div class="pred-meta">${esc(p.league_name||'')}${p.match_date?' · '+new Date(p.match_date).toLocaleDateString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',timeZone:'UTC'})+' UTC':''}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;">
+            <span class="pred-tip"><span class="material-icons-round" style="font-size:0.75rem;">sports</span>${esc(p.tip||'—')}</span>
+            <span style="font-size:0.75rem;color:${confColor};font-weight:600;">${conf}%</span>
+            <span style="font-size:0.75rem;color:var(--muted);">${esc(p.market||'')}</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          ${p.odds?`<div class="pred-odds">${p.odds}</div>`:'<div style="color:var(--muted);font-size:0.8rem;">No odds</div>'}
+          <button class="add-btn ${inSlip?'in-slip':''}" onclick="toggleLeg(${p.id})" aria-label="${inSlip?'Remove from slip':'Add to slip'}">
+            <span class="material-icons-round" style="font-size:1rem;">${inSlip?'check':'add'}</span>
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleLeg(id) {
+    const idx = slip.findIndex(l => l.id === id);
+    if (idx >= 0) {
+      slip.splice(idx, 1);
+    } else {
+      const p = preds.find(x => x.id === id);
+      if (!p || !p.odds) { alert('This prediction has no odds — it cannot be added to a bet slip.'); return; }
+      if (slip.length >= 12) { alert('Maximum 12 legs per accumulator.'); return; }
+      slip.push({ id: p.id, home_team: p.home_team, away_team: p.away_team, league: p.league_name||'', tip: p.tip||'', market: p.market||'', odds: parseFloat(p.odds), confidence_score: p.confidence_score||0, slug: p.slug||'' });
+    }
+    saveSlip();
+    renderList();
+    renderSlip();
+  }
+
+  window.toggleLeg = toggleLeg;
+
+  window.addAllVisible = function() {
+    const items = filtered().filter(p => p.odds);
+    if (!items.length) { alert('No predictions with odds match the current filter.'); return; }
+    const slipIds = new Set(slip.map(l => l.id));
+    let added = 0;
+    for (const p of items) {
+      if (slip.length >= 12) break;
+      if (!slipIds.has(p.id)) {
+        slip.push({ id: p.id, home_team: p.home_team, away_team: p.away_team, league: p.league_name||'', tip: p.tip||'', market: p.market||'', odds: parseFloat(p.odds), confidence_score: p.confidence_score||0, slug: p.slug||'' });
+        added++;
+      }
+    }
+    saveSlip(); renderList(); renderSlip();
+    if (added === 0) alert('All visible predictions are already in your slip.');
+  };
+
+  window.clearSlip = function() {
+    slip = [];
+    saveSlip(); renderList(); renderSlip();
+  };
+
+  function saveSlip() {
+    localStorage.setItem('bb_slip', JSON.stringify(slip));
+  }
+
+  function renderSlip() {
+    const wrap  = document.getElementById('slip-legs-wrap');
+    const calc  = document.getElementById('slip-calc');
+    const empty = document.getElementById('slip-empty-msg');
+    document.getElementById('slip-count').textContent = slip.length + ' selection' + (slip.length===1?'':'s');
+    document.getElementById('mobile-slip-label').textContent = 'Bet Slip (' + slip.length + ')';
+
+    if (!slip.length) {
+      wrap.innerHTML = '';
+      wrap.appendChild(empty);
+      empty.style.display = '';
+      calc.style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    wrap.innerHTML = slip.map((l,i) => `<div class="leg-item">
+      <div class="leg-num">${i+1}</div>
+      <div class="leg-content">
+        <div class="leg-match">${esc(l.home_team)} vs ${esc(l.away_team)}</div>
+        <div class="leg-tip">${esc(l.tip)} · <span style="color:var(--muted);">${esc(l.league)}</span></div>
+      </div>
+      <div class="leg-odds">${l.odds.toFixed(2)}</div>
+      <button class="remove-btn" onclick="toggleLeg(${l.id})"><span class="material-icons-round" style="font-size:0.9rem;">close</span></button>
+    </div>`).join('');
+    wrap.appendChild(empty);
+
+    const combined = slip.reduce((a, l) => a * l.odds, 1);
+    document.getElementById('slip-odds').textContent = combined.toFixed(2);
+    calc.style.display = '';
+    updateReturn();
+  }
+
+  window.updateReturn = function() {
+    const stake   = parseFloat(document.getElementById('stake-amount').value) || 0;
+    const combined = slip.reduce((a, l) => a * l.odds, 1);
+    const ret = stake * combined;
+    const profit = ret - stake;
+    document.getElementById('potential-return').textContent = stake ? '$' + ret.toFixed(2) : '$—';
+    document.getElementById('potential-profit').textContent = stake ? 'Profit: $' + profit.toFixed(2) : '';
+  };
+
+  window.shareSlip = function() {
+    if (!slip.length) return;
+    const combined = slip.reduce((a, l) => a * l.odds, 1);
+    const lines = slip.map((l,i) => `${i+1}. ${l.home_team} vs ${l.away_team} — ${l.tip} (${l.odds})`);
+    const text = `🛡️ My Rooted Predictions Accumulator\n\n${lines.join('\n')}\n\nCombined Odds: ${combined.toFixed(2)}\n\nBuild your own ▶ https://www.rootedpredict.com/bet-builder.html`;
+    if (navigator.share) {
+      navigator.share({ title: 'My Accumulator', text }).catch(()=>{});
+    } else {
+      navigator.clipboard.writeText(text).then(()=>alert('Bet slip copied to clipboard!')).catch(()=>alert(text));
+    }
+  };
+
+  // Filters
+  document.getElementById('market-filters').addEventListener('click', function(e) {
+    const btn = e.target.closest('.filter-pill');
+    if (!btn) return;
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeMarket = btn.dataset.market;
+    renderList();
+  });
+
+  document.getElementById('bb-search').addEventListener('input', function() {
+    searchTerm = this.value.trim().toLowerCase();
+    renderList();
+  });
+
+  // Mobile slip
+  window.openMobileSlip  = function() { var p = document.getElementById('slip-panel'); p.classList.add('mobile-open'); document.getElementById('slip-close').style.display=''; document.body.style.overflow='hidden'; };
+  window.closeMobileSlip = function() { var p = document.getElementById('slip-panel'); p.classList.remove('mobile-open'); document.getElementById('slip-close').style.display='none'; document.body.style.overflow=''; };
+
+  // Load safe picks
+  async function loadSafePicks() {
+    try {
+      const res  = await fetch('/api/safe-picks');
+      const json = await res.json();
+      const picks = json.data || [];
+      if (!picks.length) return;
+      const wrap = document.getElementById('safe-picks-wrap');
+      const list = document.getElementById('safe-picks-list');
+      wrap.style.display = '';
+      list.innerHTML = picks.map(pk => {
+        const legs = Array.isArray(pk.legs) ? pk.legs : [];
+        const combined = legs.reduce((a,l)=>a*parseFloat(l.odds||1),1);
+        return `<div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:14px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+            <div>
+              <div style="font-weight:800;font-size:0.95rem;">${esc(pk.title)}</div>
+              ${pk.description?`<div style="font-size:0.75rem;opacity:0.6;margin-top:2px;">${esc(pk.description)}</div>`:''}
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:0.7rem;opacity:0.5;">Combined odds</div>
+              <div style="font-family:var(--font-head);font-size:1.3rem;font-weight:900;color:var(--green);">${combined.toFixed(2)}</div>
+            </div>
+          </div>
+          ${legs.map(l=>`<div class="safe-leg">
+            <span class="material-icons-round" style="font-size:0.85rem;color:var(--green);">check_circle</span>
+            <span style="flex:1;">${esc(l.home_team)} vs ${esc(l.away_team)}</span>
+            <span style="color:var(--green);font-weight:700;">${esc(l.tip)}</span>
+            <span style="background:rgba(26,138,68,0.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:0.75rem;font-weight:700;">${l.odds}</span>
+          </div>`).join('')}
+          <button onclick='addSafePick(${JSON.stringify(legs)})' class="btn btn-sm btn-primary" style="margin-top:12px;width:100%;justify-content:center;background:rgba(26,138,68,0.2);border:1px solid rgba(26,138,68,0.5);">
+            <span class="material-icons-round">playlist_add</span>Add All Legs to My Slip
+          </button>
+        </div>`;
+      }).join('');
+    } catch(e){}
+  }
+
+  window.addSafePick = function(legs) {
+    const slipIds = new Set(slip.map(l => l.id));
+    let added = 0;
+    for (const l of legs) {
+      if (!l.prediction_id || !l.odds) continue;
+      if (slip.length >= 12) break;
+      if (!slipIds.has(l.prediction_id)) {
+        slip.push({ id: l.prediction_id, home_team: l.home_team, away_team: l.away_team, league: l.league||'', tip: l.tip||'', market: l.market||'', odds: parseFloat(l.odds), confidence_score: l.confidence_score||0, slug: l.slug||'' });
+        added++;
+      }
+    }
+    if (added === 0) { alert('All legs are already in your slip.'); return; }
+    saveSlip(); renderList(); renderSlip();
+  };
+
+  // Init
+  renderSlip();
+  loadPreds();
+  loadSafePicks();
+})();
+</script>
+</body>
+</html>

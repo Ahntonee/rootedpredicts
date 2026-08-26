@@ -1,8 +1,9 @@
 // routes/predictions.js
 // Rooted Predictions — Predictions routes
-// GET /api/predictions          — Filtered prediction listing
-// GET /api/predictions/:slug    — Single prediction by slug
-// GET /api/predictions/stats    — Accuracy statistics
+// GET /api/predictions              — Filtered prediction listing
+// GET /api/predictions/:slug        — Single prediction by slug
+// GET /api/predictions/:slug/extras — H2H + standings (public, cached)
+// GET /api/predictions/stats        — Accuracy statistics
 
 'use strict';
 
@@ -11,6 +12,9 @@ const router  = express.Router();
 const db      = require('../config/db');
 const { asyncHandler, successResponse, errorResponse, parsePagination, paginate } = require('../utils/helpers');
 const { optionalAuth } = require('../middleware/auth');
+
+// In-memory standings cache { api_league_id → { data, expires } }
+const standingsCache = new Map();
 
 // ── GET /api/predictions/stats — Overall accuracy stats
 router.get('/stats', asyncHandler(async (req, res) => {
@@ -328,6 +332,77 @@ router.get('/:slug', optionalAuth, asyncHandler(async (req, res) => {
   prediction.comment_count = comment_count;
 
   return successResponse(res, prediction);
+}));
+
+// ── GET /api/predictions/:slug/extras — H2H matches + league standings (public)
+router.get('/:slug/extras', optionalAuth, asyncHandler(async (req, res) => {
+  const [rows] = await db.query(
+    `SELECT p.home_team, p.away_team, l.api_league_id
+     FROM predictions p
+     LEFT JOIN leagues l ON p.league_id = l.id
+     WHERE p.slug = ? AND p.published_at IS NOT NULL`,
+    [req.params.slug]
+  );
+  if (!rows.length) return errorResponse(res, 'Prediction not found', 404);
+
+  const { home_team, away_team, api_league_id } = rows[0];
+
+  // H2H: query local DB (free — no API cost)
+  const h = home_team.slice(0, 12);
+  const a = away_team.slice(0, 12);
+  const [h2hRows] = await db.query(
+    `SELECT home_team, away_team, home_score, away_score, match_date
+     FROM predictions
+     WHERE home_score IS NOT NULL AND away_score IS NOT NULL
+       AND ((home_team LIKE ? AND away_team LIKE ?)
+            OR (home_team LIKE ? AND away_team LIKE ?))
+     ORDER BY match_date DESC LIMIT 10`,
+    [`%${h}%`, `%${a}%`, `%${a}%`, `%${h}%`]
+  );
+
+  const h2h = h2hRows.map(r => ({
+    date:      r.match_date ? new Date(r.match_date).toISOString().split('T')[0] : null,
+    home:      r.home_team,
+    away:      r.away_team,
+    homeScore: r.home_score,
+    awayScore: r.away_score,
+  }));
+
+  // Standings: API-Football with 6h in-memory cache
+  let standings = null;
+  if (api_league_id && process.env.API_FOOTBALL_KEY) {
+    const cacheKey = String(api_league_id);
+    const cached = standingsCache.get(cacheKey);
+    if (cached && Date.now() < cached.expires) {
+      standings = cached.data;
+    } else {
+      try {
+        const apiSvc = require('../services/apiFootball');
+        const raw = await apiSvc.fetchStandings(api_league_id);
+        if (raw && raw.length && raw[0]?.league?.standings) {
+          standings = raw[0].league.standings.flat().map(s => ({
+            rank: s.rank,
+            team: s.team.name,
+            logo: s.team.logo,
+            mp:   s.all.played,
+            w:    s.all.win,
+            d:    s.all.draw,
+            l:    s.all.lose,
+            gf:   s.all.goals.for,
+            ga:   s.all.goals.against,
+            gd:   s.goalsDiff,
+            pts:  s.points,
+            form: s.form,
+          }));
+          standingsCache.set(cacheKey, { data: standings, expires: Date.now() + 6 * 60 * 60 * 1000 });
+        }
+      } catch (e) {
+        console.error('[STANDINGS]', e.message);
+      }
+    }
+  }
+
+  return successResponse(res, { h2h, standings });
 }));
 
 module.exports = router;

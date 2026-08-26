@@ -95,6 +95,8 @@
     p = json.data;
   } catch (e) { return notFound('Could not load this article.'); }
 
+  fetch('/api/analytics/view', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ entity_type:'blog', entity_id: p.id, entity_slug: p.slug }) }).catch(()=>{});
+
   const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
   document.getElementById('bc-title').textContent = p.title;
 

@@ -99,6 +99,7 @@
           <nav class="main-nav" id="main-nav">
             <a href="/"           class="nav-link ${active('/index.html')}">Home</a>
             <a href="/predictions.html"     class="nav-link ${active('/predictions.html')}">Predictions</a>
+            <a href="/bet-builder.html"     class="nav-link ${active('/bet-builder.html')}">Bet Builder</a>
             <a href="/blog.html"            class="nav-link ${active('/blog.html')}">Blog</a>
             <a href="/pricing.html"         class="nav-link ${active('/pricing.html')}">Subscription</a>
             <a href="/about.html"           class="nav-link ${active('/about.html')}">About</a>

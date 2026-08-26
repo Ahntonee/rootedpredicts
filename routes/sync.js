@@ -21,10 +21,15 @@ router.use(authenticate, requireAdmin);
 
 // ── GET /api/sync/status
 router.get('/status', asyncHandler(async (req, res) => {
+  const used      = apiSvc.getRequestCount();
+  const limit     = apiSvc.getDailyLimit();
+  const remaining = apiSvc.getRemainingCount();
   return successResponse(res, {
-    requests_used:      apiSvc.getRequestCount(),
-    requests_remaining: apiSvc.getRemainingCount(),
-    daily_limit:        7400,
+    requests_used:      used,
+    requests_remaining: remaining,
+    daily_limit:        limit,
+    pct_used:           Math.round((used / limit) * 100),
+    warning:            remaining <= 10 ? `Only ${remaining} requests left today — avoid bulk syncs until UTC midnight.` : null,
     season:             apiSvc.CURRENT_SEASON,
   });
 }));
@@ -102,6 +107,11 @@ router.post('/odds', asyncHandler(async (req, res) => {
   if (!process.env.API_FOOTBALL_KEY) {
     return errorResponse(res, 'API_FOOTBALL_KEY not configured in .env', 400);
   }
+  // Safety check — refuse if quota is nearly exhausted to avoid burning remaining calls
+  const remaining = apiSvc.getRemainingCount();
+  if (remaining <= 5) {
+    return errorResponse(res, `Daily API quota nearly exhausted (${remaining} requests left). Odds backfill cancelled to protect remaining quota. Try again after UTC midnight.`, 429);
+  }
   const db = require('../config/db');
   const dateParam = req.body.date || null;
 
@@ -133,10 +143,11 @@ router.post('/odds', asyncHandler(async (req, res) => {
 
   let updated = 0, skipped = 0, errors = 0;
   const log = [];
+  let firstApiError = null;
 
   for (const row of rows) {
     try {
-      await new Promise(r => setTimeout(r, 250)); // respect rate limit
+      await new Promise(r => setTimeout(r, 300)); // respect rate limit
       const allOdds = await apiSvc.fetchFixtureOdds(row.fixture_id);
       if (!allOdds) {
         skipped++;
@@ -156,11 +167,20 @@ router.post('/odds', asyncHandler(async (req, res) => {
     } catch (e) {
       errors++;
       log.push({ id: row.id, fixture_id: row.fixture_id, status: 'error', error: e.message });
+      // If this looks like an API plan/auth error, stop immediately to avoid burning daily quota
+      if (!firstApiError && /api error|plan|token|rateLimit|rate limit|access|unauthorized|403|401/i.test(e.message)) {
+        firstApiError = e.message;
+        log.push({ status: 'aborted', reason: 'API-level error detected — stopping to preserve request quota', error: firstApiError });
+        break;
+      }
     }
   }
 
-  return successResponse(res, { updated, skipped, errors, total: rows.length, log },
-    `Odds backfill done: ${updated} updated, ${skipped} no bookmaker data, ${errors} errors`);
+  const msg = firstApiError
+    ? `Odds backfill aborted after ${errors} error(s): ${firstApiError}`
+    : `Odds backfill done: ${updated} updated, ${skipped} no bookmaker data, ${errors} errors`;
+
+  return successResponse(res, { updated, skipped, errors, total: rows.length, log, aborted: !!firstApiError }, msg);
 }));
 
 // ── POST /api/sync/auto-predict

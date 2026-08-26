@@ -185,6 +185,7 @@
         <div class="admin-nav-section">Content</div>
         <a href="/admin/predictions.html" class="admin-nav-link"><span class="material-icons-round">sports_soccer</span>Predictions</a>
         <a href="/admin/analytics.html"   class="admin-nav-link"><span class="material-icons-round">insights</span>Intelligence</a>
+        ${isEditor ? `<a href="/admin/bet-builder.html" class="admin-nav-link"><span class="material-icons-round">construction</span>Bet Builder</a>` : ''}
         ${isEditor ? `<a href="/admin/blog.html" class="admin-nav-link"><span class="material-icons-round">article</span>Blog Posts</a>` : ''}
         <a href="/leaderboard.html"       class="admin-nav-link" target="_blank"><span class="material-icons-round">leaderboard</span>Leaderboard</a>
 
@@ -194,6 +195,8 @@
         ${isSuperAdmin ? `<a href="/admin/newsletter.html" class="admin-nav-link"><span class="material-icons-round">mark_email_read</span>Newsletter</a>` : ''}
         ${isEditor     ? `<a href="/admin/leagues.html"  class="admin-nav-link"><span class="material-icons-round">emoji_events</span>Leagues</a>` : ''}
         ${isSuperAdmin ? `<a href="/admin/admins.html"   class="admin-nav-link"><span class="material-icons-round">admin_panel_settings</span>Admin Accounts</a>` : ''}
+
+        ${isEditor ? `<a href="/admin/performance.html" class="admin-nav-link"><span class="material-icons-round">bar_chart</span>Performance</a>` : ''}
 
         <div class="admin-nav-section">Marketing</div>
         ${isSuperAdmin ? `<a href="/admin/announcements.html" class="admin-nav-link"><span class="material-icons-round">campaign</span>Announcements</a>` : ''}

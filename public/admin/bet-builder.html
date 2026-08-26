@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><link rel="icon" type="image/png" href="/favicon.png"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bet Builder — Safe Picks | Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.min.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    .builder-layout { display:grid; grid-template-columns:1fr 360px; gap:24px; align-items:start; }
+    @media(max-width:900px){ .builder-layout{ grid-template-columns:1fr; } }
+    .pred-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .pred-row:last-child { border:none; }
+    .pred-match { flex:1; min-width:0; }
+    .pred-match .teams { font-weight:600; font-size:0.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pred-match .meta  { font-size:0.75rem; color:var(--muted); margin-top:2px; }
+    .leg-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .leg-row:last-child { border:none; }
+    .leg-info { flex:1; min-width:0; }
+    .leg-info .teams { font-size:0.85rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .leg-info .tip   { font-size:0.75rem; color:var(--green); font-weight:600; margin-top:2px; }
+    .odds-pill { background:rgba(26,138,68,0.1); color:var(--green); padding:2px 8px; border-radius:12px; font-weight:700; font-size:0.82rem; white-space:nowrap; }
+    .combined-odds { font-family:var(--font-head); font-size:2rem; font-weight:900; color:var(--green); }
+    .slip-header { background:linear-gradient(135deg,var(--navy),var(--midnight)); color:#fff; border-radius:10px 10px 0 0; padding:16px 18px; }
+    .pick-card { border:1px solid var(--border); border-radius:10px; margin-bottom:16px; overflow:hidden; }
+    .pick-card-head { display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(26,138,68,0.06); border-bottom:1px solid var(--border); cursor:pointer; }
+    .pick-card-body { padding:14px 16px; }
+    .conf-bar { height:4px; background:var(--border); border-radius:4px; margin-top:4px; }
+    .conf-fill { height:100%; border-radius:4px; background:var(--green); }
+  </style>
+</head>
+<body>
+<div id="admin-sidebar" class="admin-sidebar"></div>
+<div class="admin-topbar"><span class="admin-topbar-title">Bet Builder — Rooted Safe Picks</span></div>
+<main class="admin-main">
+
+  <!-- Tab: Create / Manage -->
+  <div style="display:flex;gap:10px;margin-bottom:22px;border-bottom:1px solid var(--border);padding-bottom:0;">
+    <button class="tab-btn active" data-tab="create" style="background:none;border:none;padding:8px 18px 12px;font-size:0.9rem;font-weight:600;cursor:pointer;border-bottom:2px solid var(--green);color:var(--green);">Create Pick</button>
+    <button class="tab-btn" data-tab="manage" style="background:none;border:none;padding:8px 18px 12px;font-size:0.9rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);">Manage Picks</button>
+  </div>
+
+  <!-- CREATE TAB -->
+  <div id="tab-create">
+    <div class="builder-layout">
+
+      <!-- Left: Prediction browser -->
+      <div>
+        <div class="card" style="padding:18px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <label style="font-size:0.85rem;font-weight:600;">Date:</label>
+            <input type="date" id="pred-date" class="form-control" style="width:auto;">
+            <input type="text" id="pred-search" class="form-control" style="flex:1;min-width:160px;" placeholder="Search team or league…">
+            <button class="btn btn-outline btn-sm" onclick="loadPredictions()"><span class="material-icons-round">search</span>Load</button>
+          </div>
+        </div>
+
+        <div class="card" style="padding:18px;">
+          <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+            <span class="material-icons-round" style="color:var(--green);">sports_soccer</span>Available Predictions
+            <span id="pred-count" style="font-size:0.75rem;font-weight:400;color:var(--muted);margin-left:auto;"></span>
+          </h3>
+          <div id="pred-list" style="max-height:480px;overflow-y:auto;">
+            <div style="text-align:center;color:var(--muted);padding:30px;font-size:0.85rem;">Select a date and click Load</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Slip builder -->
+      <div style="position:sticky;top:80px;">
+        <div style="border-radius:10px;overflow:hidden;border:1px solid var(--border);">
+          <div class="slip-header">
+            <div style="font-family:var(--font-head);font-size:1rem;font-weight:800;margin-bottom:2px;">🛡️ Rooted Safe Pick Slip</div>
+            <div style="font-size:0.78rem;opacity:0.6;" id="slip-leg-count">0 legs added</div>
+          </div>
+          <div style="padding:16px;background:var(--card-bg);">
+
+            <div id="slip-legs" style="margin-bottom:14px;min-height:40px;">
+              <div id="slip-empty" style="text-align:center;color:var(--muted);font-size:0.82rem;padding:20px 0;">Add predictions from the left panel</div>
+            </div>
+
+            <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Combined Odds</span>
+                <span class="combined-odds" id="combined-odds">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Min Confidence</span>
+                <span id="min-conf" style="font-family:var(--font-head);font-weight:700;color:var(--yellow);">—</span>
+              </div>
+            </div>
+
+            <div style="margin-bottom:14px;">
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:5px;">Pick Title *</label>
+              <input type="text" id="pick-title" class="form-control" placeholder="e.g. Tuesday Safe 3-Leg Accumulator">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:5px;">Description</label>
+              <textarea id="pick-desc" class="form-control" rows="2" placeholder="Short analysis or note…" style="resize:none;"></textarea>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:5px;">Suggested Stake ($)</label>
+              <input type="number" id="pick-stake" class="form-control" placeholder="e.g. 10" min="0" step="0.5">
+            </div>
+
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline btn-sm" onclick="savePick(false)" style="flex:1;"><span class="material-icons-round">save</span>Save Draft</button>
+              <button class="btn btn-primary btn-sm" onclick="savePick(true)" style="flex:1;"><span class="material-icons-round">publish</span>Publish</button>
+            </div>
+            <button class="btn btn-sm" onclick="clearSlip()" style="width:100%;margin-top:8px;background:none;border:1px solid var(--border);color:var(--muted);">Clear slip</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANAGE TAB -->
+  <div id="tab-manage" style="display:none;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <input type="date" id="mgmt-date" class="form-control" style="width:auto;">
+      <button class="btn btn-outline btn-sm" onclick="loadManage()"><span class="material-icons-round">filter_list</span>Filter</button>
+      <button class="btn btn-outline btn-sm" onclick="loadManage(true)"><span class="material-icons-round">calendar_today</span>All</button>
+    </div>
+    <div id="manage-list">
+      <div style="text-align:center;color:var(--muted);padding:40px;">Loading…</div>
+    </div>
+  </div>
+
+</main>
+<script src="/js/app.min.js" defer></script>
+<script src="/js/admin.js" defer></script>
+<script>
+var slip = [];
+var predictions = [];
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.style.borderBottomColor = 'transparent'; b.style.color = 'var(--muted)'; b.classList.remove('active');
+    });
+    this.style.borderBottomColor = 'var(--green)'; this.style.color = 'var(--green)'; this.classList.add('active');
+    document.getElementById('tab-create').style.display = this.dataset.tab === 'create' ? '' : 'none';
+    document.getElementById('tab-manage').style.display = this.dataset.tab === 'manage' ? '' : 'none';
+    if (this.dataset.tab === 'manage') loadManage();
+  });
+});
+
+// Load predictions
+async function loadPredictions() {
+  const date   = document.getElementById('pred-date').value;
+  const search = document.getElementById('pred-search').value.trim().toLowerCase();
+  const list   = document.getElementById('pred-list');
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">Loading…</div>';
+  try {
+    const params = new URLSearchParams({ limit:100 });
+    if (date) params.set('date', date);
+    const res  = await fetch('/api/predictions?' + params, { credentials:'include' });
+    const json = await res.json();
+    predictions = (json.data || json.predictions || []).filter(p => {
+      if (!search) return true;
+      const t = (p.home_team+' '+p.away_team+' '+(p.league_name||'')).toLowerCase();
+      return t.includes(search);
+    });
+    document.getElementById('pred-count').textContent = predictions.length + ' predictions';
+    renderPredList();
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--red);padding:16px;">Failed to load predictions</div>';
+  }
+}
+
+function renderPredList() {
+  const list = document.getElementById('pred-list');
+  if (!predictions.length) { list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;">No predictions found</div>'; return; }
+  const slipIds = new Set(slip.map(l => l.prediction_id));
+  list.innerHTML = predictions.map(p => {
+    const inSlip = slipIds.has(p.id);
+    const conf = p.confidence_score || 0;
+    const confColor = conf >= 80 ? 'var(--green)' : conf >= 60 ? 'var(--yellow)' : 'var(--muted)';
+    return `<div class="pred-row">
+      <div class="pred-match">
+        <div class="teams">${esc(p.home_team)} vs ${esc(p.away_team)}</div>
+        <div class="meta">${esc(p.league_name||'')}</div>
+        <div style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:0.78rem;font-weight:700;color:var(--green);">${esc(p.tip||'—')}</span>
+          ${p.odds?`<span class="odds-pill">${p.odds}</span>`:''}
+          <span style="font-size:0.75rem;color:${confColor};">${conf}% conf</span>
+        </div>
+      </div>
+      <button onclick="toggleLeg(${p.id})" class="btn btn-sm ${inSlip?'btn-primary':'btn-outline'}" style="min-width:36px;">
+        <span class="material-icons-round">${inSlip ? 'check' : 'add'}</span>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function toggleLeg(id) {
+  const idx = slip.findIndex(l => l.prediction_id === id);
+  if (idx >= 0) {
+    slip.splice(idx, 1);
+  } else {
+    const p = predictions.find(x => x.id === id);
+    if (!p) return;
+    slip.push({
+      prediction_id:    p.id,
+      home_team:        p.home_team,
+      away_team:        p.away_team,
+      league:           p.league_name || '',
+      tip:              p.tip || '',
+      market:           p.market || '',
+      odds:             parseFloat(p.odds) || 1,
+      confidence_score: p.confidence_score || 0,
+      slug:             p.slug || '',
+    });
+  }
+  renderSlip();
+  renderPredList();
+}
+
+function clearSlip() {
+  slip = [];
+  renderSlip();
+  renderPredList();
+}
+
+function renderSlip() {
+  const container = document.getElementById('slip-legs');
+  const empty     = document.getElementById('slip-empty');
+  document.getElementById('slip-leg-count').textContent = slip.length + ' leg' + (slip.length===1?'':'s') + ' added';
+  if (!slip.length) {
+    container.innerHTML = '';
+    empty = document.getElementById('slip-empty');
+    container.appendChild(empty);
+    empty.style.display = '';
+    document.getElementById('combined-odds').textContent = '—';
+    document.getElementById('min-conf').textContent = '—';
+    return;
+  }
+  const combinedOdds = slip.reduce((a, l) => a * l.odds, 1);
+  const minConf = Math.min(...slip.map(l => l.confidence_score));
+  document.getElementById('combined-odds').textContent = combinedOdds.toFixed(2);
+  document.getElementById('min-conf').textContent = minConf + '%';
+  container.innerHTML = slip.map((l, i) => `<div class="leg-row">
+    <div style="width:22px;height:22px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;flex-shrink:0;">${i+1}</div>
+    <div class="leg-info">
+      <div class="teams">${esc(l.home_team)} vs ${esc(l.away_team)}</div>
+      <div class="tip">${esc(l.tip)} · <span style="color:var(--muted);">${esc(l.league)}</span></div>
+      <div class="conf-bar"><div class="conf-fill" style="width:${l.confidence_score}%;"></div></div>
+    </div>
+    <span class="odds-pill">${l.odds}</span>
+    <button onclick="toggleLeg(${l.prediction_id})" style="background:none;border:none;cursor:pointer;color:var(--red);"><span class="material-icons-round" style="font-size:1rem;">close</span></button>
+  </div>`).join('');
+}
+
+async function savePick(publish) {
+  const date  = document.getElementById('pred-date').value || new Date().toISOString().split('T')[0];
+  const title = document.getElementById('pick-title').value.trim();
+  if (!title) { alert('Please enter a title for this safe pick.'); return; }
+  if (!slip.length) { alert('Add at least one prediction to the slip.'); return; }
+  const payload = {
+    title,
+    description:       document.getElementById('pick-desc').value.trim() || null,
+    valid_for:         date,
+    legs:              slip,
+    stake_suggestion:  parseFloat(document.getElementById('pick-stake').value) || null,
+    is_published:      publish,
+  };
+  try {
+    const res  = await fetch('/api/safe-picks', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(payload) });
+    const json = await res.json();
+    if (!json.success) { alert('Error: ' + json.message); return; }
+    alert(publish ? 'Safe pick published!' : 'Saved as draft.');
+    clearSlip();
+    document.getElementById('pick-title').value = '';
+    document.getElementById('pick-desc').value  = '';
+    document.getElementById('pick-stake').value = '';
+  } catch(e) {
+    alert('Network error: ' + e.message);
+  }
+}
+
+// MANAGE tab
+async function loadManage(all) {
+  const list = document.getElementById('manage-list');
+  list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">Loading…</div>';
+  try {
+    const date = !all && document.getElementById('mgmt-date').value;
+    const url  = '/api/safe-picks/all' + (date ? '?date=' + date : '');
+    const res  = await fetch(url, { credentials:'include' });
+    const json = await res.json();
+    const picks = json.data || [];
+    if (!picks.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">No safe picks found.</div>'; return; }
+    list.innerHTML = picks.map(pk => {
+      const legs = Array.isArray(pk.legs) ? pk.legs : [];
+      const legsHtml = legs.map((l,i) => `<div style="font-size:0.8rem;padding:4px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+        <span style="width:18px;height:18px;background:var(--navy);color:#fff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;">${i+1}</span>
+        <span>${esc(l.home_team)} vs ${esc(l.away_team)}</span>
+        <span style="color:var(--green);font-weight:600;">${esc(l.tip)}</span>
+        <span class="odds-pill" style="margin-left:auto;">${l.odds}</span>
+      </div>`).join('');
+      return `<div class="pick-card">
+        <div class="pick-card-head" onclick="this.parentElement.querySelector('.pick-card-body').classList.toggle('hidden')">
+          <span class="material-icons-round" style="color:${pk.is_published?'var(--green)':'var(--muted)'};">${pk.is_published?'check_circle_outline':'draft'}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:0.9rem;">${esc(pk.title)}</div>
+            <div style="font-size:0.75rem;color:var(--muted);">${pk.valid_for} · ${legs.length} legs · odds ${pk.combined_odds}</div>
+          </div>
+          <span class="badge" style="background:${pk.is_published?'rgba(26,138,68,0.12)':'rgba(107,114,128,0.12)'};color:${pk.is_published?'var(--green)':'var(--muted)'};">${pk.is_published?'Published':'Draft'}</span>
+          <button onclick="event.stopPropagation();deletePick(${pk.id},this)" style="background:none;border:none;cursor:pointer;color:var(--red);"><span class="material-icons-round" style="font-size:1rem;">delete</span></button>
+          ${!pk.is_published?`<button onclick="event.stopPropagation();publishPick(${pk.id},this)" class="btn btn-sm btn-primary" style="font-size:0.75rem;"><span class="material-icons-round">publish</span>Publish</button>`:''}
+        </div>
+        <div class="pick-card-body">
+          ${pk.description ? `<p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:10px;">${esc(pk.description)}</p>` : ''}
+          ${legsHtml}
+          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:0.78rem;color:var(--muted);">
+            <span>Created by: ${esc(pk.created_by_name||'Admin')}</span>
+            ${pk.stake_suggestion?`<span>Suggested stake: $${pk.stake_suggestion}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--red);padding:16px;">Failed to load picks: ' + esc(e.message) + '</div>';
+  }
+}
+
+async function deletePick(id, btn) {
+  if (!confirm('Delete this safe pick?')) return;
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/safe-picks/' + id, { method:'DELETE', credentials:'include' });
+    const json = await res.json();
+    if (json.success) loadManage();
+    else { alert('Error: ' + json.message); btn.disabled = false; }
+  } catch(e) { alert('Network error'); btn.disabled = false; }
+}
+
+async function publishPick(id, btn) {
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/safe-picks/' + id, { method:'PUT', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ is_published: true }) });
+    const json = await res.json();
+    if (json.success) loadManage();
+    else { alert('Error: ' + json.message); btn.disabled = false; }
+  } catch(e) { alert('Network error'); btn.disabled = false; }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+  var user = await Admin.requireAdmin();
+  if (!user) return;
+  Admin.buildSidebar(user);
+  document.getElementById('pred-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('mgmt-date').value = new Date().toISOString().split('T')[0];
+  loadPredictions();
+});
+</script>
+</body></html>

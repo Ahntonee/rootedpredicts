@@ -556,6 +556,8 @@ app.use('/api/comments',      require('./routes/comments'));
 app.use('/api/blog',          require('./routes/blog'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/admin/analytics', require('./routes/analytics'));
+app.use('/api/analytics',       require('./routes/pageviews'));
+app.use('/api/safe-picks',      require('./routes/safepicks'));
 app.use('/api/newsletter',    require('./routes/newsletter'));
 app.use('/api/pages',         require('./routes/pages'));
 app.use('/api/webhooks',      require('./routes/webhooks'));
@@ -674,10 +676,10 @@ app.get('/{*path}', (req, res) => {
 // ── Global error handler
 app.use((err, req, res, next) => {
   console.error('[ERROR]', err.stack);
-  res.status(err.status || 500).json({
-    success: false,
-    message: process.env.NODE_ENV === 'production' ? 'An error occurred.' : err.message,
-  });
+  // Expose real error messages for admin/sync API routes so operators can diagnose issues
+  const isAdminRoute = req.path.startsWith('/api/admin') || req.path.startsWith('/api/sync') || req.path.startsWith('/api/analytics') || req.path.startsWith('/api/safe-picks');
+  const message = (process.env.NODE_ENV === 'production' && !isAdminRoute) ? 'An error occurred.' : err.message;
+  res.status(err.status || 500).json({ success: false, message });
 });
 
 // ── Start server
