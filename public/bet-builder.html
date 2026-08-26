@@ -119,8 +119,11 @@
     .slip-stake-input{flex:1;border:none;outline:none;padding:9px 12px;font-size:0.9rem;background:var(--card-bg);color:var(--text);font-family:inherit}
     .slip-return{display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:14px}
     .slip-return-val{font-weight:700;color:var(--green)}
-    .slip-share-btn{width:100%;padding:11px;border-radius:8px;background:var(--green);color:#fff;border:none;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:0.15s;font-family:inherit}
+    .slip-share-btn{flex:1;padding:11px 8px;border-radius:8px;background:var(--green);color:#fff;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:0.15s;font-family:inherit}
     .slip-share-btn:hover{background:var(--green-lt)}
+    .slip-share-txt{flex:1;padding:11px 8px;border-radius:8px;background:none;color:var(--green);border:2px solid var(--green);font-size:0.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:0.15s;font-family:inherit}
+    .slip-share-txt:hover{background:rgba(26,92,46,0.06)}
+    .slip-share-row{display:flex;gap:8px;}
     .slip-disclaimer{padding:14px 20px;font-size:0.72rem;color:var(--muted);text-align:center;border-top:1px solid var(--border);line-height:1.5}
 
     /* Mobile floating slip button */
@@ -414,7 +417,10 @@ function renderSlip() {
   });
   // Wire share button
   document.querySelectorAll('.slip-share-btn').forEach(btn => {
-    btn.addEventListener('click', shareSlip);
+    btn.addEventListener('click', shareSlipImage);
+  });
+  document.querySelectorAll('.slip-share-txt').forEach(btn => {
+    btn.addEventListener('click', shareSlipText);
   });
 }
 
@@ -453,9 +459,14 @@ function buildSlipHTML(count, combined, potRet, profit) {
       <span style="color:var(--muted);">Profit</span>
       <span class="slip-return-val">${profit !== '—' ? '$'+profit : '—'}</span>
     </div>
-    <button class="slip-share-btn">
-      <span class="material-icons-round" style="font-size:1rem;">share</span> Share Slip
-    </button>
+    <div class="slip-share-row">
+      <button class="slip-share-btn">
+        <span class="material-icons-round" style="font-size:1rem;">image</span> Share Image
+      </button>
+      <button class="slip-share-txt">
+        <span class="material-icons-round" style="font-size:1rem;">content_copy</span> Copy Text
+      </button>
+    </div>
   </div>`;
 }
 
@@ -512,23 +523,199 @@ document.querySelectorAll('.bb-pill').forEach(pill => {
   });
 });
 
-// ── Share ─────────────────────────────────────────────────
-function shareSlip() {
+// ── Share as text ──────────────────────────────────────────
+function shareSlipText() {
   if (!slip.length) return;
   const combined = slip.reduce((acc, s) => acc * parseFloat(s.odds), 1);
   const text = [
     '🟢 Rooted Predictions — Bet Slip',
     '',
-    ...slip.map((s,i) => `${i+1}. ${s.home} vs ${s.away} → ${s.tip} @ ${s.odds}`),
+    ...slip.map((s,i) => `${i+1}. ${s.home} vs ${s.away}  →  ${s.tip} (${s.market}) @ ${s.odds}`),
     '',
     `Combined Odds: ${combined.toFixed(2)}`,
-    'rootedpredict.com/bet-builder.html',
+    '',
+    '🔗 rootedpredict.com/bet-builder.html',
   ].join('\n');
   if (navigator.share) {
-    navigator.share({ title:'My Bet Slip – Rooted Predictions', text }).catch(()=>{});
+    navigator.share({ title: 'My Bet Slip – Rooted Predictions', text }).catch(() => {});
   } else {
-    navigator.clipboard.writeText(text).then(() => alert('Slip copied to clipboard!')).catch(()=>{});
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('Slip copied to clipboard!'))
+      .catch(() => alert('Could not copy — please copy manually.'));
   }
+}
+
+// ── Share as image ──────────────────────────────────────────
+async function shareSlipImage() {
+  if (!slip.length) return;
+  const canvas = buildSlipCanvas();
+  canvas.toBlob(async blob => {
+    if (!blob) return;
+    const file = new File([blob], 'bet-slip.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'My Bet Slip', text: 'Built with Rooted Predictions' }); return; }
+      catch(e) { if (e.name === 'AbortError') return; }
+    }
+    // Fallback: download the image
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href = url; a.download = 'rooted-bet-slip.png'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast('Slip downloaded as image!');
+  }, 'image/png');
+}
+
+function showToast(msg) {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A5C2E;color:#fff;padding:10px 20px;border-radius:8px;font-size:0.88rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2800);
+}
+
+// ── Canvas slip image builder ──────────────────────────────
+function buildSlipCanvas() {
+  const dpr     = Math.min(window.devicePixelRatio || 1, 2);
+  const W       = 460;
+  const LEG_H   = 68;
+  const HDR_H   = 60;
+  const FOOT_H  = 130; // combined odds + branding
+  const PAD     = 20;
+  const H       = HDR_H + slip.length * LEG_H + FOOT_H + PAD;
+
+  const canvas  = document.createElement('canvas');
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  const ctx     = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // White background + subtle shadow feel
+  ctx.fillStyle = '#ffffff';
+  rrect(ctx, 0, 0, W, H, 14);
+  ctx.fill();
+
+  // Green header
+  ctx.fillStyle = '#1A5C2E';
+  rrectTop(ctx, 0, 0, W, HDR_H, 14);
+  ctx.fill();
+
+  // Header icon + text
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `700 18px 'Inter',system-ui`;
+  ctx.fillText('🧾  Bet Slip', PAD, 36);
+
+  // Count badge
+  const badge = String(slip.length);
+  ctx.fillStyle = '#4caf50';
+  ctx.beginPath();
+  ctx.arc(W - 36, HDR_H / 2, 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = `700 13px 'Inter',system-ui`;
+  ctx.textAlign = 'center';
+  ctx.fillText(badge, W - 36, HDR_H / 2 + 5);
+  ctx.textAlign = 'left';
+
+  // Legs
+  const combined = slip.reduce((acc, s) => acc * parseFloat(s.odds), 1);
+  slip.forEach((leg, i) => {
+    const y = HDR_H + i * LEG_H;
+
+    // Divider (skip first)
+    if (i > 0) {
+      ctx.strokeStyle = '#E5E7EB';
+      ctx.lineWidth   = 1;
+      ctx.beginPath();
+      ctx.moveTo(PAD, y);
+      ctx.lineTo(W - PAD, y);
+      ctx.stroke();
+    }
+
+    // Teams
+    ctx.fillStyle = '#0B2A1A';
+    ctx.font = `700 14px 'Inter',system-ui`;
+    const maxTeams = 36;
+    const teamsRaw = `${leg.home} vs ${leg.away}`;
+    ctx.fillText(trunc(teamsRaw, maxTeams), PAD, y + 24);
+
+    // Tip · market
+    ctx.fillStyle = '#1A5C2E';
+    ctx.font = `500 12px 'Bai Jamjuree',system-ui`;
+    ctx.fillText(`${leg.tip} · ${leg.market}`, PAD, y + 44);
+
+    // Odds (right-aligned)
+    ctx.fillStyle = '#C89010';
+    ctx.font = `700 16px 'Inter',system-ui`;
+    ctx.textAlign = 'right';
+    ctx.fillText(leg.odds, W - PAD, y + 34);
+    ctx.textAlign = 'left';
+  });
+
+  // Divider before footer
+  const divY = HDR_H + slip.length * LEG_H;
+  ctx.strokeStyle = '#E5E7EB';
+  ctx.lineWidth   = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, divY);
+  ctx.lineTo(W, divY);
+  ctx.stroke();
+
+  // Combined odds row
+  ctx.fillStyle = '#6B7280';
+  ctx.font = `500 13px 'Inter',system-ui`;
+  ctx.fillText('Combined Odds', PAD, divY + 30);
+  ctx.fillStyle = '#1A5C2E';
+  ctx.font = `800 22px 'Inter',system-ui`;
+  ctx.textAlign = 'right';
+  ctx.fillText(combined.toFixed(2), W - PAD, divY + 30);
+  ctx.textAlign = 'left';
+
+  // Divider
+  ctx.strokeStyle = '#E5E7EB';
+  ctx.beginPath();
+  ctx.moveTo(PAD, divY + 46);
+  ctx.lineTo(W - PAD, divY + 46);
+  ctx.stroke();
+
+  // Branding
+  ctx.fillStyle = '#9CA3AF';
+  ctx.font = `500 11px 'Inter',system-ui`;
+  ctx.textAlign = 'center';
+  ctx.fillText('Built with Rooted Predictions  ·  rootedpredict.com', W / 2, divY + 72);
+  ctx.fillStyle = '#D1D5DB';
+  ctx.font = `400 10px 'Inter',system-ui`;
+  ctx.fillText('Always verify odds with your bookmaker. Bet responsibly.', W / 2, divY + 90);
+  ctx.textAlign = 'left';
+
+  return canvas;
+}
+
+function trunc(str, max) {
+  return str.length > max ? str.slice(0, max - 1) + '…' : str;
+}
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+function rrectTop(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
 // ── Mobile slip ────────────────────────────────────────────
