@@ -206,7 +206,7 @@
     try {
       const res  = await fetch('/api/predictions?limit=100', { credentials:'include' });
       const json = await res.json();
-      preds = json.data || json.predictions || [];
+      preds = (json.data && json.data.predictions) || json.data || json.predictions || [];
       renderList();
     } catch(e) {
       document.getElementById('bb-list').innerHTML = '<div style="color:var(--red);padding:20px;">Failed to load predictions.</div>';

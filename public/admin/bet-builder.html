@@ -163,7 +163,7 @@ async function loadPredictions() {
     if (date) params.set('date', date);
     const res  = await fetch('/api/predictions?' + params, { credentials:'include' });
     const json = await res.json();
-    predictions = (json.data || json.predictions || []).filter(p => {
+    predictions = ((json.data && json.data.predictions) || json.data || json.predictions || []).filter(p => {
       if (!search) return true;
       const t = (p.home_team+' '+p.away_team+' '+(p.league_name||'')).toLowerCase();
       return t.includes(search);
