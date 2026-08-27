@@ -118,7 +118,7 @@ async function adminSend(req, res) {
       const unsubLink = siteUrl + '/api/newsletter/unsubscribe?email=' + encodeURIComponent(recipient.email);
       const body = html + `
         <div style="margin-top:32px;padding-top:16px;border-top:1px solid #333;font-family:sans-serif;font-size:11px;color:#888;text-align:center;">
-          You received this because you signed up for Rooted Predictions updates.<br>
+          You received this because you signed up for Rootedpredict updates.<br>
           <a href="${unsubLink}" style="color:#888;">Unsubscribe</a>
         </div>`;
       try {
