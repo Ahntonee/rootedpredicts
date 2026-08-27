@@ -126,32 +126,37 @@ function setTab(tab) {
 
 function wrapHtml(content) {
   return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
-    'body{font-family:Inter,sans-serif;font-size:15px;color:#111;background:#fff;max-width:600px;margin:0 auto;padding:24px;}' +
-    'a{color:#e94560;}' +
+    'body{font-family:Inter,sans-serif;font-size:15px;color:#111;background:#f4f4f4;max-width:600px;margin:0 auto;padding:24px;}' +
+    'a{color:#1a5c2e;}' +
     '</style></head><body>' + content + '</body></html>';
 }
 
 function insertTemplate() {
   var siteUrl = 'https://www.rootedpredict.com';
   var tmpl = [
-    '<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;">',
-    '  <div style="background:#0f3460;padding:24px;border-radius:12px 12px 0 0;text-align:center;">',
-    '    <h1 style="color:#e94560;margin:0;font-size:1.6rem;">Rooted Predictions</h1>',
-    '    <p style="color:#aaa;margin:6px 0 0;font-size:0.85rem;">Your edge in football betting</p>',
+    '<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;background:#f4f4f4;">',
+    '  <!-- Header -->',
+    '  <div style="background:#1a5c2e;padding:28px 24px;border-radius:12px 12px 0 0;text-align:center;">',
+    '    <img src="' + siteUrl + '/images/logo.png" alt="Rooted Predictions" style="height:60px;width:auto;display:block;margin:0 auto 12px;" />',
+    '    <p style="color:rgba(255,255,255,0.75);margin:0;font-size:0.85rem;letter-spacing:0.04em;">Your edge in football betting</p>',
     '  </div>',
-    '  <div style="background:#fff;padding:28px;border:1px solid #eee;">',
-    '    <h2 style="color:#111;font-size:1.2rem;">Hello there,</h2>',
-    '    <p style="color:#333;line-height:1.7;">Write your message here. Keep it concise and valuable.</p>',
-    '    <div style="text-align:center;margin:28px 0;">',
-    '      <a href="' + siteUrl + '/predictions.html" style="background:#e94560;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.95rem;">',
-    '        View Today\'s Tips',
+    '  <!-- Body -->',
+    '  <div style="background:#ffffff;padding:32px 28px;border-left:1px solid #e5e5e5;border-right:1px solid #e5e5e5;">',
+    '    <h2 style="color:#111;font-size:1.2rem;margin-top:0;">Hello there,</h2>',
+    '    <p style="color:#444;line-height:1.75;">Write your message here. Keep it concise and valuable.</p>',
+    '    <div style="text-align:center;margin:32px 0;">',
+    '      <a href="' + siteUrl + '/predictions.html" style="background:#1a5c2e;color:#ffffff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.95rem;display:inline-block;">',
+    '        View Today\'s Tips &rarr;',
     '      </a>',
     '    </div>',
-    '    <p style="color:#666;font-size:0.85rem;">Good luck,<br><strong>The Rooted Predictions Team</strong></p>',
+    '    <p style="color:#666;font-size:0.85rem;margin-bottom:0;">Good luck,<br><strong style="color:#1a5c2e;">The Rooted Predictions Team</strong></p>',
     '  </div>',
-    '  <div style="background:#f5f5f5;padding:16px;border-radius:0 0 12px 12px;text-align:center;">',
-    '    <p style="color:#999;font-size:0.75rem;margin:0;">',
-    '      <a href="' + siteUrl + '" style="color:#999;">' + siteUrl + '</a>',
+    '  <!-- Footer -->',
+    '  <div style="background:#f0f0f0;padding:16px 20px;border-radius:0 0 12px 12px;text-align:center;border:1px solid #e5e5e5;border-top:none;">',
+    '    <p style="color:#999;font-size:0.72rem;margin:0;line-height:1.6;">',
+    '      &copy; 2026 Rooted Predictions &middot;',
+    '      <a href="' + siteUrl + '" style="color:#999;text-decoration:none;">' + siteUrl + '</a><br>',
+    '      You are receiving this because you subscribed to Rooted Predictions updates.',
     '    </p>',
     '  </div>',
     '</div>',
