@@ -128,7 +128,19 @@
 
     /* Mobile floating slip button */
     .slip-fab{display:none;position:fixed;bottom:20px;right:20px;z-index:900;background:var(--green);color:#fff;border:none;border-radius:50px;padding:12px 20px;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.2);align-items:center;gap:8px;font-family:inherit}
-    @media(max-width:900px){.slip-fab{display:flex}}
+    @media(max-width:900px){
+      .slip-fab{display:flex}
+      #slip-desktop{display:none}
+      .bb-layout{padding-bottom:100px}
+      .bb-toolbar{gap:8px}
+      .bb-toolbar-label{display:none}
+    }
+    @media(max-width:480px){
+      .bb-toolbar{flex-direction:column;align-items:stretch}
+      .bb-btn-auto,.bb-btn-clear{justify-content:center}
+      .bb-pred-row{gap:8px}
+      .bb-pred-conf{display:none}
+    }
     .slip-mobile-overlay{display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,0.5)}
     .slip-mobile-panel{position:fixed;bottom:0;left:0;right:0;background:var(--card-bg);border-radius:16px 16px 0 0;max-height:85vh;overflow-y:auto;z-index:960;transform:translateY(100%);transition:transform 0.3s ease}
     .slip-mobile-panel.open{transform:translateY(0)}

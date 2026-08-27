@@ -10,7 +10,7 @@ const { getContinentFromCountry, generatePredictionSlug } = require('../utils/he
 
 const BASE_URL       = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
 const API_KEY        = process.env.API_FOOTBALL_KEY;
-const CURRENT_SEASON = parseInt(process.env.API_FOOTBALL_SEASON) || 2024;
+const CURRENT_SEASON = parseInt(process.env.API_FOOTBALL_SEASON) || 2026;
 
 const apiClient = axios.create({
   baseURL: BASE_URL,

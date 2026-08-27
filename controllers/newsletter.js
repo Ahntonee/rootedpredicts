@@ -100,7 +100,7 @@ async function adminSend(req, res) {
       if (aud === 'vip')  roleFilter = `AND role = 'vip'`;
       if (aud === 'free') roleFilter = `AND role = 'user'`;
       const [rows] = await db.query(
-        `SELECT email, name FROM users WHERE status = 'active' ${roleFilter}`
+        `SELECT email, name FROM users WHERE (is_banned IS NULL OR is_banned = 0) ${roleFilter}`
       );
       emails = rows;
     }
