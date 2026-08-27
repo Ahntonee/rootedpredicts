@@ -548,7 +548,18 @@ function shareSlipText() {
 // ── Share as image ──────────────────────────────────────────
 async function shareSlipImage() {
   if (!slip.length) return;
-  const canvas = buildSlipCanvas();
+  // Pre-load logo for watermark (best-effort)
+  let logoImg = null;
+  try {
+    logoImg = await new Promise((res, rej) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload  = () => res(img);
+      img.onerror = () => res(null);
+      img.src = '/images/logo.png';
+    });
+  } catch(e) {}
+  const canvas = buildSlipCanvas(logoImg);
   canvas.toBlob(async blob => {
     if (!blob) return;
     const file = new File([blob], 'bet-slip.png', { type: 'image/png' });
@@ -574,7 +585,7 @@ function showToast(msg) {
 }
 
 // ── Canvas slip image builder ──────────────────────────────
-function buildSlipCanvas() {
+function buildSlipCanvas(logoImg) {
   const dpr     = Math.min(window.devicePixelRatio || 1, 2);
   const W       = 460;
   const LEG_H   = 68;
@@ -589,10 +600,25 @@ function buildSlipCanvas() {
   const ctx     = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
 
-  // White background + subtle shadow feel
+  // White background
   ctx.fillStyle = '#ffffff';
   rrect(ctx, 0, 0, W, H, 14);
   ctx.fill();
+
+  // Logo watermark — tiled at low opacity
+  if (logoImg) {
+    const logoSz  = 52;
+    const gapX    = 120;
+    const gapY    = 100;
+    ctx.save();
+    ctx.globalAlpha = 0.045;
+    for (let y = 20; y < H; y += gapY) {
+      for (let x = 10; x < W; x += gapX) {
+        ctx.drawImage(logoImg, x, y, logoSz, logoSz);
+      }
+    }
+    ctx.restore();
+  }
 
   // Green header
   ctx.fillStyle = '#1A5C2E';
@@ -678,13 +704,16 @@ function buildSlipCanvas() {
   ctx.stroke();
 
   // Branding
-  ctx.fillStyle = '#9CA3AF';
-  ctx.font = `500 11px 'Inter',system-ui`;
+  ctx.fillStyle = '#6B7280';
+  ctx.font = `600 12px 'Inter',system-ui`;
   ctx.textAlign = 'center';
-  ctx.fillText('Built with Rooted Predictions  ·  rootedpredict.com', W / 2, divY + 72);
+  ctx.fillText('Built with rootedpredict BetBuilder', W / 2, divY + 66);
+  ctx.fillStyle = '#1A5C2E';
+  ctx.font = `500 11px 'Inter',system-ui`;
+  ctx.fillText('https://www.rootedpredict.com', W / 2, divY + 82);
   ctx.fillStyle = '#D1D5DB';
   ctx.font = `400 10px 'Inter',system-ui`;
-  ctx.fillText('Always verify odds with your bookmaker. Bet responsibly.', W / 2, divY + 90);
+  ctx.fillText('Always verify odds with your bookmaker. Bet responsibly.', W / 2, divY + 98);
   ctx.textAlign = 'left';
 
   return canvas;
