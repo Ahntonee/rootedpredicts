@@ -26,8 +26,8 @@
     :root{--navy:#0B2A1A;--red:#E74C3C;--midnight:#0D3D22;--surface:#F5F5F0;--white:#fff;--muted:#6B7280;--green:#1A5C2E;--green-lt:#2a7a45;--yellow:#D4A017;--border:#DDE1E7;--card-bg:#fff;--page-bg:#F0F2EE;--text:#1A2E1A;--text-soft:#4B5563;--header-bg:#0B2A1A;--shadow-sm:0 1px 4px rgba(0,0,0,0.07);--shadow-md:0 4px 16px rgba(0,0,0,0.09);--radius:12px;--font-head:'Inter',system-ui,-apple-system,sans-serif;--font-body:'Bai Jamjuree','Inter',system-ui,sans-serif}
     [data-theme="dark"]{--surface:#111827;--card-bg:#1F2937;--page-bg:#111827;--text:#F9FAFB;--text-soft:#9CA3AF;--border:#374151;--page-bg:#0f1117}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html{font-size:16px;scroll-behavior:smooth}
-    body{font-family:var(--font-body);background:var(--page-bg);color:var(--text);line-height:1.6;min-height:100vh}
+    html{font-size:16px;scroll-behavior:smooth;overflow-x:hidden}
+    body{font-family:var(--font-body);background:var(--page-bg);color:var(--text);line-height:1.6;min-height:100vh;overflow-x:hidden}
     h1,h2,h3{font-family:var(--font-head);font-weight:700;line-height:1.2}
     a{color:var(--green);text-decoration:none}
     img{max-width:100%;display:block}
@@ -144,10 +144,11 @@
       .container{padding:0 12px}
     }
     @media(max-width:480px){
-      .bb-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
-      .bb-select{width:100%}
-      .bb-btn-auto{grid-column:1 / -1;justify-content:center}
-      .bb-btn-clear{grid-column:1 / -1;justify-content:center}
+      .bb-toolbar{flex-wrap:wrap;padding:10px 12px;gap:6px}
+      .bb-toolbar > .material-icons-round{display:none}
+      .bb-select{flex:1 1 calc(50% - 6px);min-width:0;font-size:0.8rem;padding:6px 8px}
+      .bb-btn-auto{flex:1 1 100%;justify-content:center}
+      .bb-btn-clear{flex:1 1 100%;justify-content:center}
       .bb-pred-row{gap:6px;padding:10px 4px}
       .bb-pred-conf{display:none}
       .bb-pred-odds{min-width:30px;font-size:0.82rem}
