@@ -634,18 +634,14 @@ function buildSlipCanvas(logoImg) {
   rrect(ctx, 0, 0, W, H, 14);
   ctx.fill();
 
-  // Logo watermark — tiled at low opacity
+  // Centered logo watermark
   if (logoImg) {
-    const logoSz  = 52;
-    const gapX    = 120;
-    const gapY    = 100;
+    const sz  = 130;
+    const cx  = W / 2 - sz / 2;
+    const cy  = H / 2 - sz / 2;
     ctx.save();
-    ctx.globalAlpha = 0.045;
-    for (let y = 20; y < H; y += gapY) {
-      for (let x = 10; x < W; x += gapX) {
-        ctx.drawImage(logoImg, x, y, logoSz, logoSz);
-      }
-    }
+    ctx.globalAlpha = 0.10;
+    ctx.drawImage(logoImg, cx, cy, sz, sz);
     ctx.restore();
   }
 
