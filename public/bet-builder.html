@@ -131,15 +131,31 @@
     @media(max-width:900px){
       .slip-fab{display:flex}
       #slip-desktop{display:none}
-      .bb-layout{padding-bottom:100px}
-      .bb-toolbar{gap:8px}
+      .bb-layout{padding-bottom:100px;padding:16px 0 100px}
       .bb-toolbar-label{display:none}
+      .bb-toolbar{gap:8px;padding:12px 16px;flex-wrap:wrap}
+      .bb-select{flex:1;min-width:80px}
+      .bb-btn-auto{flex:1}
+      .bb-btn-clear{flex:1}
+      .bb-list-body{padding:0 6px}
+      .bb-markets{padding:12px 16px;gap:6px}
+      .bb-pill{padding:5px 10px;font-size:0.76rem}
+      .bb-list-header{padding:12px 16px 6px}
+      .container{padding:0 12px}
     }
     @media(max-width:480px){
-      .bb-toolbar{flex-direction:column;align-items:stretch}
-      .bb-btn-auto,.bb-btn-clear{justify-content:center}
-      .bb-pred-row{gap:8px}
+      .bb-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+      .bb-select{width:100%}
+      .bb-btn-auto{grid-column:1 / -1;justify-content:center}
+      .bb-btn-clear{grid-column:1 / -1;justify-content:center}
+      .bb-pred-row{gap:6px;padding:10px 4px}
       .bb-pred-conf{display:none}
+      .bb-pred-odds{min-width:30px;font-size:0.82rem}
+      .bb-pred-tip{min-width:44px}
+      .bb-pred-teams{font-size:0.82rem}
+      .bb-pred-meta{font-size:0.7rem}
+      .bb-header-card{padding:16px}
+      .bb-title{font-size:1.1rem}
     }
     .slip-mobile-overlay{display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,0.5)}
     .slip-mobile-panel{position:fixed;bottom:0;left:0;right:0;background:var(--card-bg);border-radius:16px 16px 0 0;max-height:85vh;overflow-y:auto;z-index:960;transform:translateY(100%);transition:transform 0.3s ease}
