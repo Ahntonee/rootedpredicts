@@ -427,8 +427,9 @@ function renderSlip() {
   document.getElementById('slip-fab-count').textContent = count;
 
   const combined = slip.reduce((acc, s) => acc * parseFloat(s.odds), 1);
-  const stakeEl  = document.querySelector('.slip-stake-input');
-  const stake    = stakeEl ? parseFloat(stakeEl.value) || 0 : 0;
+  // Read stake BEFORE replacing innerHTML (the old input is about to be destroyed)
+  const prevStake = parseFloat(document.querySelector('.slip-stake-input')?.value) || 0;
+  const stake    = prevStake;
   const potRet   = stake > 0 ? (stake * combined).toFixed(2) : '—';
   const profit   = stake > 0 ? ((stake * combined) - stake).toFixed(2) : '—';
 
@@ -436,8 +437,9 @@ function renderSlip() {
   document.getElementById('slip-body').innerHTML = slipHTML;
   document.getElementById('slip-panel-body').innerHTML = slipHTML;
 
-  // Wire stake input in both panels
+  // Restore stake value after innerHTML wipe, then wire inputs
   document.querySelectorAll('.slip-stake-input').forEach(inp => {
+    if (prevStake) inp.value = prevStake;
     inp.addEventListener('input', renderSlip);
   });
   // Wire remove buttons
