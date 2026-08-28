@@ -39,9 +39,10 @@ async function runDailySync() {
   //   reserved          = calls still needed for live-sync + scores + results + 200 buffer
   //   calls per fixture = 8 (fixture info + 2×team form + H2H + 2×team stats + standings + odds)
   const CALLS_PER_FIXTURE = 8;
-  const DAILY_RESERVED    = 600; // live (480) + scores (72) + results (2) + 46 buffer
+  const DAILY_RESERVED    = 4000; // live (480) + scores (72) + results + standings + generous buffer
+  const AUTO_PREDICT_CAP  = 50;   // hard cap: never enrich more than 50 fixtures per day
   const remaining         = apiSvc.getRemainingCount();
-  const autoLimit         = Math.max(0, Math.floor((remaining - DAILY_RESERVED) / CALLS_PER_FIXTURE));
+  const autoLimit         = Math.min(AUTO_PREDICT_CAP, Math.max(0, Math.floor((remaining - DAILY_RESERVED) / CALLS_PER_FIXTURE)));
   console.log(`[SCHEDULER] Running auto-predict (budget: ${remaining} remaining, limit: ${autoLimit} fixtures)...`);
   if (autoLimit > 0) {
     try {
