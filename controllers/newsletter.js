@@ -110,30 +110,30 @@ async function adminSend(req, res) {
     }
 
     const siteUrl   = process.env.SITE_URL || 'https://www.rootedpredict.com';
-    const fromLabel = process.env.EMAIL_FROM || 'Rooted Predictions <noreply@rootedpredict.com>';
-    let sent = 0, failed = 0;
+    const total     = emails.length;
 
-    // Send in small batches to avoid overwhelming SMTP
-    for (const recipient of emails) {
-      const unsubLink = siteUrl + '/api/newsletter/unsubscribe?email=' + encodeURIComponent(recipient.email);
-      const body = html + `
-        <div style="margin-top:32px;padding-top:16px;border-top:1px solid #333;font-family:sans-serif;font-size:11px;color:#888;text-align:center;">
-          You received this because you signed up for Rootedpredict updates.<br>
-          <a href="${unsubLink}" style="color:#888;">Unsubscribe</a>
-        </div>`;
-      try {
-        await sendMail({ to: recipient.email, subject: subject.trim(), html: body });
-        sent++;
-      } catch (e) {
-        failed++;
-        console.error('[NEWSLETTER] Failed to send to', recipient.email, ':', e.message);
+    // Respond immediately so nginx doesn't time out on large lists
+    res.json({ success: true, message: `Newsletter queued for ${total} recipient(s). Sending in background.`, data: { total } });
+
+    // Send asynchronously after response is flushed
+    setImmediate(async () => {
+      let sent = 0, failed = 0;
+      for (const recipient of emails) {
+        const unsubLink = siteUrl + '/api/newsletter/unsubscribe?email=' + encodeURIComponent(recipient.email);
+        const body = html + `
+          <div style="margin-top:32px;padding-top:16px;border-top:1px solid #333;font-family:sans-serif;font-size:11px;color:#888;text-align:center;">
+            You received this because you signed up for Rootedpredict updates.<br>
+            <a href="${unsubLink}" style="color:#888;">Unsubscribe</a>
+          </div>`;
+        try {
+          await sendMail({ to: recipient.email, subject: subject.trim(), html: body });
+          sent++;
+        } catch (e) {
+          failed++;
+          console.error('[NEWSLETTER] Failed to send to', recipient.email, ':', e.message);
+        }
       }
-    }
-
-    return res.json({
-      success: true,
-      message: 'Newsletter sent.',
-      data: { sent, failed, total: emails.length },
+      console.log(`[NEWSLETTER] Done — sent:${sent} failed:${failed} total:${total}`);
     });
   } catch (e) {
     return res.status(500).json({ success: false, message: e.message });
