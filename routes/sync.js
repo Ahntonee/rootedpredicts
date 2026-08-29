@@ -189,15 +189,32 @@ router.post('/auto-predict', asyncHandler(async (req, res) => {
   if (!process.env.API_FOOTBALL_KEY) {
     return errorResponse(res, 'API_FOOTBALL_KEY not configured in .env', 400);
   }
+
+  // Apply same budget cap as the scheduler to prevent draining the daily quota
+  const CALLS_PER_FIXTURE = 8;
+  const DAILY_RESERVED    = 3500; // reserve for live + score syncs
+  const HARD_CAP          = 50;
+  const remaining         = apiSvc.getRemainingCount();
+  const budgetLimit       = Math.min(HARD_CAP, Math.max(0, Math.floor((remaining - DAILY_RESERVED) / CALLS_PER_FIXTURE)));
+  const requestedLimit    = parseInt(req.body.limit) || 20;
+  const effectiveLimit    = Math.min(requestedLimit, budgetLimit);
+
+  if (effectiveLimit <= 0) {
+    return errorResponse(res,
+      `API budget too low to run auto-predict. ${remaining} requests remaining today — need at least ${DAILY_RESERVED + CALLS_PER_FIXTURE} to process 1 fixture. Try again after UTC midnight.`,
+      429);
+  }
+
   const db      = require('../config/db');
   const options = {
-    limit:         parseInt(req.body.limit)          || 20,
+    limit:         effectiveLimit,
     minConfidence: parseInt(req.body.min_confidence) || 55,
     autoPublish:   req.body.auto_publish !== false,
     date:          req.body.date || null,
     includePast:   req.body.include_past === true,
     forceCategory: req.body.force_category || null,  // pin all results to this category
   };
+  console.log(`[SYNC] Manual auto-predict: requested=${requestedLimit} capped_to=${effectiveLimit} remaining=${remaining}`);
   const result = await apiSvc.autoPredictFixtures(db, options);
 
   // Fire-and-forget Telegram notification for newly published predictions
@@ -237,6 +254,10 @@ router.get('/research/:fixtureId', asyncHandler(async (req, res) => {
   }
   const fixtureId = parseInt(req.params.fixtureId);
   if (isNaN(fixtureId)) return errorResponse(res, 'Valid fixture ID required', 400);
+  const remaining = apiSvc.getRemainingCount();
+  if (remaining < 8) {
+    return errorResponse(res, `API budget exhausted (${remaining} left). Research requires ~8 calls. Try again after UTC midnight.`, 429);
+  }
   const data = await apiSvc.researchFixture(fixtureId);
   return successResponse(res, data);
 }));

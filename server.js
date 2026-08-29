@@ -692,6 +692,9 @@ app.listen(PORT, () => {
   console.log(`  Status: http://localhost:${PORT}/api/status`);
   console.log('==============================================\n');
 
+  // Restore today's API quota from DB so restarts don't reset the guard
+  require('./services/apiFootball').initQuotaFromDb().catch(() => {});
+
   // Start cron scheduler
   startScheduler();
 });

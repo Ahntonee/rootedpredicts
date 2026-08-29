@@ -26,6 +26,19 @@ function checkAndResetDaily() {
   if (today !== lastResetDate) { dailyRequestCount = 0; lastResetDate = today; }
 }
 
+// Load today's count from DB on startup so restarts don't reset the quota guard
+async function initQuotaFromDb() {
+  try {
+    const dbCount = await counter.getCount();
+    if (dbCount > dailyRequestCount) {
+      dailyRequestCount = dbCount;
+      console.log(`[API-Football] Restored daily request count from DB: ${dbCount}/${DAILY_LIMIT}`);
+    }
+  } catch (e) {
+    console.warn('[API-Football] Could not restore quota count from DB:', e.message);
+  }
+}
+
 const DAILY_LIMIT = parseInt(process.env.API_FOOTBALL_DAILY_LIMIT || '7500');
 
 async function request(endpoint, params = {}) {
@@ -1337,4 +1350,5 @@ module.exports = {
   researchFixture, autoPredictFixtures, gradeFromScores,
   fetchFixtureOdds, oddsForTip,
   goalProbabilities, poissonPMF, generateTipSuggestion, scoreForm,
+  initQuotaFromDb,
 };
