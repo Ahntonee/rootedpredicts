@@ -248,7 +248,8 @@ router.get('/fixture-intel', asyncHandler(async (req, res) => {
   const { fixture_id } = req.query;
   if (!fixture_id) return errorResponse(res, 'fixture_id is required', 400);
 
-  const remaining = api.getRemainingCount();
+  const trueCount = await api.syncCountFromDb();
+  const remaining = Math.max(0, api.getDailyLimit() - trueCount);
   if (remaining < 8) {
     return errorResponse(res, `API budget exhausted (${remaining} left today). Fixture research requires ~8 calls. Try again after UTC midnight.`, 429);
   }

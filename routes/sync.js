@@ -190,11 +190,13 @@ router.post('/auto-predict', asyncHandler(async (req, res) => {
     return errorResponse(res, 'API_FOOTBALL_KEY not configured in .env', 400);
   }
 
-  // Apply same budget cap as the scheduler to prevent draining the daily quota
+  // Apply same budget cap as the scheduler to prevent draining the daily quota.
+  // Use DB-backed count so all PM2 cluster workers see the true shared total.
   const CALLS_PER_FIXTURE = 8;
   const DAILY_RESERVED    = 3500; // reserve for live + score syncs
   const HARD_CAP          = 50;
-  const remaining         = apiSvc.getRemainingCount();
+  const trueCount         = await apiSvc.syncCountFromDb();
+  const remaining         = Math.max(0, apiSvc.getDailyLimit() - trueCount);
   const budgetLimit       = Math.min(HARD_CAP, Math.max(0, Math.floor((remaining - DAILY_RESERVED) / CALLS_PER_FIXTURE)));
   const requestedLimit    = parseInt(req.body.limit) || 20;
   const effectiveLimit    = Math.min(requestedLimit, budgetLimit);
@@ -254,7 +256,8 @@ router.get('/research/:fixtureId', asyncHandler(async (req, res) => {
   }
   const fixtureId = parseInt(req.params.fixtureId);
   if (isNaN(fixtureId)) return errorResponse(res, 'Valid fixture ID required', 400);
-  const remaining = apiSvc.getRemainingCount();
+  const trueCount  = await apiSvc.syncCountFromDb();
+  const remaining  = Math.max(0, apiSvc.getDailyLimit() - trueCount);
   if (remaining < 8) {
     return errorResponse(res, `API budget exhausted (${remaining} left). Research requires ~8 calls. Try again after UTC midnight.`, 429);
   }

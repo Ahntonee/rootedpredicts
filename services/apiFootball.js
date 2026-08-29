@@ -20,10 +20,14 @@ const apiClient = axios.create({
 
 let dailyRequestCount = 0;
 let lastResetDate     = new Date().toDateString();
+// How often (in API calls) to refresh the in-memory counter from DB so that
+// workers in PM2 cluster mode converge on the true shared count.
+let callsSinceDbSync  = 0;
+const DB_SYNC_INTERVAL = 10; // re-read DB every 10 calls
 
 function checkAndResetDaily() {
   const today = new Date().toDateString();
-  if (today !== lastResetDate) { dailyRequestCount = 0; lastResetDate = today; }
+  if (today !== lastResetDate) { dailyRequestCount = 0; lastResetDate = today; callsSinceDbSync = 0; }
 }
 
 // Load today's count from DB on startup so restarts don't reset the quota guard
@@ -39,17 +43,37 @@ async function initQuotaFromDb() {
   }
 }
 
+// Read the true shared count from DB and sync in-memory (used by admin routes)
+async function syncCountFromDb() {
+  try {
+    const dbCount = await counter.getCount();
+    if (dbCount > dailyRequestCount) dailyRequestCount = dbCount;
+    return dailyRequestCount;
+  } catch (_) {
+    return dailyRequestCount;
+  }
+}
+
 const DAILY_LIMIT = parseInt(process.env.API_FOOTBALL_DAILY_LIMIT || '7500');
 
 async function request(endpoint, params = {}) {
   checkAndResetDaily();
   if (!API_KEY) throw new Error('[API-Football] API_FOOTBALL_KEY not set in .env');
+
+  // Periodically sync in-memory counter from DB so that all PM2 cluster workers
+  // converge on the true shared count and don't independently over-spend.
+  callsSinceDbSync++;
+  if (callsSinceDbSync >= DB_SYNC_INTERVAL) {
+    callsSinceDbSync = 0;
+    await syncCountFromDb().catch(() => {});
+  }
+
   if (dailyRequestCount >= DAILY_LIMIT) {
     throw new Error(`[API-Football] Daily request limit reached (${DAILY_LIMIT}). Resets at UTC midnight. Upgrade plan or set API_FOOTBALL_DAILY_LIMIT env var.`);
   }
   try {
     dailyRequestCount++;
-    counter.increment().catch(() => {}); // DB write — fire-and-forget, in-memory is the guard
+    counter.increment().catch(() => {}); // DB write — cluster-safe shared counter
     console.log(`[API-Football] #${dailyRequestCount}/${DAILY_LIMIT} GET ${endpoint}`, params);
     const response = await apiClient.get(endpoint, { params });
     if (response.data.errors && Object.keys(response.data.errors).length > 0) {
@@ -1350,5 +1374,5 @@ module.exports = {
   researchFixture, autoPredictFixtures, gradeFromScores,
   fetchFixtureOdds, oddsForTip,
   goalProbabilities, poissonPMF, generateTipSuggestion, scoreForm,
-  initQuotaFromDb,
+  initQuotaFromDb, syncCountFromDb,
 };

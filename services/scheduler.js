@@ -41,7 +41,9 @@ async function runDailySync() {
   const CALLS_PER_FIXTURE = 8;
   const DAILY_RESERVED    = 4000; // live (480) + scores (72) + results + standings + generous buffer
   const AUTO_PREDICT_CAP  = 50;   // hard cap: never enrich more than 50 fixtures per day
-  const remaining         = apiSvc.getRemainingCount();
+  // Use DB-backed count (shared across all PM2 workers) for the budget calculation
+  const trueCount         = await apiSvc.syncCountFromDb().catch(() => apiSvc.getRequestCount());
+  const remaining         = Math.max(0, apiSvc.getDailyLimit() - trueCount);
   const autoLimit         = Math.min(AUTO_PREDICT_CAP, Math.max(0, Math.floor((remaining - DAILY_RESERVED) / CALLS_PER_FIXTURE)));
   console.log(`[SCHEDULER] Running auto-predict (budget: ${remaining} remaining, limit: ${autoLimit} fixtures)...`);
   if (autoLimit > 0) {

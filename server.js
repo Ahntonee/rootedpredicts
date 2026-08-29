@@ -695,8 +695,15 @@ app.listen(PORT, () => {
   // Restore today's API quota from DB so restarts don't reset the guard
   require('./services/apiFootball').initQuotaFromDb().catch(() => {});
 
-  // Start cron scheduler
-  startScheduler();
+  // In PM2 cluster mode each worker gets its own process, so the cron scheduler
+  // would fire once per CPU core. Restrict it to worker 0 (or any non-clustered
+  // run like local dev where pm_id is undefined).
+  const workerId = process.env.pm_id !== undefined ? parseInt(process.env.pm_id, 10) : 0;
+  if (workerId === 0) {
+    startScheduler();
+  } else {
+    console.log(`[SCHEDULER] Worker ${workerId} — scheduler runs in worker 0 only`);
+  }
 });
 
 module.exports = app;
