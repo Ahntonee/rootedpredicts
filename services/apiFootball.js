@@ -45,6 +45,7 @@ async function initQuotaFromDb() {
 
 // Read the true shared count from DB and sync in-memory (used by admin routes)
 async function syncCountFromDb() {
+  checkAndResetDaily(); // reset in-memory to 0 if the day has changed before comparing
   try {
     const dbCount = await counter.getCount();
     if (dbCount > dailyRequestCount) dailyRequestCount = dbCount;
