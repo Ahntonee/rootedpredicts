@@ -1411,11 +1411,11 @@ img { max-width: 100%; display: block; }
    sets a muted inline colour for the content wrapper, so this intentionally
    overrides it for the reading text. */
 [data-theme="dark"] .article-content,
-[data-theme="dark"] .article-content p,
-[data-theme="dark"] .article-content li,
-[data-theme="dark"] .article-content blockquote {
+[data-theme="dark"] .article-content * {
   color: #fff !important;
 }
+[data-theme="dark"] .article-content a,
+[data-theme="dark"] .article-content a * { color: var(--green) !important; }
 
 /* ── Leaderboard ────────────────────────────────────────────── */
 .leaderboard-table { width: 100%; border-collapse: collapse; }
