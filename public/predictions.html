@@ -202,7 +202,7 @@
         <div class="pick-skeleton"><div class="skel" style="height:16px;width:65%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:70%;"></div></div>
       </div>
       <div style="padding:14px 20px;border-top:1px solid var(--border);text-align:center;" id="picks-footer">
-        <span style="font-size:0.82rem;color:var(--muted);">Use the date bar above to browse predictions by day.</span>
+        <a href="/blog.html" style="font-size:0.82rem;color:var(--green);font-weight:600;">Check out our latest blog</a>
       </div>
     </div>
 
@@ -1013,7 +1013,7 @@
     if (!predictions.length) {
       return `<div style="padding:36px;text-align:center;color:var(--muted);font-size:0.875rem;">
         <span class="material-icons-round" style="font-size:2rem;display:block;margin-bottom:8px;">sports_soccer</span>
-        No predictions available for this selection.
+        No predictions available at this time. Check back later.
       </div>`;
     }
     const LEAGUE_PRIORITY = [
