@@ -39,7 +39,9 @@ async function runDailySync() {
   //   reserved          = calls still needed for live-sync + scores + results + 200 buffer
   //   calls per fixture = 8 (fixture info + 2×team form + H2H + 2×team stats + standings + odds)
   const CALLS_PER_FIXTURE = 8;
-  const DAILY_RESERVED    = 4000; // live (480) + scores (72) + results + standings + generous buffer
+  // Live + score syncs use roughly 580 calls/day. Keep a safe reserve that
+  // also works on lower-tier plans instead of treating the whole plan as used.
+  const DAILY_RESERVED    = Math.min(750, Math.floor(apiSvc.getDailyLimit() * 0.3));
   const AUTO_PREDICT_CAP  = 50;   // hard cap: never enrich more than 50 fixtures per day
   // Use DB-backed count (shared across all PM2 workers) for the budget calculation
   const trueCount         = await apiSvc.syncCountFromDb().catch(() => apiSvc.getRequestCount());

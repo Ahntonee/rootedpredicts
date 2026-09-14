@@ -21,9 +21,10 @@ router.use(authenticate, requireAdmin);
 
 // ── GET /api/sync/status
 router.get('/status', asyncHandler(async (req, res) => {
-  const used      = apiSvc.getRequestCount();
+  // The DB-backed value is shared by all PM2 workers and survives restarts.
+  const used      = await apiSvc.syncCountFromDb();
   const limit     = apiSvc.getDailyLimit();
-  const remaining = apiSvc.getRemainingCount();
+  const remaining = Math.max(0, limit - used);
   return successResponse(res, {
     requests_used:      used,
     requests_remaining: remaining,
@@ -193,7 +194,10 @@ router.post('/auto-predict', asyncHandler(async (req, res) => {
   // Apply same budget cap as the scheduler to prevent draining the daily quota.
   // Use DB-backed count so all PM2 cluster workers see the true shared total.
   const CALLS_PER_FIXTURE = 8;
-  const DAILY_RESERVED    = 3500; // reserve for live + score syncs
+  // The recurring live/score jobs use roughly 580 calls/day. A reservation
+  // larger than the account limit makes auto-predict report "exhausted"
+  // before a request has been made, so cap it relative to the active plan.
+  const DAILY_RESERVED    = Math.min(750, Math.floor(apiSvc.getDailyLimit() * 0.3));
   const HARD_CAP          = 50;
   const trueCount         = await apiSvc.syncCountFromDb();
   const remaining         = Math.max(0, apiSvc.getDailyLimit() - trueCount);

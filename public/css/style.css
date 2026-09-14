@@ -1407,6 +1407,16 @@ img { max-width: 100%; display: block; }
 .article-content th,.article-content td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
 .article-content th { background: var(--surface-2); font-weight: 600; color: var(--text); }
 
+/* Published article copy must remain white in dark mode. The post template
+   sets a muted inline colour for the content wrapper, so this intentionally
+   overrides it for the reading text. */
+[data-theme="dark"] .article-content,
+[data-theme="dark"] .article-content p,
+[data-theme="dark"] .article-content li,
+[data-theme="dark"] .article-content blockquote {
+  color: #fff !important;
+}
+
 /* ── Leaderboard ────────────────────────────────────────────── */
 .leaderboard-table { width: 100%; border-collapse: collapse; }
 .leaderboard-table th {

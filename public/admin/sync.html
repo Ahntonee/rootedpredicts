@@ -199,7 +199,7 @@ window.loadApiStatus = async function loadApiStatus() {
       var d = json.data;
       var remaining = d.requests_remaining != null ? d.requests_remaining : 'N/A';
       var used      = d.requests_used      != null ? d.requests_used      : 'N/A';
-      var limit     = d.daily_limit        != null ? d.daily_limit        : 7400;
+      var limit     = d.daily_limit        != null ? d.daily_limit        : 2500;
       var season    = d.season             != null ? d.season             : 'N/A';
       var pct       = (typeof d.requests_used === 'number' && limit)
         ? Math.round(d.requests_used / limit * 100) : 0;
@@ -217,7 +217,7 @@ window.loadApiStatus = async function loadApiStatus() {
           '</div>' +
           '<div style="font-size:0.75rem;color:var(--muted);text-align:right;">' + pct + '% of daily quota used</div>' +
           warningHtml +
-          '<div style="margin-top:8px;font-size:0.72rem;color:var(--muted);">Override limit with <code>API_FOOTBALL_DAILY_LIMIT</code> in .env. Default: 7500 (paid plan).</div>' +
+          '<div style="margin-top:8px;font-size:0.72rem;color:var(--muted);">Override limit with <code>API_FOOTBALL_DAILY_LIMIT</code> in .env. Default: 2500.</div>' +
         '</div>';
     } else {
       el.textContent = (json && json.message) ? json.message : 'Could not load API status. Check API key in .env';

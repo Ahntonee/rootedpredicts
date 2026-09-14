@@ -22,7 +22,7 @@ router.get('/status', asyncHandler(async (req, res) => {
   return successResponse(res, {
     requests_used:      apiSvc.getRequestCount(),
     requests_remaining: apiSvc.getRemainingCount(),
-    daily_limit:        7400,
+    daily_limit:        apiSvc.getDailyLimit(),
     season:             apiSvc.CURRENT_SEASON,
   });
 }));

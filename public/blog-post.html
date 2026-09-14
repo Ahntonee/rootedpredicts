@@ -48,6 +48,12 @@
   <style>
     /* Blog articles use Open Sans for long-form readability */
     #post-body, #post-body p, #post-body li, #post-body blockquote { font-family: 'Open Sans', sans-serif; }
+    /* This file loads style.min.css, so keep the live dark-mode article text
+       override here as well as in the source stylesheet. */
+    [data-theme="dark"] .article-content,
+    [data-theme="dark"] .article-content p,
+    [data-theme="dark"] .article-content li,
+    [data-theme="dark"] .article-content blockquote { color: #fff !important; }
   </style>
   <script id="article-schema" type="application/ld+json">{}</script>
 </head>

@@ -19,14 +19,17 @@ const apiClient = axios.create({
 });
 
 let dailyRequestCount = 0;
-let lastResetDate     = new Date().toDateString();
+let lastResetDate     = new Date().toISOString().slice(0, 10);
 // How often (in API calls) to refresh the in-memory counter from DB so that
 // workers in PM2 cluster mode converge on the true shared count.
 let callsSinceDbSync  = 0;
 const DB_SYNC_INTERVAL = 10; // re-read DB every 10 calls
 
 function checkAndResetDaily() {
-  const today = new Date().toDateString();
+  // API-Football and the database counter both reset on UTC days. Keeping
+  // this key in UTC prevents a local-time reset from disagreeing with the
+  // shared DB counter around midnight.
+  const today = new Date().toISOString().slice(0, 10);
   if (today !== lastResetDate) { dailyRequestCount = 0; lastResetDate = today; callsSinceDbSync = 0; }
 }
 
@@ -55,7 +58,9 @@ async function syncCountFromDb() {
   }
 }
 
-const DAILY_LIMIT = parseInt(process.env.API_FOOTBALL_DAILY_LIMIT || '7500');
+// Keep this aligned with the current API-Football plan unless explicitly
+// overridden in the deployment environment.
+const DAILY_LIMIT = parseInt(process.env.API_FOOTBALL_DAILY_LIMIT || '2500', 10);
 
 async function request(endpoint, params = {}) {
   checkAndResetDaily();
