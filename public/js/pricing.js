@@ -42,7 +42,8 @@
     var el = document.getElementById('bank-modal');
     if (!el) return;
 
-    var amounts = { monthly: '8,000', quarterly: '20,800', annual: '64,000' };
+    var amounts = { monthly: '15,000', quarterly: '45,000', annual: '150,000' };
+    if (_bankDetails && _bankDetails.amounts) Object.keys(amounts).forEach(function(key) { amounts[key] = Number(_bankDetails.amounts[key].ngn).toLocaleString('en-NG'); });
     var planLabels = { monthly: 'Monthly VIP', quarterly: 'Quarterly VIP', annual: 'Annual VIP' };
     document.getElementById('bm-plan-label').textContent  = planLabels[plan] || plan;
     document.getElementById('bm-amount').textContent      = '₦' + (amounts[plan] || '');
@@ -231,6 +232,7 @@
 
     // Check session once on load
     getSessionUser().then(function(user) {
+      if (window.PricingCurrency) window.PricingCurrency.setCountry(user && user.country);
       if (!user) return;
       // Admins don't pay — disable buttons with a different label
       if (user.role === 'admin') {

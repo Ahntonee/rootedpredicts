@@ -10,6 +10,15 @@ const { asyncHandler } = require('../utils/helpers');
 
 // GET /api/subscriptions/bank-details — public, no auth needed
 router.get('/bank-details', asyncHandler(ctrl.getBankDetails));
+router.get('/pricing', asyncHandler(async (req, res) => {
+  const pricing = require('../services/planPricing');
+  const currency = String(req.query.currency || 'NGN').toUpperCase();
+  try {
+    return res.json({ success: true, data: await pricing.quote(currency) });
+  } catch (_) {
+    return res.json({ success: true, data: { ...await pricing.quote('NGN'), notice: 'Conversion is unavailable. Showing the exact naira price.' } });
+  }
+}));
 
 // All routes below require a logged-in user
 router.use(authenticate);

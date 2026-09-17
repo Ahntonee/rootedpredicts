@@ -15,19 +15,17 @@ const stripe = process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.i
   ? require('stripe')(process.env.STRIPE_SECRET_KEY)
   : null;
 
+const { amounts: NGN_AMOUNTS } = require('../services/planPricing');
+
 // Plan config
 const PLANS = {
-  monthly:   { amount: 4.89,  currency: 'usd', days: 30,  trial_days: 3 },
-  quarterly: { amount: 12.99, currency: 'usd', days: 90,  trial_days: 0 },
-  annual:    { amount: 39.99, currency: 'usd', days: 365, trial_days: 0 },
+  monthly:   { amount: NGN_AMOUNTS.monthly, currency: 'ngn', days: 30,  trial_days: 3 },
+  quarterly: { amount: NGN_AMOUNTS.quarterly, currency: 'ngn', days: 90,  trial_days: 0 },
+  annual:    { amount: NGN_AMOUNTS.annual, currency: 'ngn', days: 365, trial_days: 0 },
 };
 
-// Paystack amounts in kobo (NGN) — approximate at ₦1,600/$ rate
-const PAYSTACK_AMOUNTS = {
-  monthly:   800000,   // ~$4.89 ≈ ₦8,000
-  quarterly: 2080000,  // ~$12.99 ≈ ₦20,800
-  annual:    6400000,  // ~$39.99 ≈ ₦64,000
-};
+// Paystack charges the canonical naira prices in kobo.
+const PAYSTACK_AMOUNTS = Object.fromEntries(Object.entries(NGN_AMOUNTS).map(([plan, amount]) => [plan, amount * 100]));
 
 // ── GET /api/subscriptions/status
 async function getStatus(req, res) {
@@ -71,11 +69,6 @@ async function stripeCreateCheckout(req, res) {
     }
 
     const planConfig = PLANS[plan];
-    const priceId = process.env[`STRIPE_PRICE_${plan.toUpperCase()}`];
-    if (!priceId || priceId.includes('_id_here')) {
-      return res.status(503).json({ success: false, message: 'Stripe price IDs not configured yet.' });
-    }
-
     // Ensure Stripe customer exists
     let customerId = req.user.stripe_customer_id;
     if (!customerId) {
@@ -91,7 +84,7 @@ async function stripeCreateCheckout(req, res) {
     const sessionParams = {
       customer:   customerId,
       mode:       'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price_data: { currency: 'ngn', unit_amount: NGN_AMOUNTS[plan] * 100, product_data: { name: plan + ' VIP' }, recurring: { interval: plan === 'annual' ? 'year' : 'month', interval_count: plan === 'quarterly' ? 3 : 1 } }, quantity: 1 }],
       success_url: `${process.env.SITE_URL}/dashboard.html?vip=success&plan=${plan}`,
       cancel_url:  `${process.env.SITE_URL}/pricing.html?cancelled=1`,
       metadata:    { user_id: String(req.user.id), plan },
@@ -180,7 +173,7 @@ async function paystackVerify(req, res) {
 
     await _activateSubscription(req.user.id, plan, {
       paystack_reference: reference,
-      amount:   PLANS[plan].amount,
+      amount:   data.data.amount / 100,
       currency: 'NGN',
     });
 
@@ -233,7 +226,7 @@ async function adminGrantVip(req, res) {
 
     await _activateSubscription(user_id, plan, {
       amount:   planConfig.amount,
-      currency: 'USD',
+      currency: 'NGN',
       days:     grantDays,
     });
 
@@ -266,8 +259,8 @@ async function _activateSubscription(userId, plan, opts = {}) {
       opts.stripe_subscription_id || null,
       opts.paystack_reference      || null,
       plan,
-      opts.amount   || planConfig.amount,
-      opts.currency || 'USD',
+      opts.amount   ?? planConfig.amount,
+      opts.currency || 'NGN',
       'active',
       now,
       expiresAt,
@@ -300,7 +293,7 @@ async function stripeWebhook(req, res) {
         const plan     = session.metadata?.plan;
         const stripeSub = session.subscription;
         if (userId && plan) {
-          await _activateSubscription(userId, plan, { stripe_subscription_id: stripeSub });
+          await _activateSubscription(userId, plan, { stripe_subscription_id: stripeSub, amount: session.amount_total / 100, currency: session.currency.toUpperCase() });
         }
         break;
       }
@@ -311,7 +304,7 @@ async function stripeWebhook(req, res) {
         const userId  = parseInt(sub.metadata?.user_id);
         const plan    = sub.metadata?.plan;
         if (userId && plan) {
-          await _activateSubscription(userId, plan, { stripe_subscription_id: sub.id });
+          await _activateSubscription(userId, plan, { stripe_subscription_id: sub.id, amount: invoice.amount_paid / 100, currency: invoice.currency.toUpperCase() });
         }
         break;
       }
@@ -363,7 +356,7 @@ async function paystackWebhook(req, res) {
       if (userId && PLANS[plan]) {
         await _activateSubscription(userId, plan, {
           paystack_reference: reference,
-          amount:   PLANS[plan].amount,
+          amount:   event.data.amount / 100,
           currency: 'NGN',
         });
       }
@@ -384,9 +377,9 @@ async function getBankDetails(req, res) {
     account_number: process.env.MANUAL_ACCOUNT_NUMBER  || '9077025895',
     sort_code:      process.env.MANUAL_SORT_CODE        || '',
     amounts: {
-      monthly:   { ngn: 8000,  label: 'Monthly VIP' },
-      quarterly: { ngn: 20800, label: 'Quarterly VIP' },
-      annual:    { ngn: 64000, label: 'Annual VIP' },
+      monthly:   { ngn: NGN_AMOUNTS.monthly,  label: 'Monthly VIP' },
+      quarterly: { ngn: NGN_AMOUNTS.quarterly, label: 'Quarterly VIP' },
+      annual:    { ngn: NGN_AMOUNTS.annual, label: 'Annual VIP' },
     },
   };
   return res.json({ success: true, data: details });
@@ -438,7 +431,7 @@ async function manualSubmit(req, res) {
       });
     }
 
-    const ngnAmounts = { monthly: 8000, quarterly: 20800, annual: 64000 };
+    const ngnAmounts = NGN_AMOUNTS;
 
     await db.query(
       `INSERT INTO payment_submissions (user_id, plan, amount_ngn, image_path, image_mime)
@@ -449,7 +442,7 @@ async function manualSubmit(req, res) {
     // Email admin — fire-and-forget so slow SMTP doesn't block the response
     const adminEmail  = process.env.ADMIN_EMAIL || 'rootedpredict@gmail.com';
     const siteUrl     = process.env.SITE_URL    || 'https://www.rootedpredict.com';
-    const planLabels  = { monthly: 'Monthly (8,000)', quarterly: 'Quarterly (20,800)', annual: 'Annual (64,000)' };
+    const planLabels  = { monthly: 'Monthly (15,000)', quarterly: 'Quarterly (45,000)', annual: 'Annual (150,000)' };
     sendMail({
       to:      adminEmail,
       subject: 'New VIP Payment Awaiting Approval — ' + (req.user.name || req.user.email),
