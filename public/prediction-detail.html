@@ -478,7 +478,7 @@ function updatePredictionSEO(p) {
 
   const visiBadge = isLive
     ? `<span class="badge" style="background:rgba(231,76,60,0.12);color:var(--red);"><span class="live-dot"></span>LIVE</span>`
-    : `<span class="badge badge-free">${p.visibility==='vip'?'⭐ VIP TIP':'🔓 FREE TIP'}</span>`;
+    : `<span class="badge badge-free">${p.visibility==='vip' && p.category!=='Banker of the Day'?'⭐ VIP TIP':'🔓 FREE TIP'}</span>`;
 
   // Expert prediction card
   let expertCard;

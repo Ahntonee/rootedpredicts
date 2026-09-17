@@ -153,21 +153,13 @@ async function runAccuracyTracking() {
 }
 
 function startScheduler() {
-  if (!cron.validate(SYNC_SCHEDULE)) { console.error(`[SCHEDULER] Invalid cron: ${SYNC_SCHEDULE}`); return; }
-  cron.schedule(SYNC_SCHEDULE, runDailySync, { timezone: 'UTC' });
-  console.log(`[SCHEDULER] Daily fixture sync: ${SYNC_SCHEDULE} UTC`);
-  cron.schedule('30 23 * * *', runResultsSync,           { timezone: 'UTC' });
-  console.log('[SCHEDULER] Results sync: 23:30 UTC daily');
+  console.log('[SCHEDULER] Football API updates are manual only.');
   cron.schedule('45 23 * * *', runAccuracyTracking,       { timezone: 'UTC' });
   console.log('[SCHEDULER] Accuracy tracking: 23:45 UTC daily (after results sync)');
   cron.schedule('0 * * * *',   runSubscriptionExpiryCheck, { timezone: 'UTC' });
   console.log('[SCHEDULER] Subscription expiry check: every hour');
   cron.schedule('15 6 * * *',  runConfidenceScoring,      { timezone: 'UTC' });
   console.log('[SCHEDULER] Confidence scoring: 06:15 UTC daily');
-  cron.schedule('*/3 * * * *', runLiveSync,               { timezone: 'UTC' });
-  console.log('[SCHEDULER] Live score sync: every 3 minutes');
-  cron.schedule('*/20 * * * *', runTodayScores,           { timezone: 'UTC' });
-  console.log('[SCHEDULER] Today score/result sync: every 20 minutes');
   cron.schedule('* * * * *', runScheduledBlogPosts,       { timezone: 'UTC' });
   console.log('[SCHEDULER] Scheduled blog post publisher: every minute');
 }

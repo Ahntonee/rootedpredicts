@@ -19,27 +19,13 @@ const apiClient = axios.create({
 });
 
 let dailyRequestCount = 0;
-let lastResetDate     = new Date().toISOString().slice(0, 10);
-// How often (in API calls) to refresh the in-memory counter from DB so that
-// workers in PM2 cluster mode converge on the true shared count.
-let callsSinceDbSync  = 0;
-const DB_SYNC_INTERVAL = 10; // re-read DB every 10 calls
-
-function checkAndResetDaily() {
-  // API-Football and the database counter both reset on UTC days. Keeping
-  // this key in UTC prevents a local-time reset from disagreeing with the
-  // shared DB counter around midnight.
-  const today = new Date().toISOString().slice(0, 10);
-  if (today !== lastResetDate) { dailyRequestCount = 0; lastResetDate = today; callsSinceDbSync = 0; }
-}
-
-// Load today's count from DB on startup so restarts don't reset the quota guard
+// Load the persistent count from DB on startup so restarts don't reset the quota guard
 async function initQuotaFromDb() {
   try {
     const dbCount = await counter.getCount();
     if (dbCount > dailyRequestCount) {
       dailyRequestCount = dbCount;
-      console.log(`[API-Football] Restored daily request count from DB: ${dbCount}/${DAILY_LIMIT}`);
+      console.log(`[API-Football] Restored request budget count from DB: ${dbCount}/${DAILY_LIMIT}`);
     }
   } catch (e) {
     console.warn('[API-Football] Could not restore quota count from DB:', e.message);
@@ -48,13 +34,12 @@ async function initQuotaFromDb() {
 
 // Read the true shared count from DB and sync in-memory (used by admin routes)
 async function syncCountFromDb() {
-  checkAndResetDaily(); // reset in-memory to 0 if the day has changed before comparing
   try {
     const dbCount = await counter.getCount();
     if (dbCount > dailyRequestCount) dailyRequestCount = dbCount;
     return dailyRequestCount;
-  } catch (_) {
-    return dailyRequestCount;
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -63,23 +48,10 @@ async function syncCountFromDb() {
 const DAILY_LIMIT = parseInt(process.env.API_FOOTBALL_DAILY_LIMIT || '2500', 10);
 
 async function request(endpoint, params = {}) {
-  checkAndResetDaily();
   if (!API_KEY) throw new Error('[API-Football] API_FOOTBALL_KEY not set in .env');
 
-  // Periodically sync in-memory counter from DB so that all PM2 cluster workers
-  // converge on the true shared count and don't independently over-spend.
-  callsSinceDbSync++;
-  if (callsSinceDbSync >= DB_SYNC_INTERVAL) {
-    callsSinceDbSync = 0;
-    await syncCountFromDb().catch(() => {});
-  }
-
-  if (dailyRequestCount >= DAILY_LIMIT) {
-    throw new Error(`[API-Football] Daily request limit reached (${DAILY_LIMIT}). Resets at UTC midnight. Upgrade plan or set API_FOOTBALL_DAILY_LIMIT env var.`);
-  }
   try {
-    dailyRequestCount++;
-    counter.increment().catch(() => {}); // DB write — cluster-safe shared counter
+    dailyRequestCount = await counter.increment(DAILY_LIMIT);
     console.log(`[API-Football] #${dailyRequestCount}/${DAILY_LIMIT} GET ${endpoint}`, params);
     const response = await apiClient.get(endpoint, { params });
     if (response.data.errors && Object.keys(response.data.errors).length > 0) {
@@ -87,6 +59,7 @@ async function request(endpoint, params = {}) {
       // API says we've hit the daily limit — pin local counter so no more calls go out
       if (/request limit|requests.*limit|You have reached/i.test(errMsg)) {
         dailyRequestCount = DAILY_LIMIT;
+        await counter.pin(DAILY_LIMIT);
         console.warn(`[API-Football] API daily limit confirmed by server. Pinning counter to ${DAILY_LIMIT}.`);
       }
       throw new Error(`API error: ${errMsg}`);
@@ -1168,7 +1141,7 @@ async function autoPredictFixtures(db, options = {}) {
 }
 
 function getRequestCount()   { return dailyRequestCount; }
-function getRemainingCount() { checkAndResetDaily(); return Math.max(0, DAILY_LIMIT - dailyRequestCount); }
+function getRemainingCount() { return Math.max(0, DAILY_LIMIT - dailyRequestCount); }
 function getDailyLimit()     { return DAILY_LIMIT; }
 
 // ── Fetch finished fixtures for a league (for rate/metric calculations)

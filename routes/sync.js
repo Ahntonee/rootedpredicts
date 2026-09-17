@@ -30,7 +30,7 @@ router.get('/status', asyncHandler(async (req, res) => {
     requests_remaining: remaining,
     daily_limit:        limit,
     pct_used:           Math.round((used / limit) * 100),
-    warning:            remaining <= 10 ? `Only ${remaining} requests left today — avoid bulk syncs until UTC midnight.` : null,
+    warning:            remaining <= 10 ? `Only ${remaining} requests left in the saved local budget — automatic resets are disabled.` : null,
     season:             apiSvc.CURRENT_SEASON,
   });
 }));
@@ -111,7 +111,7 @@ router.post('/odds', asyncHandler(async (req, res) => {
   // Safety check — refuse if quota is nearly exhausted to avoid burning remaining calls
   const remaining = apiSvc.getRemainingCount();
   if (remaining <= 5) {
-    return errorResponse(res, `Daily API quota nearly exhausted (${remaining} requests left). Odds backfill cancelled to protect remaining quota. Try again after UTC midnight.`, 429);
+    return errorResponse(res, `Saved API budget nearly exhausted (${remaining} requests left). Odds backfill cancelled to protect remaining quota. Automatic resets are disabled; check the saved request budget.`, 429);
   }
   const db = require('../config/db');
   const dateParam = req.body.date || null;
@@ -207,7 +207,7 @@ router.post('/auto-predict', asyncHandler(async (req, res) => {
 
   if (effectiveLimit <= 0) {
     return errorResponse(res,
-      `API budget too low to run auto-predict. ${remaining} requests remaining today — need at least ${DAILY_RESERVED + CALLS_PER_FIXTURE} to process 1 fixture. Try again after UTC midnight.`,
+      `API budget too low to run auto-predict. ${remaining} requests remaining — need at least ${DAILY_RESERVED + CALLS_PER_FIXTURE} to process 1 fixture. Automatic resets are disabled; check the saved request budget.`,
       429);
   }
 
@@ -263,7 +263,7 @@ router.get('/research/:fixtureId', asyncHandler(async (req, res) => {
   const trueCount  = await apiSvc.syncCountFromDb();
   const remaining  = Math.max(0, apiSvc.getDailyLimit() - trueCount);
   if (remaining < 8) {
-    return errorResponse(res, `API budget exhausted (${remaining} left). Research requires ~8 calls. Try again after UTC midnight.`, 429);
+    return errorResponse(res, `API budget exhausted (${remaining} left). Research requires ~8 calls. Automatic resets are disabled; check the saved request budget.`, 429);
   }
   const data = await apiSvc.researchFixture(fixtureId);
   return successResponse(res, data);

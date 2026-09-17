@@ -1,42 +1,31 @@
-// services/apiCounter.js
-// Cluster-safe DB-backed daily API counter.
-// Falls back to in-memory if the table doesn't exist yet (safe before migration).
+// Persistent local request budget. No calendar-based resets.
 'use strict';
-
 const db = require('../config/db');
-
-let inMemory = 0;
-let lastDate = todayKey();
-
-function todayKey() { return new Date().toISOString().split('T')[0]; }
-
-function checkReset() {
-  const today = todayKey();
-  if (today !== lastDate) { inMemory = 0; lastDate = today; }
+const BUDGET_KEY = '1970-01-01';
+let ready;
+function init() {
+  if (!ready) ready = (async () => {
+    await db.query(`CREATE TABLE IF NOT EXISTS api_daily_usage (
+      date DATE PRIMARY KEY, request_count INT NOT NULL DEFAULT 0
+    )`);
+    const [[row]] = await db.query('SELECT request_count FROM api_daily_usage ORDER BY date DESC LIMIT 1');
+    await db.query('INSERT IGNORE INTO api_daily_usage (date, request_count) VALUES (?, ?)', [BUDGET_KEY, row?.request_count || 0]);
+  })().catch(error => { ready = null; throw error; });
+  return ready;
 }
-
-async function increment() {
-  checkReset();
-  inMemory++;
-  try {
-    await db.query(
-      `INSERT INTO api_daily_usage (date, request_count) VALUES (?, 1)
-       ON DUPLICATE KEY UPDATE request_count = request_count + 1`,
-      [todayKey()]
-    );
-  } catch (_) { /* table may not exist yet — in-memory is the fallback */ }
-}
-
 async function getCount() {
-  try {
-    const [[row]] = await db.query(
-      'SELECT request_count FROM api_daily_usage WHERE date = ?', [todayKey()]
-    );
-    return row?.request_count ?? 0;
-  } catch (_) {
-    checkReset();
-    return inMemory;
-  }
+  await init();
+  const [[row]] = await db.query('SELECT request_count FROM api_daily_usage WHERE date = ?', [BUDGET_KEY]);
+  return Number(row.request_count);
 }
-
-module.exports = { increment, getCount };
+async function increment(limit) {
+  await init();
+  const [result] = await db.query('UPDATE api_daily_usage SET request_count = request_count + 1 WHERE date = ? AND request_count < ?', [BUDGET_KEY, limit]);
+  if (!result.affectedRows) throw new Error('API request budget exhausted. No automatic reset is enabled.');
+  return getCount();
+}
+async function pin(limit) {
+  await init();
+  await db.query('UPDATE api_daily_usage SET request_count = GREATEST(request_count, ?) WHERE date = ?', [limit, BUDGET_KEY]);
+}
+module.exports = { increment, getCount, pin };

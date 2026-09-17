@@ -1,11 +1,10 @@
 /* =============================================================
-   Rooted Predictions — Global Design System
-   "Precision Tips. Global Reach. Real Results."
-   ============================================================= */
+   Rooted Predicts — Global Design System
+   "Precision Tips. Global Reach. Real Results." */
 
 /* Font @imports removed — loaded via <link> tags in HTML head for faster discovery */
 
-/* ── CSS Variables ─────────────────────────────────────────── */
+/* CSS Variables  */
 :root {
   --navy:       #0B2A1A;
   --red:        #E74C3C;
@@ -130,7 +129,7 @@ img { max-width: 100%; display: block; }
 }
 .logo-text span { color: var(--red); }
 
-/* ── Main Nav ───────────────────────────────────────────────── */
+/*  Main Nav ---------------------------------- */
 .main-nav { display: flex; align-items: center; gap: 6px; }
 .nav-link {
   color: rgba(255,255,255,0.75);

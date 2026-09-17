@@ -13,8 +13,7 @@ const db      = require('../config/db');
 const { asyncHandler, successResponse, errorResponse, parsePagination, paginate } = require('../utils/helpers');
 const { optionalAuth } = require('../middleware/auth');
 
-// In-memory standings cache { api_league_id → { data, expires } }
-const standingsCache = new Map();
+
 
 // ── GET /api/predictions/stats — Overall accuracy stats
 router.get('/stats', asyncHandler(async (req, res) => {
@@ -263,7 +262,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const allowedOrder = ['ASC', 'DESC'];
   const safeSort  = allowedSort.includes(sort)   ? sort  : 'match_date';
   const safeOrder = allowedOrder.includes(order.toUpperCase()) ? order.toUpperCase() : 'ASC';
-  sql += categorySort ? ` ORDER BY p.${categorySort}` : ` ORDER BY p.${safeSort} ${safeOrder}`;
+  sql += categorySort ? ` ORDER BY p.${categorySort}, p.id ASC` : ` ORDER BY p.${safeSort} ${safeOrder}, p.id ASC`;
 
   // Count query
   const countSql = sql.replace(
@@ -284,7 +283,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   // Mask VIP tip content for non-VIP users
   const isVip = req.user && ['vip', 'admin'].includes(req.user.role);
   const masked = predictions.map(p => {
-    if (p.visibility === 'vip' && !isVip) {
+    if (p.visibility === 'vip' && p.category !== 'Banker of the Day' && !isVip) {
       return { ...p, tip: null, odds: null, analysis: null, locked: true };
     }
     return { ...p, locked: false };
@@ -305,8 +304,8 @@ router.get('/:slug', optionalAuth, asyncHandler(async (req, res) => {
        l.api_league_id
      FROM predictions p
      LEFT JOIN leagues l ON p.league_id = l.id
-     WHERE p.slug = ? AND p.published_at IS NOT NULL`,
-    [req.params.slug]
+     WHERE (p.slug = ? OR CAST(p.id AS CHAR) = ?) AND p.published_at IS NOT NULL`,
+    [req.params.slug, req.params.slug]
   );
 
   if (!rows.length) return errorResponse(res, 'Prediction not found', 404);
@@ -315,7 +314,7 @@ router.get('/:slug', optionalAuth, asyncHandler(async (req, res) => {
 
   // Mask VIP content
   const isVip = req.user && ['vip', 'admin'].includes(req.user.role);
-  if (prediction.visibility === 'vip' && !isVip) {
+  if (prediction.visibility === 'vip' && prediction.category !== 'Banker of the Day' && !isVip) {
     prediction.tip      = null;
     prediction.odds     = null;
     prediction.analysis = null;
@@ -340,8 +339,8 @@ router.get('/:slug/extras', optionalAuth, asyncHandler(async (req, res) => {
     `SELECT p.home_team, p.away_team, l.api_league_id
      FROM predictions p
      LEFT JOIN leagues l ON p.league_id = l.id
-     WHERE p.slug = ? AND p.published_at IS NOT NULL`,
-    [req.params.slug]
+     WHERE (p.slug = ? OR CAST(p.id AS CHAR) = ?) AND p.published_at IS NOT NULL`,
+    [req.params.slug, req.params.slug]
   );
   if (!rows.length) return errorResponse(res, 'Prediction not found', 404);
 
@@ -368,39 +367,8 @@ router.get('/:slug/extras', optionalAuth, asyncHandler(async (req, res) => {
     awayScore: r.away_score,
   }));
 
-  // Standings: API-Football with 6h in-memory cache
-  let standings = null;
-  if (api_league_id && process.env.API_FOOTBALL_KEY) {
-    const cacheKey = String(api_league_id);
-    const cached = standingsCache.get(cacheKey);
-    if (cached && Date.now() < cached.expires) {
-      standings = cached.data;
-    } else {
-      try {
-        const apiSvc = require('../services/apiFootball');
-        const raw = await apiSvc.fetchStandings(api_league_id);
-        if (raw && raw.length && raw[0]?.league?.standings) {
-          standings = raw[0].league.standings.flat().map(s => ({
-            rank: s.rank,
-            team: s.team.name,
-            logo: s.team.logo,
-            mp:   s.all.played,
-            w:    s.all.win,
-            d:    s.all.draw,
-            l:    s.all.lose,
-            gf:   s.all.goals.for,
-            ga:   s.all.goals.against,
-            gd:   s.goalsDiff,
-            pts:  s.points,
-            form: s.form,
-          }));
-          standingsCache.set(cacheKey, { data: standings, expires: Date.now() + 6 * 60 * 60 * 1000 });
-        }
-      } catch (e) {
-        console.error('[STANDINGS]', e.message);
-      }
-    }
-  }
+  // Public page views must never spend provider API credits.
+  const standings = null;
 
   return successResponse(res, { h2h, standings });
 }));

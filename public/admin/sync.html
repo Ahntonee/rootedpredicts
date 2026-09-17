@@ -205,19 +205,19 @@ window.loadApiStatus = async function loadApiStatus() {
         ? Math.round(d.requests_used / limit * 100) : 0;
       var barColor  = pct > 80 ? 'var(--red)' : pct > 50 ? 'var(--warning, #f59e0b)' : 'var(--green)';
       var warningHtml = (d.warning || remaining <= 10)
-        ? '<div style="margin-top:8px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:6px;padding:8px 10px;font-size:0.78rem;color:var(--red);"><strong>⚠ Quota Low</strong> — ' + (d.warning || 'Only ' + remaining + ' requests left today. Resets at UTC midnight.') + '</div>'
+        ? '<div style="margin-top:8px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:6px;padding:8px 10px;font-size:0.78rem;color:var(--red);"><strong>⚠ Quota Low</strong> — ' + (d.warning || 'Only ' + remaining + ' requests left. Automatic resets are disabled.') + '</div>'
         : '';
       el.innerHTML =
         '<div style="display:flex;flex-direction:column;gap:6px;">' +
-          '<div style="display:flex;justify-content:space-between;"><span>Requests Used Today</span><strong>' + used + ' / ' + limit + '</strong></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Tracked Requests Used</span><strong>' + used + ' / ' + limit + '</strong></div>' +
           '<div style="display:flex;justify-content:space-between;"><span>Remaining</span><strong style="color:' + barColor + ';">' + remaining + '</strong></div>' +
           '<div style="display:flex;justify-content:space-between;"><span>Season</span><strong>' + season + '</strong></div>' +
           '<div style="margin-top:6px;background:var(--border);border-radius:4px;height:8px;overflow:hidden;">' +
             '<div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:4px;transition:width 0.4s;"></div>' +
           '</div>' +
-          '<div style="font-size:0.75rem;color:var(--muted);text-align:right;">' + pct + '% of daily quota used</div>' +
+          '<div style="font-size:0.75rem;color:var(--muted);text-align:right;">' + pct + '% of saved local budget used</div>' +
           warningHtml +
-          '<div style="margin-top:8px;font-size:0.72rem;color:var(--muted);">Override limit with <code>API_FOOTBALL_DAILY_LIMIT</code> in .env. Default: 2500.</div>' +
+          '<div style="margin-top:8px;font-size:0.72rem;color:var(--muted);">Local tracking only; provider balance may differ. No automatic API calls or daily resets. Override limit with <code>API_FOOTBALL_DAILY_LIMIT</code> in .env. Default: 2500.</div>' +
         '</div>';
     } else {
       el.textContent = (json && json.message) ? json.message : 'Could not load API status. Check API key in .env';

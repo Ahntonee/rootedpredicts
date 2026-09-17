@@ -72,7 +72,7 @@ const authLimiter = rateLimit({
 // Admin and sync routes get a separate high-capacity limiter so dashboard
 // operations (sync, auto-predict, bulk edits) never hit the public quota.
 const adminLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 2000,
+  windowMs: 60 * 60 * 1000, max: 4000,
   standardHeaders: true, legacyHeaders: false,
   message: { success: false, message: 'Too many admin requests. Please slow down.' },
 });
@@ -114,6 +114,9 @@ app.use(cookieParser());
 // JSON-LD structured data before serving the HTML. Regular browsers skip
 // this path entirely and get the normal CSR experience.
 
+const { categories, dbCategories, renderArticles } = require('./services/categoryPages');
+const categoryMetadata = require('./services/categoryMetadata.json');
+
 function isSearchBot(req) {
   const ua = req.headers['user-agent'] || '';
   return /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|facebot|ia_archiver/i.test(ua);
@@ -152,12 +155,15 @@ function buildBotPredCard(p) {
          </div>`
       : ''}
   </div>
+  <a href="/prediction/${encodeURIComponent(p.slug || p.id)}">View match analysis</a>
 </article>`;
 }
 
 async function prerenderPage(req, res, next, file, containerId) {
   try {
-    let html = fs.readFileSync(path.join(__dirname, 'public', file), 'utf8');
+    let html = renderArticles(fs.readFileSync(path.join(__dirname, 'public', file), 'utf8'), file === 'predictions.html' ? (req.params.category || 'free') : null);
+    const category = req.params.category || 'free';
+    if (file === 'predictions.html') html = renderCategoryMeta(html, category);
     const [preds] = await db.query(`
       SELECT p.id, p.slug, p.home_team, p.away_team, p.match_date,
              p.tip, p.market, p.odds, p.confidence_score, p.league_id,
@@ -166,13 +172,15 @@ async function prerenderPage(req, res, next, file, containerId) {
       LEFT JOIN leagues l ON l.id = p.league_id
       WHERE DATE(p.match_date) = CURDATE()
         AND p.published_at IS NOT NULL
+        AND (p.visibility <> 'vip' OR p.category = 'Banker of the Day')
+        ${category !== 'free' ? 'AND p.category = ?' : ''}
       ORDER BY p.confidence_score DESC
-      LIMIT 30
-    `);
+      ${file === 'index.html' ? 'LIMIT 15' : ''}
+    `, category !== 'free' ? [dbCategories[category]] : []);
 
     if (preds.length) {
       const cardsHtml = preds.map(buildBotPredCard).join('\n');
-      html = html.replace(`<div id="${containerId}">`, `<div id="${containerId}">\n${cardsHtml}`);
+      html = html.replace(new RegExp('(<div[^>]*id="' + containerId + '"[^>]*>)'), '$1' + cardsHtml);
 
       const BASE = process.env.SITE_URL || 'https://www.rootedpredict.com';
       const today = new Date().toISOString().split('T')[0];
@@ -181,7 +189,7 @@ async function prerenderPage(req, res, next, file, containerId) {
         '@type': 'ItemList',
         'name': `Football Predictions for ${today}`,
         'description': 'Free football predictions and betting tips updated daily.',
-        'url': `${BASE}/predictions.html`,
+        'url': `${BASE}/predictions/${category}`,
         'numberOfItems': preds.length,
         'itemListElement': preds.map((p, i) => ({
           '@type': 'ListItem',
@@ -198,17 +206,36 @@ async function prerenderPage(req, res, next, file, containerId) {
     res.send(html);
   } catch (e) {
     console.error('[PRERENDER]', e.message);
-    next();
+    let html = renderArticles(fs.readFileSync(path.join(__dirname, 'public', file), 'utf8'), file === 'predictions.html' ? (req.params.category || 'free') : null);
+    if (file === 'predictions.html') html = renderCategoryMeta(html, req.params.category || 'free');
+    res.type('html').send(html);
   }
 }
 
-// Bot pre-render routes — must come BEFORE express.static()
-app.get(['/', '/index.html'], (req, res, next) => {
-  if (!isSearchBot(req)) return next();
-  return prerenderPage(req, res, next, 'index.html', 'free-picks-list');
+function renderCategoryMeta(html, category) {
+  const meta = categoryMetadata[category];
+  const canonical = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '') + '/predictions/' + category;
+  html = html.replace(/(<title[^>]*>)[\s\S]*?<\/title>/, (_, start) => start + escHtml(meta.title) + '</title>');
+  html = html.replace(/(<meta name="description"[^>]*content=")[^"]*/, '$1' + escHtml(meta.desc));
+  html = html.replace(/(<link rel="canonical"[^>]*href=")[^"]*/, '$1' + canonical);
+  html = html.replace(/(<meta property="og:url"[^>]*content=")[^"]*/, '$1' + canonical);
+  html = html.replace(/(<meta property="og:title"[^>]*content=")[^"]*/, '$1' + escHtml(meta.title));
+  html = html.replace(/(<meta property="og:description"[^>]*content=")[^"]*/, '$1' + escHtml(meta.desc));
+  for (const [id, text] of Object.entries({ 'page-h1': meta.h1, 'page-sub': meta.sub, 'breadcrumb-label': meta.label, 'picks-title': meta.label.toUpperCase() + ' PICKS' })) {
+    html = html.replace(new RegExp('(<[^>]+id="' + id + '"[^>]*>)[^<]*'), (_, start) => start + escHtml(text));
+  }
+  html = html.replace(/<div class="seo-block" id="seo-([^" ]+)"[^>]*>/g, (_, slug) => `<div class="seo-block" id="seo-${slug}"${slug === category ? '' : ' style="display:none;"'}>`);
+  return html;
+}
+app.get(['/', '/index.html'], (req, res, next) => prerenderPage(req, res, next, 'index.html', 'free-picks-list'));
+app.get('/predictions.html', (req, res) => {
+  const category = Object.hasOwn(categories, req.query.category) ? req.query.category : 'free';
+  const params = new URLSearchParams(req.query);
+  params.delete('category');
+  res.redirect(301, '/predictions/' + category + (params.size ? '?' + params.toString() : ''));
 });
-app.get('/predictions.html', (req, res, next) => {
-  if (!isSearchBot(req)) return next();
+app.get('/predictions/:category', (req, res, next) => {
+  if (!Object.hasOwn(categories, req.params.category)) return res.status(404).type('html').send('<h1>Category not found</h1><a href="/predictions/free">View predictions</a>');
   return prerenderPage(req, res, next, 'predictions.html', 'picks-list');
 });
 
@@ -475,6 +502,7 @@ app.get('/sitemap.xml', async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
 
   const staticPages = [
+    ...Object.keys(categories).map(category => ({ url: '/predictions/' + category, changefreq: 'daily', priority: '0.9' })),
     { url: '/',               changefreq: 'daily',   priority: '1.0' },
     { url: '/predictions.html', changefreq: 'daily',   priority: '0.9' },
     { url: '/leagues.html',   changefreq: 'weekly',  priority: '0.7' },
@@ -622,11 +650,12 @@ app.get('/prediction/:slug', async (req, res) => {
       `SELECT p.*, l.name AS league_name, l.country AS league_country
        FROM predictions p
        LEFT JOIN leagues l ON l.id = p.league_id
-       WHERE p.slug = ? OR CAST(p.id AS CHAR) = ? LIMIT 1`,
+       WHERE (p.slug = ? OR CAST(p.id AS CHAR) = ?) AND p.published_at IS NOT NULL LIMIT 1`,
       [req.params.slug, req.params.slug]
     );
     if (!rows.length) return res.sendFile(path.join(__dirname, 'public', 'prediction-detail.html'));
     const p = rows[0];
+    if (p.visibility === 'vip' && p.category !== 'Banker of the Day') { p.tip = null; p.odds = null; }
     let html = fs.readFileSync(path.join(__dirname, 'public', 'prediction-detail.html'), 'utf8');
     const BASE = process.env.SITE_URL || 'https://www.rootedpredict.com';
     const schema = JSON.stringify({
@@ -692,7 +721,7 @@ app.listen(PORT, () => {
   console.log(`  Status: http://localhost:${PORT}/api/status`);
   console.log('==============================================\n');
 
-  // Restore today's API quota from DB so restarts don't reset the guard
+  // Restore the persistent local API budget from DB so restarts don't reset the guard
   require('./services/apiFootball').initQuotaFromDb().catch(() => {});
 
   // In PM2 cluster mode each worker gets its own process, so the cron scheduler
