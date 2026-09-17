@@ -11,7 +11,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../config/db');
 const { asyncHandler, successResponse, errorResponse, parsePagination, paginate } = require('../utils/helpers');
-const { optionalAuth } = require('../middleware/auth');
+const { optionalAuth, authenticate, requireAdmin } = require('../middleware/auth');
 
 
 
@@ -86,7 +86,7 @@ router.get('/stats', asyncHandler(async (req, res) => {
 }));
 
 // ── GET /api/predictions/leaderboard — real verified results breakdown
-router.get('/leaderboard', asyncHandler(async (req, res) => {
+router.get('/leaderboard', authenticate, requireAdmin, asyncHandler(async (req, res) => {
   const decided = "published_at IS NOT NULL AND result IN ('won','lost')";
 
   const [[overall]] = await db.query(
@@ -310,7 +310,7 @@ router.get('/:slug', optionalAuth, asyncHandler(async (req, res) => {
 
   if (!rows.length) return errorResponse(res, 'Prediction not found', 404);
 
-  const prediction = rows[0];
+  const prediction = await require('../services/recentForm').fillRecentForm(rows[0]);
 
   // Mask VIP content
   const isVip = req.user && ['vip', 'admin'].includes(req.user.role);

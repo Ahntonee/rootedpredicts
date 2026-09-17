@@ -3,7 +3,27 @@
   var countries = { NG:'NGN', US:'USD', GB:'GBP', GH:'GHS', KE:'KES', ZA:'ZAR', IN:'INR', AU:'AUD', CA:'CAD', NZ:'NZD', JP:'JPY', CN:'CNY', PH:'PHP', ID:'IDR', PK:'PKR', BD:'BDT', AE:'AED', SA:'SAR', EG:'EGP', UG:'UGX', TZ:'TZS', RW:'RWF', ZM:'ZMW', BW:'BWP', MA:'MAD', TN:'TND', DZ:'DZD', CM:'XAF', SN:'XOF', CI:'XOF', DE:'EUR', FR:'EUR', IT:'EUR', ES:'EUR', PT:'EUR', NL:'EUR', BE:'EUR', IE:'EUR', AT:'EUR', FI:'EUR', GR:'EUR', CY:'EUR', MT:'EUR', EE:'EUR', LV:'EUR', LT:'EUR', SK:'EUR', SI:'EUR', HR:'EUR', LU:'EUR', CH:'CHF', SE:'SEK', NO:'NOK', DK:'DKK', PL:'PLN', CZ:'CZK', HU:'HUF', RO:'RON', TR:'TRY', BR:'BRL', MX:'MXN', AR:'ARS', CL:'CLP', CO:'COP', SG:'SGD', MY:'MYR', TH:'THB', VN:'VND', KR:'KRW', HK:'HKD', TW:'TWD', IL:'ILS', QA:'QAR', KW:'KWD', BH:'BHD', OM:'OMR' };
   var zones = { 'Africa/Lagos':'NG', 'Africa/Accra':'GH', 'Africa/Nairobi':'KE', 'Africa/Johannesburg':'ZA', 'Europe/London':'GB', 'Asia/Kolkata':'IN', 'Asia/Calcutta':'IN', 'America/New_York':'US', 'America/Chicago':'US', 'America/Denver':'US', 'America/Los_Angeles':'US', 'America/Toronto':'CA', 'America/Vancouver':'CA', 'Australia/Sydney':'AU', 'Australia/Perth':'AU' };
   var select = document.getElementById('pricing-currency');
-  if (!select) return;
+  if (!select) {
+    var vipPrice = document.getElementById('vip-local-price');
+    if (!vipPrice) return;
+    (window.sessionUserPromise || Promise.resolve(null)).then(async function(user) {
+      var currency = countries[user && user.country];
+      try {
+        currency = currency || countries[zones[Intl.DateTimeFormat().resolvedOptions().timeZone]] || countries[new Intl.Locale(navigator.language).region] || 'USD';
+        var savedCurrency = localStorage.getItem('pricing_currency');
+        if (Object.values(countries).includes(savedCurrency)) currency = savedCurrency;
+      } catch (_) { currency = currency || 'USD'; }
+      try {
+        var data = await quote(currency);
+        vipPrice.textContent = 'From ' + money(data.plans.monthly.amount, data.currency) + '/month';
+        var periods = document.createElement('p');
+        periods.style.cssText = 'color:#fff;font-size:0.8rem;margin-top:10px;';
+        periods.textContent = 'Quarterly: ' + money(data.plans.quarterly.amount, data.currency) + ' / Annual: ' + money(data.plans.annual.amount, data.currency);
+        vipPrice.after(periods);
+      } catch (_) { vipPrice.textContent = 'From NGN 15,000/month'; }
+    });
+    return;
+  }
   var manual = false, version = 0, usd = null;
   var choices = Array.from(new Set(Object.values(countries))).sort();
   var names;

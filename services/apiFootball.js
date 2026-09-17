@@ -36,7 +36,9 @@ async function initQuotaFromDb() {
 async function syncCountFromDb() {
   try {
     const dbCount = await counter.getCount();
-    if (dbCount > dailyRequestCount) dailyRequestCount = dbCount;
+    dailyRequestCount = dbCount;
+    const snapshot = await counter.getSnapshot();
+    effectiveLimit = snapshot ? Number(snapshot.request_limit) : DAILY_LIMIT;
     return dailyRequestCount;
   } catch (error) {
     throw error;
@@ -46,20 +48,41 @@ async function syncCountFromDb() {
 // Keep this aligned with the current API-Football plan unless explicitly
 // overridden in the deployment environment.
 const DAILY_LIMIT = parseInt(process.env.API_FOOTBALL_DAILY_LIMIT || '2500', 10);
+let effectiveLimit = DAILY_LIMIT;
+
+let quotaCheck;
+async function checkProviderQuota() {
+  if (quotaCheck) return quotaCheck;
+  quotaCheck = (async () => {
+    if (!API_KEY) throw new Error('API_FOOTBALL_KEY is not configured');
+    const before = await counter.getCount();
+    const response = await apiClient.get('/status');
+    const info = response.data.response;
+    if (response.data.errors && Object.keys(response.data.errors).length) throw new Error('Provider rejected the quota check');
+    const used = info?.requests?.current;
+    const limit = info?.requests?.limit_day;
+    if (!Number.isInteger(used) || !Number.isInteger(limit)) throw new Error('Provider did not return valid quota counts');
+    dailyRequestCount = await counter.reconcile(used, limit, before);
+    effectiveLimit = limit;
+    return counter.getSnapshot();
+  })().finally(() => { quotaCheck = null; });
+  return quotaCheck;
+}
 
 async function request(endpoint, params = {}) {
   if (!API_KEY) throw new Error('[API-Football] API_FOOTBALL_KEY not set in .env');
 
   try {
-    dailyRequestCount = await counter.increment(DAILY_LIMIT);
+    await syncCountFromDb();
+    dailyRequestCount = await counter.increment(effectiveLimit);
     console.log(`[API-Football] #${dailyRequestCount}/${DAILY_LIMIT} GET ${endpoint}`, params);
     const response = await apiClient.get(endpoint, { params });
     if (response.data.errors && Object.keys(response.data.errors).length > 0) {
       const errMsg = JSON.stringify(response.data.errors);
       // API says we've hit the daily limit — pin local counter so no more calls go out
-      if (/request limit|requests.*limit|You have reached/i.test(errMsg)) {
-        dailyRequestCount = DAILY_LIMIT;
-        await counter.pin(DAILY_LIMIT);
+      if (String(response.headers['x-ratelimit-requests-remaining']) === '0' || (/daily|day/i.test(errMsg) && /limit|reached/i.test(errMsg))) {
+        dailyRequestCount = effectiveLimit;
+        await counter.pin(effectiveLimit);
         console.warn(`[API-Football] API daily limit confirmed by server. Pinning counter to ${DAILY_LIMIT}.`);
       }
       throw new Error(`API error: ${errMsg}`);
@@ -462,6 +485,23 @@ async function fetchTeamForm(teamId, last = 5) {
   // Sort descending by date so slice(0, last) gives the most recent first.
   data.sort((a, b) => new Date(b.fixture.date) - new Date(a.fixture.date));
   return data.slice(0, last);
+}
+// Admin-triggered form refresh; public page loads only read saved data.
+async function refreshRecentForm(predictionId) {
+  const [[prediction]] = await db.query('SELECT id, api_fixture_id, match_date FROM predictions WHERE id = ?', [predictionId]);
+  if (!prediction || !prediction.api_fixture_id) throw new Error('This prediction has no provider fixture ID.');
+  const { data } = await request('/fixtures', { id: prediction.api_fixture_id });
+  const fixture = data[0];
+  if (!fixture) throw new Error('Fixture not found');
+  const forms = [];
+  for (const side of ['home', 'away']) {
+    const teamId = fixture.teams[side].id;
+    const games = await fetchTeamForm(teamId, 15);
+    const previous = games.filter(game => new Date(game.fixture.date) < new Date(prediction.match_date) && ['FT','AET','PEN'].includes(game.fixture.status.short) && game.goals.home != null && game.goals.away != null).slice(0, 5);
+    forms.push(calculateFormString(previous, teamId));
+  }
+  await db.query('UPDATE predictions SET home_form = ?, away_form = ? WHERE id = ?', [forms[0], forms[1], predictionId]);
+  return { home_form: forms[0], away_form: forms[1] };
 }
 async function fetchStandings(leagueId, season = CURRENT_SEASON) {
   const { data } = await request('/standings', { league: leagueId, season });
@@ -1141,8 +1181,8 @@ async function autoPredictFixtures(db, options = {}) {
 }
 
 function getRequestCount()   { return dailyRequestCount; }
-function getRemainingCount() { return Math.max(0, DAILY_LIMIT - dailyRequestCount); }
-function getDailyLimit()     { return DAILY_LIMIT; }
+function getRemainingCount() { return Math.max(0, effectiveLimit - dailyRequestCount); }
+function getDailyLimit()     { return effectiveLimit; }
 
 // ── Fetch finished fixtures for a league (for rate/metric calculations)
 async function fetchLeagueFixtures(leagueId, season = CURRENT_SEASON, opts = {}) {
@@ -1346,12 +1386,12 @@ async function syncLeagueSeasonFixtures(leagueId, season, options = {}) {
 module.exports = {
   syncLeagues, syncTeams, syncFixtures, syncLeagueSeasonFixtures, syncResults, syncScores, syncLive,
   FINISHED_STATUSES, LIVE_STATUSES,
-  fetchH2H, fetchTeamForm, fetchStandings, fetchTeamStats,
+  refreshRecentForm, fetchH2H, fetchTeamForm, fetchStandings, fetchTeamStats,
   fetchLeagueFixtures, fetchFixturesByDate,
   calculateFormString, evaluateTip, mapCountryToContinent,
   isPopularLeague, getRequestCount, getRemainingCount, getDailyLimit, CURRENT_SEASON,
   researchFixture, autoPredictFixtures, gradeFromScores,
   fetchFixtureOdds, oddsForTip,
   goalProbabilities, poissonPMF, generateTipSuggestion, scoreForm,
-  initQuotaFromDb, syncCountFromDb,
+  initQuotaFromDb, syncCountFromDb, checkProviderQuota,
 };

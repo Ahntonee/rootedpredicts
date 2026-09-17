@@ -19,6 +19,13 @@ const { asyncHandler, successResponse, errorResponse } = require('../utils/helpe
 // All sync routes require admin authentication
 router.use(authenticate, requireAdmin);
 
+router.post('/status/verify', asyncHandler(async (req, res) => successResponse(res, await apiSvc.checkProviderQuota())));
+
+router.post('/forms/:id', asyncHandler(async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return errorResponse(res, 'Invalid prediction ID', 400);
+  return successResponse(res, await apiSvc.refreshRecentForm(req.params.id));
+}));
+
 // ── GET /api/sync/status
 router.get('/status', asyncHandler(async (req, res) => {
   // The DB-backed value is shared by all PM2 workers and survives restarts.
@@ -32,6 +39,7 @@ router.get('/status', asyncHandler(async (req, res) => {
     pct_used:           Math.round((used / limit) * 100),
     warning:            remaining <= 10 ? `Only ${remaining} requests left in the saved local budget — automatic resets are disabled.` : null,
     season:             apiSvc.CURRENT_SEASON,
+    provider:           await require('../services/apiCounter').getSnapshot(),
   });
 }));
 

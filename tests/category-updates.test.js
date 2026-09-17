@@ -61,7 +61,8 @@ test('guest Safe Tips and detail data are public; other VIP tips stay locked', a
   load('routes/predictions.js', {
     express: { Router: () => ({ get: (url, ...fns) => { handlers[url] = fns.at(-1); } }) },
     '../config/db': db,
-    '../middleware/auth': { optionalAuth: () => {} },
+    '../middleware/auth': { optionalAuth: () => {}, authenticate: () => {}, requireAdmin: () => {} },
+    '../services/recentForm': { fillRecentForm: async prediction => prediction },
     '../services/apiFootball': new Proxy({}, { get: () => { throw new Error('Public API call forbidden'); } }),
   });
   async function invoke(url, query = {}) {

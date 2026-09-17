@@ -461,6 +461,7 @@ app.get('/tips/:slug', async (req, res) => {
 });
 
 // ── Static files
+app.get('/leaderboard.html', require('./middleware/auth').authenticate, require('./middleware/auth').requireAdmin, (req, res) => res.sendFile(path.join(__dirname, 'public', 'leaderboard.html')));
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: process.env.NODE_ENV === 'production' ? '30d' : 0,
   etag: true,
@@ -506,7 +507,6 @@ app.get('/sitemap.xml', async (req, res) => {
     { url: '/',               changefreq: 'daily',   priority: '1.0' },
     { url: '/predictions.html', changefreq: 'daily',   priority: '0.9' },
     { url: '/leagues.html',   changefreq: 'weekly',  priority: '0.7' },
-    { url: '/leaderboard.html', changefreq: 'daily', priority: '0.7' },
     { url: '/blog.html',      changefreq: 'weekly',  priority: '0.7' },
     { url: '/pricing.html',   changefreq: 'monthly', priority: '0.8' },
     { url: '/about.html',     changefreq: 'monthly', priority: '0.5' },

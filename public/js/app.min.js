@@ -207,7 +207,7 @@
             <ul class="footer-links">
               <li><a href="/pricing.html">VIP Packages</a></li>
               <li><a href="/predictions.html?result=won&all_dates=1">Recent Winnings</a></li>
-              <li><a href="/leaderboard.html">Leaderboard</a></li>
+              <li></li>
               <li><a href="/blog.html">Blog</a></li>
             </ul>
           </div>
@@ -548,7 +548,7 @@
            </div>
            <div class="vip-unlock-cta">
              <span class="material-icons-round">lock</span>
-             <p>VIP tip — unlock from $4.89/month</p>
+             <p>VIP tip — unlock from NGN 15,000/month</p>
              <a href="/pricing.html" class="btn btn-primary btn-sm">Unlock VIP</a>
            </div>
          </div>`

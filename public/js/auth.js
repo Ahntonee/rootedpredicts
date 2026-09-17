@@ -9,8 +9,9 @@
   // ── Check if user is logged in and update header ──────────
   async function checkAuthState() {
     try {
-      const res  = await fetch('/api/auth/me', { credentials: 'include' });
-      const json = await res.json();
+      if (!window.sessionUserPromise) window.sessionUserPromise = fetch('/api/auth/me', { credentials:'include' }).then(r => r.json()).then(j => j.success ? j.data : null).catch(() => null);
+      const sessionUser = await window.sessionUserPromise;
+      const json = { success:!!sessionUser, data:sessionUser };
 
       if (json.success && json.data) {
         const user = json.data;
@@ -27,6 +28,7 @@
 
   // ── Update header buttons based on auth state ─────────────
   function updateHeaderForUser(user) {
+    document.querySelectorAll('a[href="/register.html"], a[href^="/login.html"]').forEach(link => { link.hidden = true; link.style.display = 'none'; });
     // Replace "Log In" + "Get VIP" with user menu
     const actions = document.querySelector('.header-actions');
     if (!actions) return;

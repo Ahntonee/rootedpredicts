@@ -110,9 +110,10 @@
             <span class="material-icons-round" style="font-size:2rem;color:var(--green);">workspace_premium</span>
             <h3 style="font-family:var(--font-head);font-size:1.3rem;font-weight:800;color:#fff;margin:8px 0 6px;">Unlock VIP Tips</h3>
             <p style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;">Premium picks, early access &amp; Telegram alerts.</p>
-            <a href="/pricing.html" class="btn btn-primary" style="width:100%;justify-content:center;">From $4.89/month</a>
+            <a id="vip-local-price" href="/pricing.html" class="btn btn-primary" style="width:100%;justify-content:center;">From NGN 15,000/month</a>
           </div>
         </div>
+        <div style="font-size:0.75rem;padding:8px;">Local prices are estimates; payments are in NGN. <a href="https://www.exchangerate-api.com">Rates by ExchangeRate-API</a></div>
         <!-- Team stats injected here after load -->
         <div id="team-stats-card"></div>
         <div class="sidebar-card">
@@ -122,14 +123,11 @@
               <span style="font-size:0.85rem;">All Today's Tips</span>
               <span class="material-icons-round" style="margin-left:auto;font-size:0.9rem;color:var(--muted);">arrow_forward</span>
             </a>
-            <a href="/predictions.html?market=over-2-5" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);">
+            <a href="/predictions/2-5-goals" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);">
               <span style="font-size:0.85rem;">Over 2.5 Goals Tips</span>
               <span class="material-icons-round" style="margin-left:auto;font-size:0.9rem;color:var(--muted);">arrow_forward</span>
             </a>
-            <a href="/leaderboard.html" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--text);">
-              <span style="font-size:0.85rem;">Accuracy Leaderboard</span>
-              <span class="material-icons-round" style="margin-left:auto;font-size:0.9rem;color:var(--muted);">arrow_forward</span>
-            </a>
+
           </div>
         </div>
       </aside>
@@ -137,6 +135,8 @@
   </div>
 </main>
 <footer class="site-footer" id="site-footer"></footer>
+<script>window.sessionUserPromise = fetch('/api/auth/me', { credentials:'include' }).then(r => r.json()).then(j => j.success ? j.data : null).catch(() => null);</script>
+<script src="/js/pricing-currency.js" defer></script>
 <script src="/js/app.min.js" defer></script>
 <script src="/js/content-protection.min.js" defer></script>
 <script>
@@ -190,11 +190,9 @@ function updatePredictionSEO(p) {
   }
 
   function formBadges(str) {
-    if (!str) return '<span style="color:var(--muted);font-size:0.82rem;">—</span>';
+    const results = String(str || '').toUpperCase().replace(/[^WDL]/g,'').slice(0,5).padEnd(5, '?');
     const c = {W:'var(--green)',D:'var(--yellow)',L:'var(--red)'};
-    return str.toUpperCase().replace(/[^WDL]/g,'').split('').slice(0,5).map(ch =>
-      `<span style="width:28px;height:28px;border-radius:6px;background:${c[ch]||'var(--muted)'};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:0.78rem;margin-right:4px;">${ch}</span>`
-    ).join('');
+    return results.split('').map(ch => `<span title="${ch === '?' ? 'Result not available' : ch}" style="width:28px;height:28px;border-radius:6px;background:${c[ch]||'var(--muted)'};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:0.78rem;margin-right:4px;">${ch}</span>`).join('');
   }
 
   function fmtDate(d) {
@@ -239,7 +237,7 @@ function updatePredictionSEO(p) {
   function teamStatsCard(home_form, away_form, home, away) {
     const hs = calcStats(home_form);
     const as = calcStats(away_form);
-    if (!hs && !as) return '';
+
     const h = hs || {mp:0,w:0,d:0,l:0};
     const a = as || {mp:0,w:0,d:0,l:0};
     const maxMP = Math.max(h.mp, a.mp, 1);
@@ -247,12 +245,14 @@ function updatePredictionSEO(p) {
     const maxD  = Math.max(h.d, a.d, 1);
     const maxL  = Math.max(h.l, a.l, 1);
     return `<div class="sidebar-card">
-      <div class="sidebar-card-header"><span class="material-icons-round">bar_chart</span>Team Stats</div>
+      <div class="sidebar-card-header"><span class="material-icons-round">bar_chart</span>Recent Form (Last 5)</div>
       <div class="sidebar-card-body" style="padding:16px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:14px;font-size:0.78rem;">
           <span style="color:var(--green);font-weight:700;">${esc(home)}</span>
           <span style="color:var(--red);font-weight:700;">${esc(away)}</span>
         </div>
+        <p>${esc(home)}: ${formBadges(home_form)}</p><p>${esc(away)}: ${formBadges(away_form)}</p>
+        <p style="font-size:0.75rem;">Newest first. ? means no saved result is available.</p>
         ${statBar('Matches Played', h.mp, a.mp, maxMP)}
         ${statBar('Wins', h.w, a.w, maxW)}
         ${statBar('Draws', h.d, a.d, maxD)}
@@ -393,6 +393,7 @@ function updatePredictionSEO(p) {
 
   // Discussion section
   async function commentsSection(predictionId, slug) {
+    const sessionUser = await window.sessionUserPromise;
     let commentsHtml = '';
     try {
       const cr = await fetch(`/api/comments/${predictionId}`, { credentials:'include' });
@@ -423,11 +424,12 @@ function updatePredictionSEO(p) {
       </h2>
       <div id="comments-list">${commentsHtml}</div>
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-        <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">
+        ${sessionUser ? `<form id="prediction-comment-form"><label for="prediction-comment">Your comment</label><textarea id="prediction-comment" class="form-control" minlength="2" maxlength="1000" required></textarea><button class="btn btn-primary btn-sm" type="submit">Post comment</button><p id="comment-status" aria-live="polite"></p></form>` : `        <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">
           <a href="/login.html?redirect=${encodeURIComponent('/prediction/'+slug)}" style="color:var(--green);font-weight:600;">Log in</a>
           or <a href="/register.html" style="color:var(--green);font-weight:600;">register</a> to join the discussion.
         </p>
-        <a href="/register.html" class="btn btn-outline btn-sm"><span class="material-icons-round">person_add</span>Create Free Account</a>
+        <a href="/register.html" class="btn btn-outline btn-sm"><span class="material-icons-round">person_add</span>Create Free Account</a>`}
+
       </div>
     </div>`;
   }
@@ -592,10 +594,41 @@ function updatePredictionSEO(p) {
   // Inject team stats into sidebar
   document.getElementById('team-stats-card').innerHTML = teamStatsCard(p.home_form, p.away_form, p.home_team, p.away_team);
 
+  window.sessionUserPromise.then(user => {
+    if (!user || user.role !== 'admin') return;
+    const button = document.createElement('button');
+    button.className = 'btn btn-outline btn-sm';
+    button.textContent = 'Update recent form (3 API calls)';
+    document.getElementById('team-stats-card').appendChild(button);
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try {
+        const response = await fetch('/api/sync/forms/' + p.id, {method:'POST', credentials:'include'});
+        const json = await response.json();
+        if (!json.success) throw new Error(json.message || 'Update failed');
+        location.reload();
+      } catch (error) { button.textContent = error.message; button.disabled = false; }
+    });
+  });
+
   // Load comments async
   commentsSection(p.id, slug).then(html => {
     const el = document.getElementById('comments-placeholder');
     if (el) el.innerHTML = html;
+    const form = document.getElementById('prediction-comment-form');
+    if (form) form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const button = form.querySelector('button');
+      button.disabled = true;
+      const status = document.getElementById('comment-status');
+      try {
+        const response = await fetch('/api/comments/' + p.id, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({content:document.getElementById('prediction-comment').value}) });
+        const json = await response.json();
+        status.textContent = json.message || (json.success ? 'Comment submitted.' : 'Could not post comment.');
+        if (json.success) form.reset();
+      } catch (_) { status.textContent = 'Could not post comment. Please try again.'; }
+      button.disabled = false;
+    });
   });
 
   // Fetch extras (H2H + standings) async — non-blocking

@@ -21,6 +21,8 @@
     <!-- API Status -->
     <div class="card" style="padding:20px;">
       <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;"><span class="material-icons-round" style="color:var(--red);">monitor_heart</span>API Status</h3>
+      <button id="verify-provider-quota" class="btn btn-outline btn-sm" onclick="verifyProviderQuota(this)">Check actual provider balance</button>
+      <p id="provider-quota-status" style="font-size:0.8rem;"></p>
       <div id="api-status" style="font-size:0.875rem;color:var(--muted);">Loading...</div>
       <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="loadApiStatus()"><span class="material-icons-round">refresh</span>Refresh</button>
     </div>
@@ -197,6 +199,7 @@ window.loadApiStatus = async function loadApiStatus() {
     var json = await Admin.api('GET', '/api/sync/status');
     if (json && json.success) {
       var d = json.data;
+      document.getElementById('provider-quota-status').textContent = d.provider ? 'Provider at last check: ' + d.provider.requests_used + ' used / ' + d.provider.request_limit + ' total. Checked: ' + d.provider.checked_at + '. Use the button to verify again.' : 'Provider balance not verified. The counter below is only the saved local safety budget.';
       var remaining = d.requests_remaining != null ? d.requests_remaining : 'N/A';
       var used      = d.requests_used      != null ? d.requests_used      : 'N/A';
       var limit     = d.daily_limit        != null ? d.daily_limit        : 2500;
@@ -209,8 +212,8 @@ window.loadApiStatus = async function loadApiStatus() {
         : '';
       el.innerHTML =
         '<div style="display:flex;flex-direction:column;gap:6px;">' +
-          '<div style="display:flex;justify-content:space-between;"><span>Tracked Requests Used</span><strong>' + used + ' / ' + limit + '</strong></div>' +
-          '<div style="display:flex;justify-content:space-between;"><span>Remaining</span><strong style="color:' + barColor + ';">' + remaining + '</strong></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Local Budget Used</span><strong>' + used + ' / ' + limit + '</strong></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Local Budget Remaining</span><strong style="color:' + barColor + ';">' + remaining + '</strong></div>' +
           '<div style="display:flex;justify-content:space-between;"><span>Season</span><strong>' + season + '</strong></div>' +
           '<div style="margin-top:6px;background:var(--border);border-radius:4px;height:8px;overflow:hidden;">' +
             '<div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:4px;transition:width 0.4s;"></div>' +
@@ -227,6 +230,16 @@ window.loadApiStatus = async function loadApiStatus() {
   }
 };
 
+async function verifyProviderQuota(button) {
+  button.disabled = true;
+  try {
+    const json = await Admin.api('POST', '/api/sync/status/verify');
+    if (!json.success) throw new Error(json.message || 'Quota check failed');
+    await loadApiStatus();
+  } catch (error) { document.getElementById('provider-quota-status').textContent = error.message; }
+  button.disabled = false;
+}
+
 async function runSync(btnId, url, resultId, method, body) {
   var btn = document.getElementById(btnId);
   var res = document.getElementById(resultId);
@@ -238,6 +251,7 @@ async function runSync(btnId, url, resultId, method, body) {
     var json = await Admin.api(method || 'POST', url, body || undefined);
     if (json.success) {
       var d = json.data;
+      document.getElementById('provider-quota-status').textContent = d.provider ? 'Provider at last check: ' + d.provider.requests_used + ' used / ' + d.provider.request_limit + ' total. Checked: ' + d.provider.checked_at + '. Use the button to verify again.' : 'Provider balance not verified. The counter below is only the saved local safety budget.';
       res.textContent = JSON.stringify(d || json.message);
       log('Success: ' + (json.message || JSON.stringify(d)), 'success');
       Admin.toast('Sync complete');
@@ -310,6 +324,7 @@ document.getElementById('odds-backfill-btn').addEventListener('click', async fun
     var json = await Admin.api('POST', '/api/sync/odds', body);
     if (json.success) {
       var d = json.data;
+      document.getElementById('provider-quota-status').textContent = d.provider ? 'Provider at last check: ' + d.provider.requests_used + ' used / ' + d.provider.request_limit + ' total. Checked: ' + d.provider.checked_at + '. Use the button to verify again.' : 'Provider balance not verified. The counter below is only the saved local safety budget.';
       var parts = [
         '<span style="color:var(--green);">&#10004; ' + d.updated + ' updated</span>',
         d.skipped + ' no bookmaker data',
@@ -547,6 +562,7 @@ document.getElementById('grade-all-btn').addEventListener('click', async functio
     var json = await Admin.api('POST', '/api/sync/grade-all');
     if (json.success) {
       var d = json.data;
+      document.getElementById('provider-quota-status').textContent = d.provider ? 'Provider at last check: ' + d.provider.requests_used + ' used / ' + d.provider.request_limit + ' total. Checked: ' + d.provider.checked_at + '. Use the button to verify again.' : 'Provider balance not verified. The counter below is only the saved local safety budget.';
       res.innerHTML = '<span style="color:var(--green);">✓ ' + d.graded + ' predictions graded, ' + d.logged + ' outcomes logged, accuracy stats updated</span>';
       log('Grade & Recalibrate done: ' + d.graded + ' graded, ' + d.logged + ' logged', 'success');
       Admin.toast('Recalibration complete');
