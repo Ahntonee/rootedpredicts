@@ -18,9 +18,19 @@ const dbCategories = { ...categories, '1-5-goals': '1.5 Goals', '2-5-goals': '2.
 function article(slug) {
   return fs.readFileSync(path.join(__dirname, '../public/content/categories', slug + '.html'), 'utf8');
 }
-function renderArticles(html, category) {
-  html = html.replace(/<!-- category-article:([a-z0-9-]+) -->/g, (_, slug) => categories[slug] && (!category || slug === category) ? article(slug) : '');
+function renderArticles(html, category, overrides = {}) {
+  const content = slug => Object.hasOwn(overrides, slug) ? (overrides[slug] || '') : article(slug);
+  html = html.replace(/<!-- category-article:([a-z0-9-]+) -->/g, (_, slug) => categories[slug] && (!category || slug === category) ? content(slug) : '');
   return html.replace('<!-- home-category-articles -->', '<section class="seo-content-block"><h2>Prediction category guides</h2>' +
-    Object.entries(categories).map(([slug, label]) => `<details><summary style="cursor:pointer;padding:12px 0;font-weight:700;">${label}</summary><a href="/predictions/${slug}">View ${label} predictions</a>${article(slug)}</details>`).join('') + '</section>');
+    Object.entries(categories).filter(([slug]) => content(slug).trim()).map(([slug, label]) => `<details><summary style="cursor:pointer;padding:12px 0;font-weight:700;">${label}</summary><a href="/predictions/${slug}">View ${label} predictions</a>${content(slug)}</details>`).join('') + '</section>');
 }
-module.exports = { categories, dbCategories, renderArticles };
+async function loadArticleOverrides(db) {
+  const [rows] = await db.query("SELECT slug, content FROM static_pages WHERE slug LIKE 'category-%'");
+  return Object.fromEntries(rows.filter(p => Object.hasOwn(categories, p.slug.slice(9))).map(p => [p.slug.slice(9), p.content]));
+}
+function categoryPage(slug) {
+  if (!Object.hasOwn(categories, slug)) return null;
+  return { slug: 'category-' + slug, kind: 'category', label: categories[slug], url: '/predictions/' + slug,
+    page_title: categories[slug] + ' SEO Article', content: article(slug) };
+}
+module.exports = { categories, dbCategories, renderArticles, loadArticleOverrides, categoryPage };

@@ -11,6 +11,7 @@
 
   <link rel="stylesheet" href="/css/style.min.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/page-editor.css">
   <style>
     .page-tab { display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:0.875rem; font-weight:500; color:var(--muted); transition:all 0.15s; border:none; background:none; width:100%; text-align:left; }
     .page-tab:hover { background:var(--surface); color:var(--text); }
@@ -41,7 +42,7 @@
 </div>
 
 <main class="admin-main">
-  <div style="display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start;">
+  <div class="site-pages-layout" style="display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;align-items:start;">
 
     <!-- Left: page list -->
     <div class="card" style="padding:12px;">
@@ -64,8 +65,9 @@
       <button class="page-tab" data-slug="subscription" onclick="selectPage('subscription',this)">
         <span class="material-icons-round">star</span>Subscription
       </button>
+      <div id="category-page-tabs"></div>
       <div style="padding:10px 8px 4px;border-top:1px solid var(--border);margin-top:8px;">
-        <a href="/about.html" target="_blank" style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:4px;" id="preview-link">
+        <a href="/" target="_blank" rel="noopener" style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:4px;" id="preview-link">
           <span class="material-icons-round" style="font-size:0.9rem;">open_in_new</span>Preview page
         </a>
       </div>
@@ -79,11 +81,11 @@
 
       <div id="editor-wrap" style="display:none;">
         <!-- Meta fields (all pages) -->
-        <div class="card" style="padding:24px;margin-bottom:20px;">
+        <div class="card" id="page-info-card" style="padding:24px;margin-bottom:20px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
             <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;">
-              Page Info
-              <span class="badge-updated"><span class="material-icons-round" style="font-size:0.85rem;">update</span><span id=”last-saved”>&mdash;</span></span>
+              <span id="editor-title">Page Info</span>
+              <span class="badge-updated"><span class="material-icons-round" style="font-size:0.85rem;">update</span><span id="last-saved">&mdash;</span></span>
             </h2>
             <button id="save-btn" class="btn btn-primary btn-sm" onclick="savePage()">
               <span class="material-icons-round">save</span>Save Changes
@@ -94,7 +96,7 @@
             <input type="text" id="f-page-title" class="field-input" placeholder="Page title">
           </div>
           <div class="field-group">
-            <label class=”field-label”>Meta Description (SEO &mdash; keep under 160 chars)</label>
+            <label class="field-label">Meta Description (SEO &mdash; keep under 160 chars)</label>
             <input type="text" id="f-meta-desc" class="field-input" placeholder="Meta description">
             <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;"><span id="meta-count">0</span>/160</div>
           </div>
@@ -257,12 +259,14 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div>
               <span style="font-family:var(--font-head);font-size:1rem;font-weight:700;">Page Content</span>
-              <span style="font-size:0.78rem;color:var(--muted);margin-left:8px;">HTML editor</span>
+              <span style="font-size:0.78rem;color:var(--muted);margin-left:8px;">Visual text editor</span>
             </div>
             <button class="btn btn-outline btn-sm" onclick="togglePreview()" id="preview-btn">
               <span class="material-icons-round">preview</span>Preview
             </button>
           </div>
+          <p id="category-help" style="display:none;margin-bottom:12px;color:var(--muted);">Add or edit the article below, then save. Removing the article keeps the prediction page available.</p>
+          <button type="button" id="remove-article" class="btn btn-outline btn-sm" style="display:none;margin-bottom:12px;" onclick="removeArticle()">Remove article</button>
           <div class="field-group">
             <textarea id="f-content" class="field-textarea" placeholder="Enter HTML content for this page..."></textarea>
           </div>
@@ -278,12 +282,21 @@
 
 <script src="/js/app.min.js"></script>
 <script src="/js/admin.js"></script>
+<script src="/js/page-editor.js"></script>
 <script>
 const theme = localStorage.getItem('afro_theme') || 'light';
 document.documentElement.setAttribute('data-theme', theme);
 
 let currentSlug = 'home';
 let allPages    = {};
+let pageEditor;
+let dirty = false;
+let saving = false;
+let loadedSlug = null;
+function markDirty() { dirty = true; }
+window.addEventListener('beforeunload', event => {
+  if (dirty || saving) { event.preventDefault(); event.returnValue = ''; }
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await Admin.requireAdmin();
@@ -311,27 +324,55 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadAllPages() {
   try {
     const data = await Admin.api('GET', '/api/pages/admin/list');
-    if (data.pages) {
-      data.pages.forEach(p => { allPages[p.slug] = p; });
+    if (!data.success || !Array.isArray(data.pages)) throw new Error('Load failed');
+    allPages = Object.fromEntries(data.pages.map(p => [p.slug, p]));
+    const tabs = document.getElementById('category-page-tabs');
+    tabs.replaceChildren();
+    for (const page of data.pages.filter(p => p.kind === 'category')) {
+      const button = document.createElement('button');
+      button.className = 'page-tab'; button.dataset.slug = page.slug;
+      button.textContent = page.label;
+      button.onclick = () => selectPage(page.slug, button);
+      tabs.append(button);
     }
+    document.getElementById('editor-loading').style.display = 'none';
+    return true;
   } catch (e) {
-    Admin.toast('Failed to load pages', 'error');
+    document.getElementById('editor-loading').textContent = 'Failed to load pages. Reload to try again.';
+    Admin.toast('Failed to load pages. Editing is disabled until pages load.', 'error');
+    return false;
   }
-  document.getElementById('editor-loading').style.display = 'none';
-  document.getElementById('editor-wrap').style.display = 'block';
 }
 
 function selectPage(slug, btn) {
+  if (saving) return;
+  if (!allPages[slug]) { Admin.toast('This page has not loaded. Reload and try again.', 'error'); return; }
+  if (dirty && !window.confirm('Discard unsaved changes and switch pages?')) return;
   document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   currentSlug = slug;
-  document.getElementById('preview-link').href = slug === 'home' ? '/' : slug === 'subscription' ? '/pricing.html' : `/${slug}.html`;
+  document.getElementById('preview-link').href = allPages[slug].url || (slug === 'home' ? '/' : slug === 'subscription' ? '/pricing.html' : '/' + slug + '.html');
   renderPage(slug);
+}
+
+function removeArticle() {
+  if (saving || allPages[currentSlug]?.kind !== 'category') return;
+  if (!window.confirm('Remove this article? Click Save Changes to publish the removal.')) return;
+  pageEditor.setContent('');
+  markDirty();
 }
 
 function renderPage(slug) {
   const p = allPages[slug];
+  loadedSlug = null;
+  document.getElementById('editor-wrap').style.display = 'none';
   if (!p) return;
+  const isCategory = p.kind === 'category';
+  document.getElementById('editor-title').textContent = isCategory ? p.label + ' SEO Article' : 'Page Info';
+  document.querySelectorAll('#page-info-card .field-group').forEach(el => el.style.display = isCategory ? 'none' : '');
+  document.getElementById('category-help').style.display = isCategory ? '' : 'none';
+  document.getElementById('remove-article').style.display = isCategory ? '' : 'none';
+  document.querySelectorAll('#about-stats-card input, #contact-details-card input, #subscription-details-card input, #subscription-details-card textarea').forEach(el => el.value = '');
 
   // Meta fields
   document.getElementById('f-page-title').value    = p.page_title     || '';
@@ -394,7 +435,10 @@ function renderPage(slug) {
   }
 
   // Content
-  document.getElementById('f-content').value = p.content || '';
+  pageEditor.setContent(p.content || '');
+  dirty = false;
+  loadedSlug = slug;
+  document.getElementById('editor-wrap').style.display = 'block';
   document.getElementById('preview-area').style.display = 'none';
   document.getElementById('preview-btn').innerHTML = '<span class="material-icons-round">preview</span>Preview';
 }
@@ -403,7 +447,7 @@ function togglePreview() {
   const area = document.getElementById('preview-area');
   const btn  = document.getElementById('preview-btn');
   if (area.style.display === 'none') {
-    document.getElementById('preview-pane').innerHTML = document.getElementById('f-content').value || '<em style="color:var(--muted)">No content yet.</em>';
+    document.getElementById('preview-pane').innerHTML = pageEditor.getContent() || '<em style="color:var(--muted)">No content yet.</em>';
     area.style.display = 'block';
     btn.innerHTML = '<span class="material-icons-round">edit</span>Edit';
   } else {
@@ -413,6 +457,7 @@ function togglePreview() {
 }
 
 async function savePage() {
+  if (saving || loadedSlug !== currentSlug) return;
   const btn   = document.getElementById('save-btn');
   const slug           = currentSlug;
   const isContact      = slug === 'contact';
@@ -425,7 +470,7 @@ async function savePage() {
     hero_title:       document.getElementById('f-hero-title').value.trim(),
     hero_subtitle:    document.getElementById('f-hero-subtitle').value.trim() || null,
     last_updated:     document.getElementById('f-last-updated').value || null,
-    content:          (isContact || isSubscription) ? null : document.getElementById('f-content').value,
+    content:          (isContact || isSubscription) ? null : pageEditor.getContent(),
     extra:            null,
   };
 
@@ -468,12 +513,23 @@ async function savePage() {
     };
   }
 
+  if (isAbout && !pageEditor.visual.textContent.trim() && !pageEditor.getContent().replace(/<[^>]*>/g, '').trim()) {
+    Admin.toast('About page content cannot be empty.', 'error'); return;
+  }
+  if (allPages[slug].kind === 'category') {
+    for (const key of Object.keys(payload)) if (key !== 'content') delete payload[key];
+  } else if (isContact || isSubscription) {
+    delete payload.content;
+  }
+  saving = true;
+  document.getElementById('editor-wrap').inert = true;
   btn.disabled = true;
   btn.innerHTML = '<span class="material-icons-round">hourglass_empty</span>Saving...';
 
   try {
     const res = await Admin.api('PUT', `/api/pages/admin/${slug}`, payload);
     if (res.success) {
+      dirty = false;
       Admin.toast('Page saved successfully!', 'success');
       allPages[slug] = { ...allPages[slug], ...payload, updated_at: new Date().toISOString() };
       document.getElementById('last-saved').textContent = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
@@ -484,6 +540,8 @@ async function savePage() {
     Admin.toast('Network error. Try again.', 'error');
   }
 
+  saving = false;
+  document.getElementById('editor-wrap').inert = false;
   btn.disabled = false;
   btn.innerHTML = '<span class="material-icons-round">save</span>Save Changes';
 }

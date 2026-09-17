@@ -97,18 +97,14 @@
       document.getElementById('page-content').innerHTML = p.content;
     }
 
-    // Stats banner
+    // Some layouts omit the optional statistics banner.
     if (p.extra) {
-      const e = p.extra;
-      document.getElementById('stat-accuracy').textContent        = e.stat_accuracy        || '';
-      document.getElementById('stat-accuracy-label').textContent  = e.stat_accuracy_label  || '';
-      document.getElementById('stat-leagues').textContent         = e.stat_leagues          || '';
-      document.getElementById('stat-leagues-label').textContent   = e.stat_leagues_label    || '';
-      document.getElementById('stat-members').textContent         = e.stat_members          || '';
-      document.getElementById('stat-members-label').textContent   = e.stat_members_label    || '';
-      document.getElementById('stat-countries').textContent       = e.stat_countries        || '';
-      document.getElementById('stat-countries-label').textContent = e.stat_countries_label  || '';
-      document.getElementById('stats-banner').style.display = 'block';
+      for (const [key, value] of Object.entries(p.extra)) {
+        const element = document.getElementById(key.replaceAll('_', '-'));
+        if (element) element.textContent = value || '';
+      }
+      const banner = document.getElementById('stats-banner');
+      if (banner) banner.style.display = 'block';
     }
 
   } catch (e) {

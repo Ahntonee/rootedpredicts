@@ -1,0 +1,11 @@
+.page-editor-toolbar { display:flex; flex-wrap:wrap; gap:6px; padding:10px; border:1px solid var(--border); border-radius:8px 8px 0 0; background:var(--surface); }
+.page-editor-toolbar button, .page-editor-toolbar select { padding:7px 9px; border:1px solid var(--border); border-radius:4px; color:var(--text); background:var(--card-bg); cursor:pointer; }
+.page-editor-toolbar button:disabled { opacity:.5; cursor:default; }
+.page-editor-visual { min-height:360px; max-height:70vh; overflow:auto; padding:20px; border:1px solid var(--border); border-top:0; border-radius:0 0 8px 8px; line-height:1.75; overflow-wrap:anywhere; }
+.page-editor-visual:focus { outline:2px solid var(--green); }
+.page-editor-visual p, .preview-pane p { margin:0 0 1em; }
+.page-editor-visual h1, .page-editor-visual h2, .page-editor-visual h3, .page-editor-visual h4,
+.preview-pane h1, .preview-pane h2, .preview-pane h3, .preview-pane h4 { margin:1.2em 0 .6em; }
+.page-editor-visual ul, .page-editor-visual ol, .preview-pane ul, .preview-pane ol { padding-left:2em; margin:1em 0; }
+.page-editor-visual blockquote, .preview-pane blockquote { border-left:4px solid var(--green); padding-left:16px; margin:1em 0; }
+@media(max-width:760px) { .site-pages-layout { grid-template-columns:1fr !important; } }

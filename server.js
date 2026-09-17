@@ -114,7 +114,7 @@ app.use(cookieParser());
 // JSON-LD structured data before serving the HTML. Regular browsers skip
 // this path entirely and get the normal CSR experience.
 
-const { categories, dbCategories, renderArticles } = require('./services/categoryPages');
+const { categories, dbCategories, renderArticles, loadArticleOverrides } = require('./services/categoryPages');
 const categoryMetadata = require('./services/categoryMetadata.json');
 
 function isSearchBot(req) {
@@ -160,8 +160,11 @@ function buildBotPredCard(p) {
 }
 
 async function prerenderPage(req, res, next, file, containerId) {
+  let articleOverrides = {};
+  try { articleOverrides = await loadArticleOverrides(db); }
+  catch (err) { console.error('[CATEGORY ARTICLES]', err.message); }
   try {
-    let html = renderArticles(fs.readFileSync(path.join(__dirname, 'public', file), 'utf8'), file === 'predictions.html' ? (req.params.category || 'free') : null);
+    let html = renderArticles(fs.readFileSync(path.join(__dirname, 'public', file), 'utf8'), file === 'predictions.html' ? (req.params.category || 'free') : null, articleOverrides);
     const category = req.params.category || 'free';
     if (file === 'predictions.html') html = renderCategoryMeta(html, category);
     const [preds] = await db.query(`
@@ -206,7 +209,7 @@ async function prerenderPage(req, res, next, file, containerId) {
     res.send(html);
   } catch (e) {
     console.error('[PRERENDER]', e.message);
-    let html = renderArticles(fs.readFileSync(path.join(__dirname, 'public', file), 'utf8'), file === 'predictions.html' ? (req.params.category || 'free') : null);
+    let html = renderArticles(fs.readFileSync(path.join(__dirname, 'public', file), 'utf8'), file === 'predictions.html' ? (req.params.category || 'free') : null, articleOverrides);
     if (file === 'predictions.html') html = renderCategoryMeta(html, req.params.category || 'free');
     res.type('html').send(html);
   }

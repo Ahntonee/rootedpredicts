@@ -83,7 +83,17 @@
       <p style="font-size:0.75rem;color:var(--muted);">Currency suggested from your account country or browser settings; you can change it.
         <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Rates by ExchangeRate-API</a></p>
     </div>
-    <style>.pricing-price { font-size:clamp(1.5rem,3vw,2.5rem);overflow-wrap:anywhere; }</style>
+    <style>
+      .pricing-card { min-width: 0; container-type: inline-size; }
+      .pricing-card .pricing-price {
+        font-size: 1.5rem;
+        font-size: clamp(1rem, 9cqi, 1.75rem);
+        line-height: 1.2;
+        letter-spacing: -0.025em;
+        white-space: nowrap;
+        overflow-wrap: normal;
+      }
+    </style>
     <!-- Pricing cards -->
     <div class="pricing-grid" style="max-width:900px;margin:32px auto;">
 
