@@ -50,6 +50,10 @@
       <div class="form-group"><label class="form-label">Role</label>
         <select class="form-control" id="u-role"><option value="user">User (Free)</option><option value="vip">VIP</option><option value="admin">Admin</option></select>
       </div>
+      <div class="form-group"><label for="u-plan">VIP plan</label><select class="form-control" id="u-plan"><option value="standard">Standard</option><option value="deluxe">Deluxe</option></select></div>
+      <div class="form-group"><label for="u-duration">Subscription duration</label><select class="form-control" id="u-duration"><option value="biweekly">Bi-weekly (14 days)</option><option value="monthly" selected>Monthly (30 days)</option><option value="quarterly">Quarterly (90 days)</option><option value="yearly">Yearly (365 days)</option></select></div>
+      <button type="button" class="btn btn-primary" id="grant-vip-btn">Activate selected VIP plan</button>
+      <button type="button" class="btn btn-outline" id="notify-expiry-btn">Send expiry notification</button>
       <div class="form-group" style="margin-bottom:0;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-user-select:text;user-select:text;">
           <input type="checkbox" id="u-banned"> <span class="form-label" style="margin:0;color:var(--red);">Ban this account</span>
@@ -91,7 +95,7 @@ async function loadUsers(page) {
       <td style="font-size:0.8rem;color:var(--muted);">#${u.id}</td>
       <td><div style="font-weight:600;font-size:0.875rem;">${u.name}</div></td>
       <td style="font-size:0.82rem;color:var(--muted);">${u.email}</td>
-      <td>${Admin.badge(u.role)}</td>
+      <td>${Admin.badge(u.role === 'admin' ? 'admin' : ({ standard: 'standard', deluxe: 'deluxe' }[u.membership_tier] || 'free'))}</td>
       <td style="font-size:0.82rem;">${u.country||'â€”'}</td>
       <td style="font-size:0.78rem;color:var(--muted);">${Admin.fmtDate(u.created_at)}</td>
       <td>${u.is_banned?'<span class="badge badge-lost">BANNED</span>':'<span class="badge badge-won">Active</span>'}</td>
@@ -110,6 +114,8 @@ function editUser(id,name,role,banned) {
   document.getElementById('u-edit-id').value=id;
   document.getElementById('u-edit-name').textContent=name;
   document.getElementById('u-role').value=role;
+  document.getElementById('u-plan').value='standard';
+  document.getElementById('u-duration').value='monthly';
   document.getElementById('u-banned').checked=!!banned;
   Admin.showModal('user-modal');
 }
@@ -122,6 +128,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('apply-filters').addEventListener('click',()=>loadUsers(1));
   document.getElementById('u-prev').addEventListener('click',()=>loadUsers(--userPage));
   document.getElementById('u-next').addEventListener('click',()=>loadUsers(++userPage));
+  document.getElementById('grant-vip-btn').addEventListener('click', async function() {
+    this.disabled = true;
+    try {
+      const id = document.getElementById('u-edit-id').value;
+      const json = await Admin.api('POST', '/api/admin/users/' + id + '/grant-vip', {
+        plan: document.getElementById('u-plan').value, duration: document.getElementById('u-duration').value
+      });
+      Admin.toast(json.message || 'Unable to activate plan.', json.success ? 'success' : 'error');
+      if (json.success) { Admin.hideModal('user-modal'); loadUsers(userPage); }
+    } finally { this.disabled = false; }
+  });
+  document.getElementById('notify-expiry-btn').addEventListener('click', async function() {
+    this.disabled = true;
+    try {
+      const json = await Admin.api('POST', '/api/admin/users/' + document.getElementById('u-edit-id').value + '/notify-expiry');
+      Admin.toast(json.message || 'Unable to send notification.', json.success ? 'success' : 'error');
+    } finally { this.disabled = false; }
+  });
   document.getElementById('save-user-btn').addEventListener('click', async () => {
     const id   = document.getElementById('u-edit-id').value;
     const body = { role: document.getElementById('u-role').value, is_banned: document.getElementById('u-banned').checked };
@@ -132,4 +156,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 </script>
 </body></html>
-

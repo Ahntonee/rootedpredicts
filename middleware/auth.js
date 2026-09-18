@@ -8,6 +8,7 @@ const db                = require('../config/db');
 const { verifyToken, extractToken } = require('../utils/jwt');
 const { errorResponse } = require('../utils/helpers');
 
+const { attachMembership } = require('../services/membership');
 const USER_FIELDS = 'SELECT id, name, username, email, role, admin_role, country, timezone, telegram_invited, is_banned FROM users WHERE id = ?';
 
 async function getUserFromToken(token) {
@@ -15,7 +16,7 @@ async function getUserFromToken(token) {
   if (!decoded) return null;
   const [rows] = await db.query(USER_FIELDS, [decoded.id]);
   if (!rows.length || rows[0].is_banned) return null;
-  return rows[0];
+  return attachMembership(db, rows[0]);
 }
 
 /**
@@ -35,7 +36,7 @@ async function authenticate(req, res, next) {
     if (!rows.length) return errorResponse(res, 'User account not found.', 401);
     if (rows[0].is_banned) return errorResponse(res, 'Your account has been suspended. Contact support.', 403);
 
-    req.user = rows[0];
+    req.user = await attachMembership(db, rows[0]);
     next();
   } catch (error) {
     console.error('[AUTH] Middleware error:', error.message);

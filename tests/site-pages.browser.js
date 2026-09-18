@@ -15,8 +15,8 @@ const categories = Object.keys(require('../services/categoryPages').categories);
 const boot = `
 window.testErrors = [];
 window.addEventListener('error', e => testErrors.push(e.message));
-const mockPages = [{slug:'home',content:'<p>Home article</p>'}, {slug:'about',content:'<h2>About us</h2><p>Original about</p>',extra:{stat_accuracy:'75%'}}];
-for (const slug of ${JSON.stringify(categories)}) mockPages.push({slug:'category-'+slug,kind:'category',label:slug,url:'/predictions/'+slug,content:'<h2>Original heading</h2><p>Original text</p>'});
+const mockPages = [{slug:'home',content:'<p>Home article</p>'}, {slug:'about',content:'<h2>About us</h2><p>Original about</p>',extra:{stat_accuracy:'75%',about_sections:${JSON.stringify(require('../services/aboutSections').defaultAboutSections())}}}];
+for (const slug of ${JSON.stringify(categories)}) mockPages.push({slug:'category-'+slug,kind:'category',label:slug,url:'/predictions/'+slug,page_title:'Original title',meta_description:'Original description',hero_title:'Original hero',hero_subtitle:'Original subtitle',content:'<h2>Original heading</h2><p>Original text</p>'});
 window.confirm = () => true;
 window.mockFail = false;
 window.Admin = {
@@ -34,23 +34,31 @@ const checks = `
 const check = (value,message) => { if(!value) throw new Error(message); };
 window.addEventListener('DOMContentLoaded', () => setTimeout(async () => {
  try {
-  check(pageEditor && loadedSlug === 'home', 'Editor must initialize and load home');
+  check(pageEditor && loadedSlug === 'home', 'Editor must initialize and load home: ' + typeof Quill + '; ' + document.getElementById('editor-loading').textContent + '; ' + testErrors.join(';'));
   check(document.querySelectorAll('#category-page-tabs button').length === 10, 'All category tabs');
   const tab=document.querySelector('[data-slug="category-1-5-goals"]');
   tab.click();
   check(loadedSlug === 'category-1-5-goals', 'Category selection');
-  const paragraph=pageEditor.visual.querySelector('p');
-  const range=document.createRange(); range.selectNodeContents(paragraph);
-  const selection=window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
-  pageEditor.range=range;
-  pageEditor.command('bold');
-  check(/<(b|strong)>Original text/.test(pageEditor.getContent()), 'Bold formatting');
+  check(document.querySelector('.ql-toolbar button.ql-bold svg'), 'Blog-style icon toolbar');
+  document.getElementById('f-page-title').value='Custom browser title';
+  document.getElementById('f-hero-title').value='Custom category heading';
+  document.getElementById('f-hero-subtitle').value='Custom category subtitle';
+  check(document.getElementById('hero-subtitle-wrap').style.display!=='none', 'Category subtitle is editable');
+  pageEditor.quill.formatText(17,13,'bold',true,'user');
+  check(pageEditor.getContent().includes('<strong>'), 'Bold formatting');
   await savePage();
   const saved=mockPages.find(p=>p.slug==='category-1-5-goals').content;
   check(saved===pageEditor.getContent() && !dirty, 'Formatted save');
   document.querySelector('[data-slug="about"]').click();
   check(pageEditor.getContent().includes('Original about'), 'About loaded');
+  check(aboutSectionEditors.length===2, 'FAQ and pricing editors');
+  addAboutSection();
+  aboutSectionEditors.at(-1).title.value='Our new section';
+  aboutSectionEditors.at(-1).editor.setContent('<p><strong>New formatted section</strong></p>');
+  await savePage();
+  check(mockPages.find(p=>p.slug==='about').extra.about_sections.length===3, 'New About section saved');
   tab.click(); check(pageEditor.getContent()===saved, 'Reopen preserves formatting');
+  check(document.getElementById('f-hero-title').value==='Custom category heading' && document.getElementById('f-hero-subtitle').value==='Custom category subtitle', 'Category metadata survives reopening');
   pageEditor.toggleSource();
   pageEditor.source.value='<h2>Source heading</h2><ol><li><em>First</em></li></ol>';
   pageEditor.source.dispatchEvent(new Event('input',{bubbles:true}));
@@ -65,12 +73,12 @@ window.addEventListener('DOMContentLoaded', () => setTimeout(async () => {
   check(dirty && !saving && !document.getElementById('editor-wrap').inert, 'Failed save preserves editing');
   mockFail=false;
   check(!testErrors.length, testErrors.join(';'));
-  document.body.innerHTML='<pre id="test-result">PASS: dashboard loads; 10 category tabs; bold formatting; save and reopen; HTML source; remove and restore; failed-save recovery.</pre>';
+  document.body.innerHTML='<pre id="test-result">PASS: Blog-style Quill toolbar; category headings and subtitles; formatted save and reopen; About FAQ, pricing and new sections; HTML source; removal; failed-save recovery.</pre>';
  } catch(error) { document.body.innerHTML='<pre id="test-result"></pre>'; document.getElementById('test-result').textContent='FAIL: '+error.stack; }
 },100));
 `;
 const fixture = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '').replace(/<link\b[^>]*>/g, '')
-  .replace('</body>', `<script>${boot}</script><script>${editorScript}</script><script>${pageScript}</script><script>${checks}</script></body>`);
+  .replace('</body>', `<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script><script>${boot}</script><script>${editorScript}</script><script>${pageScript}</script><script>${checks}</script></body>`);
 const filename = path.join(tmp, 'dashboard.html');
 fs.writeFileSync(filename, fixture);
 const result = spawnSync(chrome, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--user-data-dir=' + path.join(tmp, 'profile'), '--virtual-time-budget=4000', '--dump-dom', pathToFileURL(filename).href], { encoding:'utf8', timeout:30000, maxBuffer:2*1024*1024, windowsHide:true });

@@ -315,7 +315,9 @@
 
   // ── Update page meta when category changes
   function applyMeta(cat) {
-    const m = CAT_META[cat] || CAT_META['free'];
+    const savedMeta = document.getElementById('category-page-meta');
+    const overrides = savedMeta ? JSON.parse(savedMeta.textContent) : {};
+    const m = overrides[cat] || CAT_META[cat] || CAT_META['free'];
     document.getElementById('page-title').textContent = m.title;
     document.getElementById('page-desc').setAttribute('content', m.desc);
     document.getElementById('page-h1').textContent = m.h1;
@@ -391,7 +393,7 @@
     if (el) el.textContent = new Date(chosen + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
     const params = new URLSearchParams({ date: chosen, limit: '40' });
     const cat = currentCategory;
-    if (cat && cat !== 'free' && cat !== 'all') {
+    if (cat && cat !== 'all') {
       params.set('category', cat);
     }
     const list = document.getElementById('picks-list');
@@ -530,7 +532,7 @@
     const date = isoDate(getDateFor(currentOffset));
     const params = new URLSearchParams({ date, limit: '40' });
     const cat = currentCategory;
-    if (cat && cat !== 'free' && cat !== 'all') {
+    if (cat && cat !== 'all') {
       params.set('category', cat);
     }
     return `/api/predictions?${params.toString()}`;

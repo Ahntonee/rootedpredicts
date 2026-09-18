@@ -11,6 +11,7 @@
 
   <link rel="stylesheet" href="/css/style.min.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
   <link rel="stylesheet" href="/css/page-editor.css">
   <style>
     .page-tab { display:flex; align-items:center; gap:8px; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:0.875rem; font-weight:500; color:var(--muted); transition:all 0.15s; border:none; background:none; width:100%; text-align:left; }
@@ -265,7 +266,7 @@
               <span class="material-icons-round">preview</span>Preview
             </button>
           </div>
-          <p id="category-help" style="display:none;margin-bottom:12px;color:var(--muted);">Add or edit the article below, then save. Removing the article keeps the prediction page available.</p>
+          <p id="category-help" style="display:none;margin-bottom:12px;color:var(--muted);">Edit the page title, heading and subtitle above, and format the article below, then save. Removing the article keeps the prediction page available.</p>
           <button type="button" id="remove-article" class="btn btn-outline btn-sm" style="display:none;margin-bottom:12px;" onclick="removeArticle()">Remove article</button>
           <div class="field-group">
             <textarea id="f-content" class="field-textarea" placeholder="Enter HTML content for this page..."></textarea>
@@ -275,6 +276,12 @@
             <div class="preview-pane" id="preview-pane"></div>
           </div>
         </div>
+        <div class="card" id="about-sections-card" style="padding:24px;margin-top:20px;display:none;">
+          <h2 style="font-size:1.1rem;">About Page Sections</h2>
+          <p style="margin:10px 0;color:var(--muted);">Add and format sections below the main article. Save Changes publishes the entire page.</p>
+          <div id="about-section-editors"></div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addAboutSection()">Add section</button>
+        </div>
       </div><!-- /editor-wrap -->
     </div>
   </div>
@@ -282,6 +289,7 @@
 
 <script src="/js/app.min.js"></script>
 <script src="/js/admin.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
 <script src="/js/page-editor.js"></script>
 <script>
 const theme = localStorage.getItem('afro_theme') || 'light';
@@ -290,6 +298,7 @@ document.documentElement.setAttribute('data-theme', theme);
 let currentSlug = 'home';
 let allPages    = {};
 let pageEditor;
+let aboutSectionEditors = [];
 let dirty = false;
 let saving = false;
 let loadedSlug = null;
@@ -301,6 +310,9 @@ window.addEventListener('beforeunload', event => {
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await Admin.requireAdmin();
   if (!user) return;
+  if (typeof Quill === 'undefined') {
+    document.getElementById('editor-loading').textContent = 'The text editor could not load. Please reload the page.'; return;
+  }
   Admin.buildSidebar(user);
   document.getElementById('admin-user-name').textContent = user.name;
   const ti = document.getElementById('theme-icon');
@@ -369,8 +381,8 @@ function renderPage(slug) {
   document.getElementById('editor-wrap').style.display = 'none';
   if (!p) return;
   const isCategory = p.kind === 'category';
-  document.getElementById('editor-title').textContent = isCategory ? p.label + ' SEO Article' : 'Page Info';
-  document.querySelectorAll('#page-info-card .field-group').forEach(el => el.style.display = isCategory ? 'none' : '');
+  document.getElementById('editor-title').textContent = isCategory ? p.label + ' Page' : 'Page Info';
+  document.querySelectorAll('#page-info-card .field-group').forEach(el => el.style.display = '');
   document.getElementById('category-help').style.display = isCategory ? '' : 'none';
   document.getElementById('remove-article').style.display = isCategory ? '' : 'none';
   document.querySelectorAll('#about-stats-card input, #contact-details-card input, #subscription-details-card input, #subscription-details-card textarea').forEach(el => el.value = '');
@@ -390,12 +402,14 @@ function renderPage(slug) {
   const isAbout        = slug === 'about';
   const isContact      = slug === 'contact';
   const isSubscription = slug === 'subscription';
+  document.getElementById('about-sections-card').style.display = isAbout ? '' : 'none';
+  renderAboutSections(isAbout ? (p.extra?.about_sections || []) : []);
   document.getElementById('about-stats-card').style.display          = isAbout        ? '' : 'none';
   document.getElementById('contact-details-card').style.display      = isContact      ? '' : 'none';
   document.getElementById('subscription-details-card').style.display = isSubscription ? '' : 'none';
   document.getElementById('content-card').style.display              = (!isContact && !isSubscription) ? '' : 'none';
   document.getElementById('last-updated-wrap').style.display         = (slug === 'terms' || slug === 'privacy') ? '' : 'none';
-  document.getElementById('hero-subtitle-wrap').style.display        = (slug === 'about' || slug === 'contact') ? '' : 'none';
+  document.getElementById('hero-subtitle-wrap').style.display        = (isCategory || slug === 'about' || slug === 'contact') ? '' : 'none';
 
   // About stats
   if (isAbout && p.extra) {
@@ -444,6 +458,49 @@ function renderPage(slug) {
   document.getElementById('preview-btn').innerHTML = '<span class="material-icons-round">preview</span>Preview';
 }
 
+function readAboutSections() {
+  return aboutSectionEditors.map(item => ({ title: item.title.value.trim(), content: item.editor.getContent() }));
+}
+function renderAboutSections(sections) {
+  const host = document.getElementById('about-section-editors');
+  host.replaceChildren();
+  aboutSectionEditors = [];
+  sections.forEach(section => appendAboutSection(section));
+}
+function appendAboutSection(section) {
+  const wrapper = document.createElement('div'); wrapper.className = 'about-section-editor';
+  const title = document.createElement('input'); title.className = 'field-input';
+  title.setAttribute('aria-label', 'Section title'); title.placeholder = 'Section title'; title.value = section.title;
+  const textarea = document.createElement('textarea'); textarea.className = 'field-textarea';
+  const controls = document.createElement('div'); controls.style.margin = '10px 0';
+  wrapper.append(title, textarea, controls);
+  document.getElementById('about-section-editors').append(wrapper);
+  const editor = new PageEditor(textarea, markDirty); editor.setContent(section.content);
+  const item = { wrapper, title, editor }; aboutSectionEditors.push(item);
+  for (const [label, action] of [['Move up', -1], ['Move down', 1], ['Remove section', 0]]) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'btn btn-outline btn-sm'; button.textContent = label;
+    button.onclick = () => {
+      const index = aboutSectionEditors.indexOf(item);
+      if (action === 0) {
+        if (!window.confirm('Remove this section? Save Changes to publish the removal.')) return;
+        aboutSectionEditors.splice(index, 1); wrapper.remove();
+      } else {
+        const target = index + action;
+        if (target < 0 || target >= aboutSectionEditors.length) return;
+        const other = aboutSectionEditors[target];
+        if (action < 0) other.wrapper.before(wrapper); else other.wrapper.after(wrapper);
+        [aboutSectionEditors[index], aboutSectionEditors[target]] = [aboutSectionEditors[target], aboutSectionEditors[index]];
+      }
+      markDirty();
+    };
+    controls.append(button);
+  }
+}
+function addAboutSection() {
+  appendAboutSection({ title: '', content: '' }); markDirty();
+  aboutSectionEditors.at(-1).title.focus();
+}
+
 function togglePreview() {
   const area = document.getElementById('preview-area');
   const btn  = document.getElementById('preview-btn');
@@ -477,6 +534,8 @@ async function savePage() {
 
   if (isAbout) {
     payload.extra = {
+      ...allPages[slug].extra,
+      about_sections: readAboutSections(),
       stat_accuracy:        document.getElementById('f-stat-accuracy').value.trim(),
       stat_accuracy_label:  document.getElementById('f-stat-accuracy-label').value.trim(),
       stat_leagues:         document.getElementById('f-stat-leagues').value.trim(),
@@ -518,7 +577,9 @@ async function savePage() {
     Admin.toast('About page content cannot be empty.', 'error'); return;
   }
   if (allPages[slug].kind === 'category') {
-    for (const key of Object.keys(payload)) if (key !== 'content') delete payload[key];
+    delete payload.extra;
+    delete payload.last_updated;
+    payload.hero_subtitle = document.getElementById('f-hero-subtitle').value.trim();
   } else if (isContact || isSubscription) {
     delete payload.content;
   }

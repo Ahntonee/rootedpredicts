@@ -156,6 +156,7 @@
           <input type="number" min="0" max="100" class="form-control" id="m-conf" placeholder="Click Auto-Score or enter manually">
         </div>
 
+        <div class="form-group"><label class="form-label" for="m-access-tier">Membership access</label><select id="m-access-tier" class="form-control"><option value="free">Free access</option><option value="standard">Standard + Deluxe members</option><option value="deluxe">Deluxe members only</option></select></div>
         <!-- Category (maps to visibility: Banker of the Day = VIP, rest = Free) -->
         <div class="form-group" style="margin:0;">
           <label class="form-label">Category
@@ -398,6 +399,7 @@ async function loadPredictions(page) {
       <td>
         <div style="display:flex;gap:4px;">
           ${p.fixture_id ? `<button onclick="researchPred(${p.fixture_id},'${p.home_team} vs ${p.away_team}')" class="btn btn-sm" style="padding:4px 8px;background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);" title="Research match data"><span class="material-icons-round" style="font-size:0.9rem;">insights</span></button>` : ''}
+          <button onclick="toggleHomepage(${p.id}, ${p.on_homepage ? 'false' : 'true'})" class="btn btn-outline btn-sm" title="Select up to 10 free homepage picks per day">${p.on_homepage ? 'Remove from homepage' : 'Add to homepage'}</button>
           <button onclick="editPred(${p.id})" class="btn btn-outline btn-sm" style="padding:4px 8px;"><span class="material-icons-round" style="font-size:0.9rem;">edit</span></button>
           <button onclick="deletePred(${p.id})" class="btn btn-sm" style="padding:4px 8px;background:rgba(233,69,96,0.1);color:var(--red);border:1px solid rgba(233,69,96,0.2);"><span class="material-icons-round" style="font-size:0.9rem;">delete</span></button>
         </div>
@@ -410,6 +412,12 @@ async function loadPredictions(page) {
     document.getElementById('p-prev').disabled=(page<=1);
     document.getElementById('p-next').disabled=(page>=pages);
   }
+}
+
+async function toggleHomepage(id, selected) {
+  const json = await Admin.api('PUT', '/api/admin/predictions/' + id + '/homepage', { selected });
+  Admin.toast(json.message || 'Unable to update homepage selection.', json.success ? 'success' : 'error');
+  if (json.success) loadPredictions(predPage);
 }
 
 // â”€â”€ Tip options per market â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -480,6 +488,7 @@ function openNewModal() {
   document.getElementById('league-dropdown-list').style.display = 'none';
   document.getElementById('m-market').value = '1X2';
   document.getElementById('m-category').value = 'Free Pick';
+  document.getElementById('m-access-tier').value = 'free';
   document.getElementById('m-result').value = 'pending';
   document.getElementById('m-published').checked = true;
   document.getElementById('m-live-status').style.display  = 'none';
@@ -1100,6 +1109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cat = document.getElementById('cat-sel-' + id).value;
     const json = await Admin.api('PUT', '/api/admin/predictions/' + id, {
       category: cat,
+      access_tier: document.getElementById('m-access-tier').value,
       visibility: cat === 'Banker of the Day' ? 'vip' : 'free',
     });
     if (json.success) {

@@ -6,6 +6,67 @@
 (function () {
   'use strict';
 
+  let reviewNotificationsChecked = false;
+  async function showReviewNotifications() {
+    if (reviewNotificationsChecked) return;
+    reviewNotificationsChecked = true;
+    try {
+      const response = await fetch('/api/subscriptions/notifications', { credentials: 'include' });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error('Notifications unavailable');
+      for (const notice of result.data) {
+        await new Promise(resolve => {
+          const dialog = document.createElement('dialog');
+          dialog.setAttribute('aria-labelledby', 'payment-review-title');
+          dialog.style.cssText = 'margin:auto;width:min(440px,90vw);padding:28px;border:1px solid var(--border,#ddd);border-radius:16px;background:var(--card-bg,#fff);color:var(--text,#222);box-shadow:0 20px 80px #0006;';
+          const title = document.createElement('h2');
+          title.id = 'payment-review-title';
+          title.textContent = notice.status === 'expired' ? 'Your subscription has expired' : notice.status === 'approved' ? 'Your payment has been approved' : 'Your payment has been rejected';
+          const message = document.createElement('p');
+          message.style.cssText = 'margin:16px 0;line-height:1.7;white-space:pre-wrap;';
+          message.textContent = notice.status === 'approved'
+            ? 'Your payment has been verified and your VIP subscription has been activated. Visit your dashboard to view your subscription.'
+            : 'We could not verify your payment.' + (notice.notes ? '\n\nReason: ' + notice.notes : '') + '\n\nPlease contact our 24/7 support team via Telegram or email for help.';
+          const support = document.createElement('a');
+          if (notice.status === 'expired') {
+            const plan = notice.plan === 'standard' ? 'Standard' : 'Deluxe';
+            message.textContent = 'Your ' + plan + ' subscription has expired. VIP access for this subscription has ended. If you have not renewed or activated another plan, your account now has Free access. Visit the subscription page to renew.';
+          }
+          support.href = '/contact.html';
+          support.textContent = 'Contact support';
+          if (notice.status === 'expired') { support.href = '/pricing.html'; support.textContent = 'Renew subscription'; }
+          support.style.cssText = 'display:inline-block;margin-right:20px;color:var(--red,#e94560);';
+          const button = document.createElement('button');
+          button.className = 'btn btn-primary';
+          button.textContent = 'Got it';
+          const error = document.createElement('p');
+          error.setAttribute('role', 'alert');
+          dialog.append(title, message, support, button, error);
+          dialog.addEventListener('cancel', event => event.preventDefault());
+          button.addEventListener('click', async () => {
+            button.disabled = true;
+            try {
+              const saved = await fetch('/api/subscriptions/notifications/' + encodeURIComponent(notice.id) + '/read', { method: 'POST', credentials: 'include' });
+              const body = await saved.json();
+              if (!saved.ok || !body.success) throw new Error('Save failed');
+              dialog.close();
+              dialog.remove();
+              resolve();
+            } catch (_) {
+              error.textContent = 'Unable to dismiss this notification. Please try again.';
+              button.disabled = false;
+            }
+          });
+          document.body.appendChild(dialog);
+          dialog.showModal();
+          button.focus();
+        });
+      }
+    } catch (_) {
+      reviewNotificationsChecked = false;
+    }
+  }
+
   // ── Check if user is logged in and update header ──────────
   async function checkAuthState() {
     try {
@@ -17,6 +78,7 @@
         const user = json.data;
         window.currentUser = user;
         updateHeaderForUser(user);
+        void showReviewNotifications();
         return user;
       }
     } catch (e) {
@@ -33,7 +95,8 @@
     const actions = document.querySelector('.header-actions');
     if (!actions) return;
 
-    const isVip   = user.role === 'vip' || user.role === 'admin';
+    const membershipLabel = user.role === 'admin' ? 'Admin' : ({ standard: 'Standard', deluxe: 'Deluxe' }[user.membership_tier] || 'Free');
+    const isVip = membershipLabel !== 'Free';
     const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) : 'U';
 
     // Find and replace login/vip buttons
@@ -71,7 +134,7 @@
     wrap.style.cssText = 'position:relative;display:flex;align-items:center;gap:8px;';
     wrap.innerHTML = `
       ${isVip
-        ? `<span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;color:var(--red);background:rgba(233,69,96,0.12);border:1px solid rgba(233,69,96,0.25);border-radius:4px;padding:2px 7px;text-transform:uppercase;">VIP</span>`
+        ? `<span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;color:var(--red);background:rgba(233,69,96,0.12);border:1px solid rgba(233,69,96,0.25);border-radius:4px;padding:2px 7px;text-transform:uppercase;">${membershipLabel}</span>`
         : `<span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;color:#22c55e;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);border-radius:4px;padding:2px 7px;text-transform:uppercase;">FREE</span>`
       }
       <button id="user-avatar-btn" style="width:36px;height:36px;border-radius:50%;background:var(--red);border:none;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;flex-shrink:0;">
@@ -81,7 +144,7 @@
         <div style="padding:12px 14px;border-bottom:1px solid var(--border);">
           <div style="font-weight:600;font-size:0.875rem;color:var(--text);">${user.name}</div>
           <div style="font-size:0.75rem;color:var(--muted);">${user.email}</div>
-          <span style="font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${isVip?'var(--red)':'var(--muted)'};">${user.role.toUpperCase()}</span>
+          <span style="font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${isVip?'var(--red)':'var(--muted)'};">${membershipLabel}</span>
         </div>
         <a href="/dashboard.html" style="display:flex;align-items:center;gap:8px;padding:10px 14px;text-decoration:none;color:var(--text);font-size:0.85rem;" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'">
           <span class="material-icons-round" style="font-size:1rem;color:var(--muted);">dashboard</span>Dashboard

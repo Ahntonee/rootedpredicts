@@ -5,15 +5,20 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../config/db');
 const { authenticate, requireAdmin, requireAdminRole } = require('../middleware/auth');
-const { categories, categoryPage } = require('../services/categoryPages');
+const { categories, categoryPage, mergeCategoryPage } = require('../services/categoryPages');
 const fs = require('fs');
 const path = require('path');
+const { defaultAboutSections } = require('../services/aboutSections');
 const hasText = content => typeof content === 'string' && content.replace(/<[^>]*>/g, '').replace(/&nbsp;|&#160;|\s/g, '').length > 0;
 function preparePage(page) {
   const p = { ...page };
   if (p.extra && typeof p.extra === 'string') { try { p.extra = JSON.parse(p.extra); } catch { p.extra = null; } }
   if (p.slug === 'about' && !hasText(p.content)) {
     p.content = fs.readFileSync(path.join(__dirname, '../public/content/pages/about.html'), 'utf8');
+  }
+  if (p.slug === 'about') {
+    p.extra = { ...p.extra };
+    if (!Array.isArray(p.extra.about_sections)) p.extra.about_sections = defaultAboutSections();
   }
   return p;
 }
@@ -31,7 +36,7 @@ router.get('/admin/list', authenticate, requireAdmin, async (req, res) => {
     for (const slug of Object.keys(categories)) {
       const defaults = categoryPage(slug);
       const saved = rows.find(p => p.slug === defaults.slug);
-      pages.push({ ...defaults, ...saved, kind: 'category', url: defaults.url, label: defaults.label });
+      pages.push(mergeCategoryPage(slug, saved));
     }
     res.json({ success: true, pages });
   } catch (err) {
@@ -50,12 +55,25 @@ router.put('/admin/:slug', authenticate, requireAdmin, requireAdminRole('superad
       const page = categoryPage(slug.slice(9));
       if (!page) return res.status(404).json({ success: false, message: 'Category not found.' });
       if (typeof content !== 'string') return res.status(400).json({ success: false, message: 'Article content is required.' });
-      await db.query(`INSERT INTO static_pages (slug, page_title, content) VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE content=VALUES(content)`, [slug, page.page_title, content]);
+      const fields = ['page_title', 'meta_description', 'hero_title', 'hero_subtitle'];
+      for (const field of fields) {
+        if (Object.hasOwn(req.body, field) && typeof req.body[field] !== 'string') {
+          return res.status(400).json({ success: false, message: 'Page headings and metadata must be text.' });
+        }
+      }
+      const supplied = fields.filter(field => Object.hasOwn(req.body, field));
+      await db.query(`INSERT INTO static_pages (slug, page_title, content, meta_description, hero_title, hero_subtitle) VALUES (?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE content=VALUES(content)${supplied.map(field => ', ' + field + '=VALUES(' + field + ')').join('')}`,
+        [slug, req.body.page_title ?? page.page_title, content, req.body.meta_description ?? page.meta_description, req.body.hero_title ?? page.hero_title, req.body.hero_subtitle ?? page.hero_subtitle]);
       return res.json({ success: true, message: 'Article saved successfully.' });
     }
     if (slug === 'about' && Object.hasOwn(req.body, 'content') && !hasText(content)) {
       return res.status(400).json({ success: false, message: 'About page content cannot be empty.' });
+    }
+    if (slug === 'about' && extra && Object.hasOwn(extra, 'about_sections')) {
+      if (!Array.isArray(extra.about_sections) || extra.about_sections.some(section => !section || typeof section.title !== 'string' || typeof section.content !== 'string')) {
+        return res.status(400).json({ success: false, message: 'Each About section needs a title and content.' });
+      }
     }
     // Partial updates must not erase fields that were not submitted.
     const fields = ['page_title', 'meta_description', 'hero_title', 'hero_subtitle', 'last_updated', 'content', 'extra']

@@ -7,6 +7,8 @@ const fs     = require('fs');
 const path   = require('path');
 const { randomUUID } = require('crypto');
 const { sendMail }   = require('../services/mailer');
+const { sendEmail } = require('../utils/email');
+const escapeEmailHtml = value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'payment-proofs');
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
@@ -15,14 +17,16 @@ const stripe = process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.i
   ? require('stripe')(process.env.STRIPE_SECRET_KEY)
   : null;
 
-const { amounts: NGN_AMOUNTS } = require('../services/planPricing');
+const { amounts: NGN_AMOUNTS, usdAmounts, plans: MEMBERSHIP_PLANS } = require('../services/planPricing');
+const manualPayments = require('../services/manualPayments');
 
 // Plan config
 const PLANS = {
-  monthly:   { amount: NGN_AMOUNTS.monthly, currency: 'ngn', days: 30,  trial_days: 3 },
-  quarterly: { amount: NGN_AMOUNTS.quarterly, currency: 'ngn', days: 90,  trial_days: 0 },
-  annual:    { amount: NGN_AMOUNTS.annual, currency: 'ngn', days: 365, trial_days: 0 },
+  standard: { amount: NGN_AMOUNTS.standard, days: 30, trial_days: 0 },
+  deluxe: { amount: NGN_AMOUNTS.deluxe, days: 30, trial_days: 0 },
 };
+const LEGACY_PLANS = { monthly: {amount:15000,days:30}, quarterly:{amount:45000,days:90}, annual:{amount:150000,days:365} };
+const planLabel = plan => MEMBERSHIP_PLANS[plan]?.label || ({monthly:'Legacy Monthly',quarterly:'Legacy Quarterly',annual:'Legacy Annual'}[plan] || plan);
 
 // Paystack charges the canonical naira prices in kobo.
 const PAYSTACK_AMOUNTS = Object.fromEntries(Object.entries(NGN_AMOUNTS).map(([plan, amount]) => [plan, amount * 100]));
@@ -36,19 +40,6 @@ async function getStatus(req, res) {
       [req.user.id]
     );
     const sub = rows[0] || null;
-
-    // Auto-expire: if expires_at has passed, mark expired and demote user
-    if (sub && sub.status === 'active' && sub.expires_at && new Date(sub.expires_at) < new Date()) {
-      await db.query(`UPDATE subscriptions SET status='expired', updated_at=NOW() WHERE id=?`, [sub.id]);
-      await db.query(`UPDATE users SET role='user', updated_at=NOW() WHERE id=?`, [req.user.id]);
-      sub.status = 'expired';
-    }
-
-    // Auto-convert trial: if trial_ends_at has passed and still trialing, mark active
-    if (sub && sub.status === 'trialing' && sub.trial_ends_at && new Date(sub.trial_ends_at) < new Date()) {
-      await db.query(`UPDATE subscriptions SET status='active', updated_at=NOW() WHERE id=?`, [sub.id]);
-      sub.status = 'active';
-    }
 
     return res.json({ success: true, data: sub });
   } catch (e) {
@@ -65,7 +56,7 @@ async function stripeCreateCheckout(req, res) {
 
     const { plan } = req.body;
     if (!PLANS[plan]) {
-      return res.status(400).json({ success: false, message: 'Invalid plan. Choose monthly, quarterly, or annual.' });
+      return res.status(400).json({ success: false, message: 'Invalid plan. Choose Standard or Deluxe.' });
     }
 
     const planConfig = PLANS[plan];
@@ -84,7 +75,7 @@ async function stripeCreateCheckout(req, res) {
     const sessionParams = {
       customer:   customerId,
       mode:       'subscription',
-      line_items: [{ price_data: { currency: 'ngn', unit_amount: NGN_AMOUNTS[plan] * 100, product_data: { name: plan + ' VIP' }, recurring: { interval: plan === 'annual' ? 'year' : 'month', interval_count: plan === 'quarterly' ? 3 : 1 } }, quantity: 1 }],
+      line_items: [{ price_data: { currency: req.user.country === 'NG' ? 'ngn' : 'usd', unit_amount: (req.user.country === 'NG' ? NGN_AMOUNTS[plan] : usdAmounts[plan]) * 100, product_data: { name: planLabel(plan) }, recurring: { interval: 'month' } }, quantity: 1 }],
       success_url: `${process.env.SITE_URL}/dashboard.html?vip=success&plan=${plan}`,
       cancel_url:  `${process.env.SITE_URL}/pricing.html?cancelled=1`,
       metadata:    { user_id: String(req.user.id), plan },
@@ -218,11 +209,17 @@ async function cancelSubscription(req, res) {
 // ── POST /api/subscriptions/admin/grant  (admin manually grants VIP)
 async function adminGrantVip(req, res) {
   try {
-    const { user_id, plan = 'monthly', days } = req.body;
+    const { user_id, plan = 'standard', duration = 'monthly' } = req.body;
     if (!user_id) return res.status(400).json({ success: false, message: 'user_id required' });
+    const [users] = await db.query('SELECT id, role FROM users WHERE id=?', [user_id]);
+    if (!users.length) return res.status(404).json({ success: false, message: 'User not found.' });
+    if (users[0].role === 'admin') return res.status(400).json({ success: false, message: 'Admin accounts already have access.' });
 
-    const planConfig = PLANS[plan] || PLANS.monthly;
-    const grantDays  = parseInt(days) || planConfig.days;
+    const planConfig = PLANS[plan] || LEGACY_PLANS[plan];
+    if (!planConfig) throw new Error('Unknown membership plan.');
+    let grantDays;
+    try { grantDays = require('../services/subscriptionExpiry').durationDays(duration); }
+    catch (e) { return res.status(400).json({ success: false, message: e.message }); }
 
     await _activateSubscription(user_id, plan, {
       amount:   planConfig.amount,
@@ -238,7 +235,7 @@ async function adminGrantVip(req, res) {
 
 // ── Internal: activate subscription + elevate user role
 async function _activateSubscription(userId, plan, opts = {}) {
-  const planConfig = PLANS[plan] || PLANS.monthly;
+  const planConfig = PLANS[plan] || LEGACY_PLANS[plan];
   const days       = opts.days || planConfig.days;
   const now        = new Date();
   const expiresAt  = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
@@ -376,11 +373,8 @@ async function getBankDetails(req, res) {
     account_name:   process.env.MANUAL_ACCOUNT_NAME    || 'Anthony Ikpe',
     account_number: process.env.MANUAL_ACCOUNT_NUMBER  || '9077025895',
     sort_code:      process.env.MANUAL_SORT_CODE        || '',
-    amounts: {
-      monthly:   { ngn: NGN_AMOUNTS.monthly,  label: 'Monthly VIP' },
-      quarterly: { ngn: NGN_AMOUNTS.quarterly, label: 'Quarterly VIP' },
-      annual:    { ngn: NGN_AMOUNTS.annual, label: 'Annual VIP' },
-    },
+    amounts: Object.fromEntries(Object.entries(NGN_AMOUNTS).map(([plan, ngn]) => [plan, { ngn, usd: usdAmounts[plan], label: planLabel(plan) }])),
+    methods: manualPayments.methods(),
   };
   return res.json({ success: true, data: details });
 }
@@ -388,11 +382,15 @@ async function getBankDetails(req, res) {
 // ── POST /api/subscriptions/manual/submit
 async function manualSubmit(req, res) {
   try {
-    const { plan, imageData } = req.body;
+    const { plan, imageData, quoteToken, reference = '' } = req.body;
 
     if (!PLANS[plan]) {
       return res.status(400).json({ success: false, message: 'Invalid plan.' });
     }
+    let payment;
+    try { payment = manualPayments.verifyQuote(quoteToken, req.user.id, plan); }
+    catch (_) { return res.status(400).json({ success:false, message:'Reopen payment details to get a valid quote before submitting your receipt.' }); }
+    if (typeof reference !== 'string' || reference.length > 255) return res.status(400).json({success:false,message:'Payment reference is too long.'});
     if (!imageData || typeof imageData !== 'string') {
       return res.status(400).json({ success: false, message: 'Payment proof image is required.' });
     }
@@ -408,7 +406,7 @@ async function manualSubmit(req, res) {
     }
 
     const buffer = Buffer.from(b64, 'base64');
-    if (buffer.length > MAX_BYTES) {
+    if (!buffer.length || buffer.length > MAX_BYTES) {
       return res.status(400).json({ success: false, message: 'Image must be under 5 MB.' });
     }
 
@@ -434,15 +432,14 @@ async function manualSubmit(req, res) {
     const ngnAmounts = NGN_AMOUNTS;
 
     await db.query(
-      `INSERT INTO payment_submissions (user_id, plan, amount_ngn, image_path, image_mime)
-       VALUES (?, ?, ?, ?, ?)`,
-      [req.user.id, plan, ngnAmounts[plan], filename, mime]
+      `INSERT INTO payment_submissions (user_id, plan, amount_ngn, image_path, image_mime, payment_method, payment_currency, payment_amount, payment_details, payment_reference) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [req.user.id, plan, payment.ngn, filename, mime, payment.method, payment.currency, payment.amount, JSON.stringify(payment.destination), reference.trim()]
     );
 
     // Email admin — fire-and-forget so slow SMTP doesn't block the response
     const adminEmail  = process.env.ADMIN_EMAIL || 'rootedpredict@gmail.com';
     const siteUrl     = process.env.SITE_URL    || 'https://www.rootedpredict.com';
-    const planLabels  = { monthly: 'Monthly (15,000)', quarterly: 'Quarterly (45,000)', annual: 'Annual (150,000)' };
+    const paymentSummary = planLabel(plan) + ' / ' + payment.method + ' / ' + payment.currency + ' ' + payment.amount;
     sendMail({
       to:      adminEmail,
       subject: 'New VIP Payment Awaiting Approval — ' + (req.user.name || req.user.email),
@@ -450,7 +447,7 @@ async function manualSubmit(req, res) {
         <h2 style="font-family:sans-serif;">New Payment Submission</h2>
         <table style="font-family:sans-serif;font-size:14px;border-collapse:collapse;">
           <tr><td style="padding:6px 12px 6px 0;color:#666;">User</td><td style="padding:6px 0;font-weight:600;">${req.user.name || ''} (${req.user.email})</td></tr>
-          <tr><td style="padding:6px 12px 6px 0;color:#666;">Plan</td><td style="padding:6px 0;font-weight:600;">&#8358;${planLabels[plan]}</td></tr>
+          <tr><td style="padding:6px 12px 6px 0;color:#666;">Plan</td><td style="padding:6px 0;font-weight:600;">${paymentSummary}</td></tr>
           <tr><td style="padding:6px 12px 6px 0;color:#666;">Submitted</td><td style="padding:6px 0;">${new Date().toUTCString()}</td></tr>
         </table>
         <p style="font-family:sans-serif;margin-top:20px;">
@@ -480,7 +477,7 @@ async function adminListSubmissions(req, res) {
     const offset = (page - 1) * limit;
 
     const [rows] = await db.query(
-      `SELECT ps.id, ps.plan, ps.amount_ngn, ps.status, ps.notes,
+      `SELECT ps.id, ps.plan, ps.amount_ngn, ps.payment_method, ps.payment_currency, ps.payment_amount, ps.payment_details, ps.payment_reference, ps.status, ps.notes,
               ps.submitted_at, ps.reviewed_at,
               u.name AS user_name, u.email AS user_email, u.id AS user_id
        FROM payment_submissions ps
@@ -536,9 +533,13 @@ async function adminApproveSubmission(req, res) {
       return res.status(409).json({ success: false, message: `Submission is already ${sub.status}.` });
     }
 
+    let days;
+    try { days = require('../services/subscriptionExpiry').durationDays(req.body.duration); }
+    catch (e) { return res.status(400).json({ success: false, message: e.message }); }
     await _activateSubscription(sub.user_id, sub.plan, {
-      amount:   sub.amount_ngn,
-      currency: 'NGN',
+      days,
+      amount: sub.payment_amount ?? sub.amount_ngn,
+      currency: sub.payment_currency || 'NGN',
     });
 
     await db.query(
@@ -547,15 +548,15 @@ async function adminApproveSubmission(req, res) {
       [req.user.id, req.body.notes || null, sub.id]
     );
 
-    // Email the user — fire-and-forget
+    // Use the same email provider as account verification and password resets.
     const siteUrl = process.env.SITE_URL || 'https://www.rootedpredict.com';
-    const planLabels = { monthly: 'Monthly', quarterly: 'Quarterly', annual: 'Annual' };
-    sendMail({
+    const planLabels = Object.fromEntries(['standard','deluxe','monthly','quarterly','annual'].map(plan => [plan, planLabel(plan)]));
+    const emailResult = await sendEmail({
       to:      sub.user_email,
       subject: 'Your VIP Access Has Been Approved — Rooted Predictions',
       html: `
         <h2 style="font-family:sans-serif;color:#22c55e;">Welcome to VIP!</h2>
-        <p style="font-family:sans-serif;font-size:15px;">Hi ${sub.user_name || 'there'},</p>
+        <p style="font-family:sans-serif;font-size:15px;">Hi ${escapeEmailHtml(sub.user_name || 'there')},</p>
         <p style="font-family:sans-serif;font-size:15px;">Your ${planLabels[sub.plan]} VIP payment has been verified and your account is now active.</p>
         <p style="font-family:sans-serif;margin-top:20px;">
           <a href="${siteUrl}/dashboard.html" style="background:#e94560;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-weight:600;font-family:sans-serif;">
@@ -564,9 +565,9 @@ async function adminApproveSubmission(req, res) {
         </p>
         <p style="font-family:sans-serif;font-size:12px;color:#999;margin-top:24px;">Questions? Email rootedpredict@gmail.com</p>
       `,
-    }).catch(function(e) { console.error('[MAILER] approve notify failed:', e.message); });
+    });
 
-    return res.json({ success: true, message: 'VIP activated and user notified.' });
+    return res.json({ success: true, email_sent: emailResult.success, message: emailResult.success ? 'VIP activated and approval email sent.' : 'VIP activated. The login notification is ready, but the email could not be sent. Check the email service configuration.' });
   } catch (e) {
     return res.status(500).json({ success: false, message: e.message });
   }
@@ -594,21 +595,21 @@ async function adminRejectSubmission(req, res) {
       [req.user.id, notes, sub.id]
     );
 
-    sendMail({
+    const emailResult = await sendEmail({
       to:      sub.user_email,
       subject: 'Payment Verification Update — Rooted Predictions',
       html: `
         <h2 style="font-family:sans-serif;">Payment Verification Update</h2>
-        <p style="font-family:sans-serif;font-size:15px;">Hi ${sub.user_name || 'there'},</p>
+        <p style="font-family:sans-serif;font-size:15px;">Hi ${escapeEmailHtml(sub.user_name || 'there')},</p>
         <p style="font-family:sans-serif;font-size:15px;">Unfortunately we were unable to verify your payment proof.
-          ${notes ? `<br><br><strong>Reason:</strong> ${notes}` : ''}</p>
+          ${notes ? `<br><br><strong>Reason:</strong> ${escapeEmailHtml(notes)}` : ''}</p>
         <p style="font-family:sans-serif;font-size:15px;">Please contact us at
           <a href="mailto:rootedpredict@gmail.com">rootedpredict@gmail.com</a>
           or resubmit with a clearer screenshot of your bank transfer receipt.</p>
       `,
-    }).catch(function(e) { console.error('[MAILER] reject notify failed:', e.message); });
+    });
 
-    return res.json({ success: true, message: 'Submission rejected and user notified.' });
+    return res.json({ success: true, email_sent: emailResult.success, message: emailResult.success ? 'Submission rejected and rejection email sent.' : 'Submission rejected. The login notification is ready, but the email could not be sent. Check the email service configuration.' });
   } catch (e) {
     return res.status(500).json({ success: false, message: e.message });
   }
@@ -618,10 +619,10 @@ async function adminRejectSubmission(req, res) {
 async function getMyPayments(req, res) {
   try {
     const [rows] = await db.query(
-      `SELECT id, plan, amount_ngn, status, created_at, reviewed_at, notes
+      `SELECT id, plan, amount_ngn, payment_method, payment_currency, payment_amount, status, submitted_at AS created_at, reviewed_at, notes
        FROM payment_submissions
        WHERE user_id = ?
-       ORDER BY created_at DESC
+       ORDER BY submitted_at DESC
        LIMIT 20`,
       [req.user.id]
     );

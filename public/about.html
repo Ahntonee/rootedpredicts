@@ -97,10 +97,21 @@
     if (p.content) {
       document.getElementById('page-content').innerHTML = p.content;
     }
+    for (const item of (p.extra?.about_sections || [])) {
+      const section = document.createElement('section');
+      section.className = 'about-content-section';
+      const heading = document.createElement('h2');
+      heading.textContent = item.title;
+      const body = document.createElement('div');
+      body.innerHTML = item.content;
+      section.append(heading, body);
+      document.getElementById('page-content').append(section);
+    }
 
     // Some layouts omit the optional statistics banner.
     if (p.extra) {
       for (const [key, value] of Object.entries(p.extra)) {
+        if (key === 'about_sections') continue;
         const element = document.getElementById(key.replaceAll('_', '-'));
         if (element) element.textContent = value || '';
       }

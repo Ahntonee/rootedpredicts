@@ -974,7 +974,7 @@
       <div class="pick-skeleton"><div class="skel" style="height:16px;width:55%;margin-bottom:8px;"></div><div class="skel" style="height:14px;width:75%;"></div></div>`;
 
     const date = isoDate(getDateFor(currentOffset));
-    const params = new URLSearchParams({ date, limit: '15' });
+    const params = new URLSearchParams({ date, limit: '10', homepage: '1' });
     if (currentCategory && currentCategory !== 'free' && currentCategory !== 'all') {
       params.set('category', currentCategory);
     }
@@ -982,7 +982,7 @@
       .then(r => r.json())
       .then(j => {
         const preds = (j && j.data && j.data.predictions) || [];
-        list.innerHTML = buildPicksHTML(preds.slice(0, 15));
+        list.innerHTML = buildPicksHTML(preds.slice(0, 10));
       })
       .catch(() => {
         list.innerHTML = `<div style="padding:28px;text-align:center;color:var(--muted);font-size:0.875rem;">Could not load predictions. Please try again.</div>`;

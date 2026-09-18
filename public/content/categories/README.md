@@ -17,4 +17,6 @@ Paste each article as HTML into its matching file below. Replace the file conten
 
 Admins can add, edit, format, or remove these articles under **Site Pages**. Saved articles are stored in `static_pages` with a `category-` slug prefix and override these default files on both the prediction page and homepage. An empty saved article means intentionally removed; it does not restore the default. Add content and save again to restore an article.
 
+Site Pages also edits each category's browser title, meta description, main heading, and subtitle. These fields are rendered on the server and retained when the prediction page initializes in the browser. Older article-only records inherit the original category metadata until those fields are edited.
+
 These files supply the initial content until an admin saves an override. Deploying a changed default file does not replace an existing admin override. The admin SEO Pages editor manages separate /tips/ articles.

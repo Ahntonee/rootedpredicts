@@ -4,7 +4,7 @@
 
 'use strict';
 
-const RESEND_API_KEY = process.env.SMTP_PASS; // reuses existing env var
+const RESEND_API_KEY = process.env.RESEND_API_KEY || process.env.SMTP_PASS; // legacy configuration
 const FROM_ADDRESS   = process.env.EMAIL_FROM || 'Rooted Predictions <noreply@rootedpredict.com>';
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
@@ -14,6 +14,7 @@ const RESEND_API_URL = 'https://api.resend.com/emails';
 async function sendEmail({ to, subject, html, text }) {
   try {
     const response = await fetch(RESEND_API_URL, {
+      signal: AbortSignal.timeout(20000),
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${RESEND_API_KEY}`,

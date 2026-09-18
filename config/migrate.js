@@ -28,6 +28,10 @@ const DB_CONFIG = {
 // ============================================================
 
 const MIGRATIONS = [
+  { name: 'Homepage prediction slots', sql: `CREATE TABLE IF NOT EXISTS homepage_picks (
+    pick_date DATE NOT NULL, slot TINYINT NOT NULL, prediction_id INT NOT NULL UNIQUE,
+    PRIMARY KEY (pick_date, slot)
+  )` },
 
   // ----------------------------------------------------------
   // 1. Ensure charset on the database (safe on Railway where DB
@@ -910,6 +914,26 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `,
   },
+  { name: "Support Standard and Deluxe subscriptions", sql: "ALTER TABLE subscriptions MODIFY plan ENUM('monthly','quarterly','annual','standard','deluxe') NOT NULL" },
+  { name: "Support Standard and Deluxe payment submissions", sql: "ALTER TABLE payment_submissions MODIFY plan ENUM('monthly','quarterly','annual','standard','deluxe') NOT NULL" },
+  { name: "Prediction membership tier", sql: "ALTER TABLE predictions ADD COLUMN access_tier ENUM('free','standard','deluxe') NOT NULL DEFAULT 'free'" },
+  { name: "Payment method", sql: "ALTER TABLE payment_submissions ADD COLUMN payment_method VARCHAR(30) NOT NULL DEFAULT 'moniepoint'" },
+  { name: "Payment currency", sql: "ALTER TABLE payment_submissions ADD COLUMN payment_currency VARCHAR(10) NOT NULL DEFAULT 'NGN'" },
+  { name: "Payment amount", sql: "ALTER TABLE payment_submissions ADD COLUMN payment_amount DECIMAL(18,4) NULL" },
+  { name: "Payment destination snapshot", sql: "ALTER TABLE payment_submissions ADD COLUMN payment_details JSON NULL" },
+  { name: "Payment reference", sql: "ALTER TABLE payment_submissions ADD COLUMN payment_reference VARCHAR(255) NULL" },
+  { name: "Payment review notification acknowledgement", sql: "ALTER TABLE payment_submissions ADD COLUMN notification_read_at DATETIME NULL" },
+  { name: 'Subscription expiry notifications', sql: `CREATE TABLE IF NOT EXISTS subscription_expiry_notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    subscription_id INT NOT NULL UNIQUE,
+    user_id INT NOT NULL,
+    plan VARCHAR(30) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    read_at DATETIME NULL,
+    email_sent_at DATETIME NULL,
+    email_attempt_at DATETIME NULL,
+    INDEX unread_user (user_id, read_at)
+  )` },
 ];
 
 // ============================================================

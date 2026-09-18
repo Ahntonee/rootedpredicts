@@ -26,12 +26,26 @@ function renderArticles(html, category, overrides = {}) {
     Object.entries(categories).filter(([slug]) => content(slug).trim()).map(([slug, label]) => `<details><summary style="cursor:pointer;padding:12px 0;font-weight:700;">${label}</summary><a href="/predictions/${slug}">View ${label} predictions</a>${content(slug)}</details>`).join('') + '</section>');
 }
 async function loadArticleOverrides(db) {
-  const [rows] = await db.query("SELECT slug, content FROM static_pages WHERE slug LIKE 'category-%'");
-  return Object.fromEntries(rows.filter(p => Object.hasOwn(categories, p.slug.slice(9))).map(p => [p.slug.slice(9), p.content]));
+  return Object.fromEntries(Object.entries(await loadCategoryOverrides(db)).map(([slug, p]) => [slug, p.content]));
+}
+async function loadCategoryOverrides(db) {
+  const [rows] = await db.query("SELECT slug, page_title, meta_description, hero_title, hero_subtitle, content FROM static_pages WHERE slug LIKE 'category-%'");
+  return Object.fromEntries(rows.filter(p => Object.hasOwn(categories, p.slug.slice(9))).map(p => [p.slug.slice(9), mergeCategoryPage(p.slug.slice(9), p)]));
 }
 function categoryPage(slug) {
   if (!Object.hasOwn(categories, slug)) return null;
+  const meta = require('./categoryMetadata.json')[slug];
   return { slug: 'category-' + slug, kind: 'category', label: categories[slug], url: '/predictions/' + slug,
-    page_title: categories[slug] + ' SEO Article', content: article(slug) };
+    page_title: meta.title, meta_description: meta.desc, hero_title: meta.h1, hero_subtitle: meta.sub, content: article(slug) };
 }
-module.exports = { categories, dbCategories, renderArticles, loadArticleOverrides, categoryPage };
+function mergeCategoryPage(slug, saved = {}) {
+  const defaults = categoryPage(slug);
+  const page = { ...defaults, ...saved };
+  // Older article-only records contain a placeholder title and null metadata.
+  if (page.page_title === categories[slug] + ' SEO Article') page.page_title = defaults.page_title;
+  for (const field of ['page_title', 'meta_description', 'hero_title', 'hero_subtitle']) {
+    if (page[field] == null) page[field] = defaults[field];
+  }
+  return page;
+}
+module.exports = { categories, dbCategories, renderArticles, loadArticleOverrides, loadCategoryOverrides, categoryPage, mergeCategoryPage };

@@ -22,6 +22,36 @@ router.get('/pricing', asyncHandler(async (req, res) => {
 
 // All routes below require a logged-in user
 router.use(authenticate);
+router.get('/notifications', asyncHandler(async (req, res) => {
+  const db = require('../config/db');
+  await require('../services/subscriptionExpiry').expireDue(db, req.user.id);
+  const [rows] = await db.query(
+    `SELECT id, plan, status, notes, reviewed_at FROM payment_submissions
+     WHERE user_id = ? AND status IN ('approved', 'rejected') AND notification_read_at IS NULL
+     ORDER BY reviewed_at ASC, id ASC`, [req.user.id]);
+  res.setHeader('Cache-Control', 'no-store');
+  const [expired] = await db.query(`SELECT CONCAT('expiry-', id) AS id, plan, 'expired' AS status, created_at AS reviewed_at
+    FROM subscription_expiry_notifications WHERE user_id=? AND read_at IS NULL ORDER BY id`, [req.user.id]);
+  res.json({ success: true, data: [...rows, ...expired] });
+}));
+router.post('/notifications/:id/read', asyncHandler(async (req, res) => {
+  const db = require('../config/db');
+  if (/^expiry-\d+$/.test(req.params.id)) {
+    await db.query('UPDATE subscription_expiry_notifications SET read_at=COALESCE(read_at,NOW()) WHERE id=? AND user_id=?', [req.params.id.slice(7), req.user.id]);
+    return res.json({ success: true });
+  }
+  await db.query(
+    `UPDATE payment_submissions SET notification_read_at = COALESCE(notification_read_at, NOW())
+     WHERE id = ? AND user_id = ? AND status IN ('approved', 'rejected')`,
+    [req.params.id, req.user.id]);
+  res.json({ success: true });
+}));
+router.post('/manual/quote', asyncHandler(async (req, res) => {
+  try {
+    const data = await require('../services/manualPayments').createQuote(req.user.id, req.body.plan, req.body.method);
+    res.json({success:true,data});
+  } catch (e) { res.status(400).json({success:false,message:e.message}); }
+}));
 
 // GET  /api/subscriptions/status
 router.get('/status', asyncHandler(ctrl.getStatus));

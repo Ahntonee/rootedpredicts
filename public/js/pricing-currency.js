@@ -65,7 +65,7 @@
       if (request === version) render(data);
     } catch (_) {
       if (request === version) {
-        render({ currency:'NGN', plans:{ monthly:{ngn:15000,amount:15000}, quarterly:{ngn:45000,amount:45000}, annual:{ngn:150000,amount:150000} }, notice:'Conversion unavailable. Showing the exact naira price.' });
+        render({ currency:'NGN', plans:{ standard:{ngn:15000,amount:15000}, deluxe:{ngn:25000,amount:25000} }, notice:'Conversion unavailable. Showing the exact naira price.' });
       }
     }
   }

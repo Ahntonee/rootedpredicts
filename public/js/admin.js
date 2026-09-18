@@ -125,6 +125,8 @@
       void:         'badge-pending',
       free:         'badge-free',
       vip:          'badge-vip',
+      standard:     'badge-vip',
+      deluxe:       'badge-vip',
       active:       'badge-won',
       admin:        'badge-vip',
       user:         'badge-free',

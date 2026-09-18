@@ -110,23 +110,9 @@ async function runScheduledBlogPosts() {
 
 async function runSubscriptionExpiryCheck() {
   try {
-    const [expired] = await db.query(
-      `SELECT s.user_id, s.id as sub_id FROM subscriptions s
-       WHERE s.status = 'active' AND s.expires_at < NOW() AND s.expires_at IS NOT NULL`
-    );
-    for (const sub of expired) {
-      await db.query("UPDATE users SET role='user',updated_at=NOW() WHERE id=? AND role='vip'", [sub.user_id]);
-      await db.query("UPDATE subscriptions SET status='expired',updated_at=NOW() WHERE id=?", [sub.sub_id]);
-      console.log(`[SCHEDULER] Subscription expired user ${sub.user_id}`);
-    }
-    const [trialEnded] = await db.query(
-      `SELECT s.user_id, s.id as sub_id FROM subscriptions s
-       WHERE s.status='trialing' AND s.trial_ends_at < NOW() AND s.trial_ends_at IS NOT NULL`
-    );
-    for (const sub of trialEnded) {
-      await db.query("UPDATE users SET role='user',updated_at=NOW() WHERE id=? AND role='vip'", [sub.user_id]);
-      await db.query("UPDATE subscriptions SET status='expired',updated_at=NOW() WHERE id=?", [sub.sub_id]);
-    }
+    const expiry = require('./subscriptionExpiry');
+    await expiry.expireDue(db);
+    await expiry.sendExpiryEmails(db);
   } catch(e) { console.error('[SCHEDULER] Expiry check failed:', e.message); }
 }
 
@@ -156,8 +142,8 @@ function startScheduler() {
   console.log('[SCHEDULER] Football API updates are manual only.');
   cron.schedule('45 23 * * *', runAccuracyTracking,       { timezone: 'UTC' });
   console.log('[SCHEDULER] Accuracy tracking: 23:45 UTC daily (after results sync)');
-  cron.schedule('0 * * * *',   runSubscriptionExpiryCheck, { timezone: 'UTC' });
-  console.log('[SCHEDULER] Subscription expiry check: every hour');
+  cron.schedule('* * * * *',   runSubscriptionExpiryCheck, { timezone: 'UTC' });
+  console.log('[SCHEDULER] Subscription expiry check: every minute');
   cron.schedule('15 6 * * *',  runConfidenceScoring,      { timezone: 'UTC' });
   console.log('[SCHEDULER] Confidence scoring: 06:15 UTC daily');
   cron.schedule('* * * * *', runScheduledBlogPosts,       { timezone: 'UTC' });

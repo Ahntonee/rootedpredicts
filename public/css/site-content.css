@@ -6,3 +6,10 @@
 #page-content blockquote, .seo-block blockquote, .seo-content-block blockquote { margin:1em 0; border-left:4px solid var(--green); padding-left:1em; }
 #page-content, .seo-block, .seo-content-block { overflow-wrap:anywhere; }
 .seo-block:empty { display:none !important; }
+#page-content { font-size:1rem; line-height:1.85; }
+#page-content h1 { font-size:2rem; }
+#page-content h2 { font-size:1.6rem; font-weight:800; }
+#page-content h3 { font-size:1.2rem; font-weight:700; }
+#page-content a { text-decoration:underline; text-underline-offset:3px; }
+#page-content .about-content-section { margin-top:36px; padding-top:20px; border-top:1px solid var(--border); }
+#page-content pre, .seo-block pre { white-space:pre-wrap; padding:16px; background:var(--surface); }

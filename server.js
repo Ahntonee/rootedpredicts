@@ -114,7 +114,7 @@ app.use(cookieParser());
 // JSON-LD structured data before serving the HTML. Regular browsers skip
 // this path entirely and get the normal CSR experience.
 
-const { categories, dbCategories, renderArticles, loadArticleOverrides } = require('./services/categoryPages');
+const { categories, dbCategories, renderArticles, loadCategoryOverrides } = require('./services/categoryPages');
 const categoryMetadata = require('./services/categoryMetadata.json');
 
 function isSearchBot(req) {
@@ -160,13 +160,17 @@ function buildBotPredCard(p) {
 }
 
 async function prerenderPage(req, res, next, file, containerId) {
+  let categoryOverrides = {};
   let articleOverrides = {};
-  try { articleOverrides = await loadArticleOverrides(db); }
+  try {
+    categoryOverrides = await loadCategoryOverrides(db);
+    articleOverrides = Object.fromEntries(Object.entries(categoryOverrides).map(([slug, page]) => [slug, page.content]));
+  }
   catch (err) { console.error('[CATEGORY ARTICLES]', err.message); }
   try {
     let html = renderArticles(fs.readFileSync(path.join(__dirname, 'public', file), 'utf8'), file === 'predictions.html' ? (req.params.category || 'free') : null, articleOverrides);
     const category = req.params.category || 'free';
-    if (file === 'predictions.html') html = renderCategoryMeta(html, category);
+    if (file === 'predictions.html') html = renderCategoryMeta(html, category, categoryOverrides[category]);
     const [preds] = await db.query(`
       SELECT p.id, p.slug, p.home_team, p.away_team, p.match_date,
              p.tip, p.market, p.odds, p.confidence_score, p.league_id,
@@ -175,7 +179,7 @@ async function prerenderPage(req, res, next, file, containerId) {
       LEFT JOIN leagues l ON l.id = p.league_id
       WHERE DATE(p.match_date) = CURDATE()
         AND p.published_at IS NOT NULL
-        AND (p.visibility <> 'vip' OR p.category = 'Banker of the Day')
+        AND p.access_tier = 'free' AND (p.visibility <> 'vip' OR p.category = 'Banker of the Day')
         ${category !== 'free' ? 'AND p.category = ?' : ''}
       ORDER BY p.confidence_score DESC
       ${file === 'index.html' ? 'LIMIT 15' : ''}
@@ -210,13 +214,14 @@ async function prerenderPage(req, res, next, file, containerId) {
   } catch (e) {
     console.error('[PRERENDER]', e.message);
     let html = renderArticles(fs.readFileSync(path.join(__dirname, 'public', file), 'utf8'), file === 'predictions.html' ? (req.params.category || 'free') : null, articleOverrides);
-    if (file === 'predictions.html') html = renderCategoryMeta(html, req.params.category || 'free');
+    if (file === 'predictions.html') html = renderCategoryMeta(html, req.params.category || 'free', categoryOverrides[req.params.category || 'free']);
     res.type('html').send(html);
   }
 }
 
-function renderCategoryMeta(html, category) {
-  const meta = categoryMetadata[category];
+function renderCategoryMeta(html, category, page) {
+  const defaults = categoryMetadata[category];
+  const meta = page ? { ...defaults, title: page.page_title, desc: page.meta_description, h1: page.hero_title, sub: page.hero_subtitle } : defaults;
   const canonical = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '') + '/predictions/' + category;
   html = html.replace(/(<title[^>]*>)[\s\S]*?<\/title>/, (_, start) => start + escHtml(meta.title) + '</title>');
   html = html.replace(/(<meta name="description"[^>]*content=")[^"]*/, '$1' + escHtml(meta.desc));
@@ -228,7 +233,8 @@ function renderCategoryMeta(html, category) {
     html = html.replace(new RegExp('(<[^>]+id="' + id + '"[^>]*>)[^<]*'), (_, start) => start + escHtml(text));
   }
   html = html.replace(/<div class="seo-block" id="seo-([^" ]+)"[^>]*>/g, (_, slug) => `<div class="seo-block" id="seo-${slug}"${slug === category ? '' : ' style="display:none;"'}>`);
-  return html;
+  const clientMeta = JSON.stringify({ [category]: meta }).replace(/</g, '\\u003c');
+  return html.replace('</head>', '<script type="application/json" id="category-page-meta">' + clientMeta + '</script>\n</head>');
 }
 app.get(['/', '/index.html'], (req, res, next) => prerenderPage(req, res, next, 'index.html', 'free-picks-list'));
 app.get('/predictions.html', (req, res) => {
@@ -333,7 +339,7 @@ app.get('/tips/:slug', async (req, res) => {
              l.name AS league_name, l.country AS league_country
       FROM predictions p
       LEFT JOIN leagues l ON l.id = p.league_id
-      WHERE DATE(p.match_date) = CURDATE() AND p.published_at IS NOT NULL
+      WHERE DATE(p.match_date) = CURDATE() AND p.published_at IS NOT NULL AND p.access_tier = 'free' AND (p.visibility <> 'vip' OR p.category = 'Banker of the Day')
       ORDER BY p.confidence_score DESC LIMIT 30
     `);
     const BASE = process.env.SITE_URL || 'https://www.rootedpredict.com';
@@ -658,7 +664,7 @@ app.get('/prediction/:slug', async (req, res) => {
     );
     if (!rows.length) return res.sendFile(path.join(__dirname, 'public', 'prediction-detail.html'));
     const p = rows[0];
-    if (p.visibility === 'vip' && p.category !== 'Banker of the Day') { p.tip = null; p.odds = null; }
+    if (require('./services/membership').requiredTier(p) !== 'free') { p.tip = null; p.odds = null; }
     let html = fs.readFileSync(path.join(__dirname, 'public', 'prediction-detail.html'), 'utf8');
     const BASE = process.env.SITE_URL || 'https://www.rootedpredict.com';
     const schema = JSON.stringify({

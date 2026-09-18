@@ -86,7 +86,8 @@ async function getPredictions(req, res) {
       filterArgs
     );
     const [rows] = await db.query(
-      `SELECT p.*,COALESCE(p.category,'Free Pick') as category,l.name as league_name,l.logo_url as league_logo
+      `SELECT p.*,COALESCE(p.category,'Free Pick') as category,l.name as league_name,l.logo_url as league_logo,
+       EXISTS(SELECT 1 FROM homepage_picks h WHERE h.prediction_id=p.id AND h.pick_date=DATE(p.match_date)) AS on_homepage
        FROM predictions p LEFT JOIN leagues l ON p.league_id=l.id${WHERE}
        ORDER BY p.match_date DESC LIMIT ? OFFSET ?`,
       [...filterArgs, parseInt(limit), offset]
@@ -132,7 +133,7 @@ async function getPrediction(req, res) {
 async function createPrediction(req, res) {
   try {
     const { league_id,fixture_id,home_team,away_team,home_team_logo,away_team_logo,
-            match_date,tip,market,odds,odds_data,confidence_score,visibility,category,analysis,
+            match_date,tip,market,odds,odds_data,confidence_score,visibility,category,access_tier,analysis,
             home_form,away_form,h2h_summary,published } = req.body;
     if (!home_team||!away_team||!match_date||!tip||!market) {
       return res.status(400).json({ success:false, message:'Missing required fields' });
@@ -141,7 +142,8 @@ async function createPrediction(req, res) {
     // Normalise datetime-local format ('2026-06-18T14:00') to MySQL DATETIME ('2026-06-18 14:00:00')
     const normalMatch = match_date ? match_date.replace('T', ' ').replace(/(\d{2}:\d{2})$/, '$1:00').slice(0, 19) : match_date;
     // Derive visibility from category if provided
-    const derivedVis = category === 'Banker of the Day' ? 'vip' : (visibility || 'free');
+    if (access_tier !== undefined && !['free','standard','deluxe'].includes(access_tier)) return res.status(400).json({success:false,message:'Invalid access tier.'});
+    const derivedVis = access_tier && access_tier !== 'free' ? 'vip' : category === 'Banker of the Day' ? 'vip' : (visibility || 'free');
     const leagueIdVal  = league_id  ? parseInt(league_id)  : null;
     const fixtureIdVal = fixture_id ? parseInt(fixture_id) : null;
     let leagueName = 'Match';
@@ -154,11 +156,11 @@ async function createPrediction(req, res) {
     if (existing.length) slug = slug+'-'+Date.now();
     const [ins] = await db.query(
       `INSERT INTO predictions (fixture_id,league_id,home_team,away_team,home_team_logo,away_team_logo,
-        match_date,tip,market,odds,odds_data,confidence_score,visibility,category,analysis,home_form,away_form,
-        h2h_summary,slug,result,published_at,created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?,?)`,
+        match_date,tip,market,odds,odds_data,confidence_score,visibility,category,access_tier,analysis,home_form,away_form,
+        h2h_summary,slug,result,published_at,created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?,?)`,
       [fixtureIdVal,leagueIdVal,sanitiseText(home_team),sanitiseText(away_team),home_team_logo||null,
        away_team_logo||null,normalMatch,sanitiseText(tip),sanitiseText(market),
-       odds||null,oddsJson,confidence_score||null,derivedVis,category||null,analysis||null,
+       odds||null,oddsJson,confidence_score||null,derivedVis,category||null,access_tier||'free',analysis||null,
        home_form||null,away_form||null,h2h_summary||null,slug,
        published ? new Date() : null, req.user.id]
     );
@@ -182,9 +184,13 @@ async function updatePrediction(req, res) {
   try {
     const { id } = req.params;
     const { fixture_id,league_id,home_team,away_team,match_date,tip,market,odds,odds_data,
-            confidence_score,visibility,category,result,analysis,
+            confidence_score,visibility,category,access_tier,result,analysis,
             home_form,away_form,h2h_summary,published } = req.body;
     const updates=[]; const args=[];
+    if (access_tier !== undefined) {
+      if (!['free','standard','deluxe'].includes(access_tier)) return res.status(400).json({success:false,message:'Invalid access tier.'});
+      updates.push('access_tier=?'); args.push(access_tier);
+    }
     if (fixture_id !== undefined) { updates.push('fixture_id=?'); args.push(fixture_id ? parseInt(fixture_id) : null); }
     if (league_id)        { updates.push('league_id=?');        args.push(league_id); }
     if (home_team)        { updates.push('home_team=?');        args.push(sanitiseText(home_team)); }
@@ -345,7 +351,12 @@ async function getUsers(req, res) {
        ORDER BY created_at DESC LIMIT ? OFFSET ?`,
       [...filterArgs, parseInt(limit), offset]
     );
-    res.json({ success:true, data:{ users:rows, total:parseInt(total), page:parseInt(page) }});
+    const { attachMembership } = require('../services/membership');
+    const users = await Promise.all(rows.map(async user => {
+      const membership = await attachMembership(db, { ...user });
+      return { ...user, membership_tier: membership.membership_tier || 'free' };
+    }));
+    res.json({ success:true, data:{ users, total:parseInt(total), page:parseInt(page) }});
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 

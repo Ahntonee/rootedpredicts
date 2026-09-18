@@ -1,11 +1,48 @@
-.page-editor-toolbar { display:flex; flex-wrap:wrap; gap:6px; padding:10px; border:1px solid var(--border); border-radius:8px 8px 0 0; background:var(--surface); }
-.page-editor-toolbar button, .page-editor-toolbar select { padding:7px 9px; border:1px solid var(--border); border-radius:4px; color:var(--text); background:var(--card-bg); cursor:pointer; }
-.page-editor-toolbar button:disabled { opacity:.5; cursor:default; }
-.page-editor-visual { min-height:360px; max-height:70vh; overflow:auto; padding:20px; border:1px solid var(--border); border-top:0; border-radius:0 0 8px 8px; line-height:1.75; overflow-wrap:anywhere; }
-.page-editor-visual:focus { outline:2px solid var(--green); }
-.page-editor-visual p, .preview-pane p { margin:0 0 1em; }
-.page-editor-visual h1, .page-editor-visual h2, .page-editor-visual h3, .page-editor-visual h4,
-.preview-pane h1, .preview-pane h2, .preview-pane h3, .preview-pane h4 { margin:1.2em 0 .6em; }
-.page-editor-visual ul, .page-editor-visual ol, .preview-pane ul, .preview-pane ol { padding-left:2em; margin:1em 0; }
-.page-editor-visual blockquote, .preview-pane blockquote { border-left:4px solid var(--green); padding-left:16px; margin:1em 0; }
+    /* Quill dark-theme overrides */
+    .ql-toolbar.ql-snow {
+      background: var(--surface-2);
+      border-color: var(--border) !important;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .ql-container.ql-snow {
+      background: var(--surface);
+      border-color: var(--border) !important;
+      border-radius: 0 0 var(--radius) var(--radius);
+      font-family: var(--font-body);
+      font-size: 0.93rem;
+      min-height: 240px;
+      color: var(--text);
+    }
+    .ql-editor { min-height: 240px; color: var(--text); }
+    .ql-editor.ql-blank::before { color: var(--muted); font-style: normal; }
+    .ql-toolbar .ql-stroke { stroke: var(--text-soft) !important; }
+    .ql-toolbar .ql-fill  { fill:   var(--text-soft) !important; }
+    .ql-toolbar .ql-picker-label { color: var(--text-soft) !important; }
+    .ql-toolbar button:hover .ql-stroke,
+    .ql-toolbar button.ql-active .ql-stroke { stroke: var(--text) !important; }
+    .ql-toolbar button:hover .ql-fill,
+    .ql-toolbar button.ql-active .ql-fill   { fill:   var(--text) !important; }
+    .ql-toolbar .ql-picker-options {
+      background: var(--surface-2);
+      border-color: var(--border) !important;
+      color: var(--text);
+    }
+    .ql-snow .ql-tooltip {
+      background: var(--surface-2);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .ql-snow .ql-tooltip input[type=text] {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+.ql-editor { max-height:65vh; overflow:auto; line-height:1.8; }
+.ql-editor p { margin-bottom:.7em; }
+.ql-editor h1, .ql-editor h2, .ql-editor h3 { margin:1em 0 .5em; }
+.editor-source-toggle { margin:10px 0; }
+.ql-toolbar[hidden], .ql-container[hidden] { display:none !important; }
+.about-section-editor { border-top:1px solid var(--border); margin-top:20px; padding-top:20px; }
+.about-section-editor .field-input { margin-bottom:12px; }
 @media(max-width:760px) { .site-pages-layout { grid-template-columns:1fr !important; } }

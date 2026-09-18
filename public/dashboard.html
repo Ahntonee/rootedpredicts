@@ -308,7 +308,7 @@ async function checkAuth() {
     const { data } = await res.json();
     if (!data) { window.location.href = '/login.html'; return; }
 
-    document.getElementById('user-plan').textContent    = data.role === 'admin' ? 'Admin' : data.role === 'vip' ? 'VIP' : 'Free';
+    document.getElementById('user-plan').textContent    = data.role === 'admin' ? 'Admin' : ({ standard: 'Standard', deluxe: 'Deluxe' }[data.membership_tier] || 'Free');
     document.getElementById('user-country').textContent = data.country || '—';
     document.getElementById('user-since').textContent   = data.created_at
       ? new Date(data.created_at).toLocaleDateString('en-GB', { month:'short', year:'numeric' }) : '—';
@@ -320,7 +320,7 @@ async function loadSubscription() {
     const res  = await fetch('/api/subscriptions/status', { credentials: 'include' });
     const json = await res.json();
     const sub  = json.success ? json.data : null;
-    const planLabels = { monthly: 'Monthly VIP', quarterly: 'Quarterly VIP', annual: 'Annual VIP' };
+    const planLabels = { standard: 'Standard', deluxe: 'Deluxe', monthly: 'Monthly VIP', quarterly: 'Quarterly VIP', annual: 'Annual VIP' };
 
     const mobBanner = document.getElementById('mob-sub-banner');
 

@@ -4,6 +4,7 @@
   'use strict';
 
   var _selectedPlan = null;
+  var _paymentQuote = null;
   var _bankDetails  = null;
 
   async function apiFetch(method, url, body) {
@@ -42,24 +43,13 @@
     var el = document.getElementById('bank-modal');
     if (!el) return;
 
-    var amounts = { monthly: '15,000', quarterly: '45,000', annual: '150,000' };
-    if (_bankDetails && _bankDetails.amounts) Object.keys(amounts).forEach(function(key) { amounts[key] = Number(_bankDetails.amounts[key].ngn).toLocaleString('en-NG'); });
-    var planLabels = { monthly: 'Monthly VIP', quarterly: 'Quarterly VIP', annual: 'Annual VIP' };
-    document.getElementById('bm-plan-label').textContent  = planLabels[plan] || plan;
-    document.getElementById('bm-amount').textContent      = '₦' + (amounts[plan] || '');
-
-    if (_bankDetails) {
-      document.getElementById('bm-bank-name').textContent    = _bankDetails.bank_name      || 'Loading...';
-      document.getElementById('bm-acct-name').textContent    = _bankDetails.account_name   || 'Loading...';
-      document.getElementById('bm-acct-number').textContent  = _bankDetails.account_number || 'Loading...';
-      var sortRow = document.getElementById('bm-sort-row');
-      if (_bankDetails.sort_code) {
-        document.getElementById('bm-sort-code').textContent = _bankDetails.sort_code;
-        if (sortRow) sortRow.style.display = '';
-      } else {
-        if (sortRow) sortRow.style.display = 'none';
-      }
-    }
+    if (!_paymentQuote || _paymentQuote.plan !== plan) return;
+    document.getElementById('bm-plan-label').textContent = plan === 'standard' ? 'Standard Plan' : 'Deluxe Plan';
+    document.getElementById('bm-amount').textContent = _paymentQuote.currency + ' ' + Number(_paymentQuote.amount).toLocaleString('en-NG');
+    document.getElementById('bm-bank-name').textContent = _paymentQuote.destination.provider;
+    document.getElementById('bm-acct-name').textContent = _paymentQuote.destination.account_name;
+    document.getElementById('bm-acct-number').textContent = _paymentQuote.destination.account_number;
+    document.getElementById('bm-sort-row').style.display = 'none';
 
     el.style.display = 'flex';
   }
@@ -142,6 +132,7 @@
       try {
         var json = await apiFetch('POST', '/api/subscriptions/manual/submit', {
           plan:      _selectedPlan,
+          quoteToken: _paymentQuote && _paymentQuote.token,
           imageData: e.target.result,
         });
 
@@ -185,27 +176,19 @@
     }
   }
 
-  async function loadSubscriptionStatus() {
-    var json = await apiFetch('GET', '/api/subscriptions/status');
-    if (!json.success || !json.data) return;
-    var sub = json.data;
-    if (sub.status === 'active' || sub.status === 'trialing') {
-      var banner = document.getElementById('vip-active-banner');
-      var label  = document.getElementById('vip-expires-label');
-      if (banner) banner.style.display = 'block';
-      if (label && sub.expires_at) {
-        var exp = new Date(sub.expires_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-        label.textContent = sub.status === 'trialing'
-          ? 'Trial ends ' + new Date(sub.trial_ends_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-          : 'Active until ' + exp;
-      }
-      document.querySelectorAll('.pay-btn').forEach(function(btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="material-icons-round">check_circle</span> Already Subscribed';
-        btn.style.opacity = '0.6';
-        btn.style.cursor  = 'not-allowed';
-      });
-    }
+  function applyMembership(user) {
+    var tier = user && user.membership_tier || 'free';
+    var admin = user && user.role === 'admin';
+    var subscribed = tier === 'standard' || tier === 'deluxe';
+    var banner = document.getElementById('vip-active-banner');
+    if (banner) banner.style.display = subscribed ? 'block' : 'none';
+    document.querySelectorAll('.pay-btn').forEach(function(btn) {
+      var upgrade = tier === 'standard' && btn.dataset.plan === 'deluxe';
+      btn.disabled = !!admin || (subscribed && !upgrade);
+      btn.textContent = admin ? 'Admin Account' : upgrade ? 'Upgrade to Deluxe' : subscribed ? 'Already subscribed' : 'Get ' + (btn.dataset.plan === 'standard' ? 'Standard' : 'Deluxe') + ' VIP';
+      btn.style.opacity = btn.disabled ? '0.6' : '1';
+      btn.style.cursor = btn.disabled ? 'not-allowed' : 'pointer';
+    });
   }
 
   // ── Init ──────────────────────────────────────────────────────
@@ -233,18 +216,7 @@
     // Check session once on load
     getSessionUser().then(function(user) {
       if (window.PricingCurrency) window.PricingCurrency.setCountry(user && user.country);
-      if (!user) return;
-      // Admins don't pay — disable buttons with a different label
-      if (user.role === 'admin') {
-        document.querySelectorAll('.pay-btn').forEach(function(btn) {
-          btn.disabled = true;
-          btn.innerHTML = '<span class="material-icons-round">admin_panel_settings</span> Admin Account';
-          btn.style.opacity = '0.6';
-          btn.style.cursor  = 'not-allowed';
-        });
-        return;
-      }
-      loadSubscriptionStatus();
+      applyMembership(user);
     });
 
     // Wire up all pay buttons to show bank modal
@@ -264,7 +236,16 @@
           return;
         }
 
-        showBankModal(btn.dataset.plan);
+        applyMembership(user);
+        if (btn.disabled) return;
+        try {
+          setButtonLoading(btn, true);
+          var quote = await apiFetch('POST', '/api/subscriptions/manual/quote', { plan: btn.dataset.plan, method: 'moniepoint' });
+          if (!quote.success) throw new Error(quote.message || 'Unable to load payment details.');
+          _paymentQuote = quote.data;
+          showBankModal(btn.dataset.plan);
+        } catch (error) { showToast(error.message, 'error'); }
+        finally { setButtonLoading(btn, false); applyMembership(user); }
       });
     });
 

@@ -97,65 +97,23 @@
     <!-- Pricing cards -->
     <div class="pricing-grid" style="max-width:900px;margin:32px auto;">
 
-      <!-- Monthly -->
       <div class="pricing-card">
-        <div class="pricing-plan-name">Monthly</div>
-        <div class="pricing-price" id="sub-monthly-price">NGN 15,000</div><p id="sub-monthly-equivalent" style="font-size:0.8rem;color:var(--muted);"></p>
+        <div class="pricing-plan-name">Standard Plan</div>
+        <div class="pricing-price" id="sub-standard-price">NGN 15,000</div>
+        <p id="sub-standard-equivalent" style="font-size:0.8rem;color:var(--muted);"></p>
         <div class="pricing-period">per month</div>
-        <div class="pricing-save" style="visibility:hidden;">-</div>
-        <ul class="pricing-features" id="sub-monthly-features">
-          <li><span class="material-icons-round">check</span>All free tips included</li>
-          <li><span class="material-icons-round">check</span>Full VIP prediction cards</li>
-          <li><span class="material-icons-round">check</span>Early access — 2hrs ahead</li>
-          <li><span class="material-icons-round">check</span>High-confidence picks</li>
-          <li><span class="material-icons-round">check</span>Telegram VIP channel</li>
-          <li><span class="material-icons-round">check</span>Cancel anytime</li>
-        </ul>
-        <button class="btn btn-outline pay-btn" style="width:100%;justify-content:center;" data-plan="monthly" data-provider="paystack">
-          <span class="material-icons-round">credit_card</span>Get Monthly VIP
-        </button>
-        <p class="trial-note">Billed monthly. Cancel anytime.</p>
+        <ul class="pricing-features" id="sub-standard-features"><li><span class="material-icons-round">check</span>Daily 2+ odds picks</li><li><span class="material-icons-round">check</span>24/7 support</li><li><span class="material-icons-round">check</span>Free 10+ odds on weekends</li></ul>
+        <button class="btn btn-primary pay-btn" style="width:100%;justify-content:center;" data-plan="standard" disabled>Checking subscription...</button>
+        <p class="trial-note">30 days of access.</p>
       </div>
-
-      <!-- Quarterly — Featured -->
-      <div class="pricing-card featured">
-        <div class="pricing-popular">Most Popular</div>
-        <div class="pricing-plan-name">Quarterly</div>
-        <div class="pricing-price" id="sub-quarterly-price">NGN 45,000</div><p id="sub-quarterly-equivalent" style="font-size:0.8rem;color:var(--muted);"></p>
-        <div class="pricing-period">every 3 months</div>
-        <div class="pricing-save" id="sub-quarterly-save">Same monthly rate</div>
-        <ul class="pricing-features" id="sub-quarterly-features">
-          <li><span class="material-icons-round">check</span>Everything in Monthly</li>
-          <li><span class="material-icons-round">check</span>Full VIP prediction cards</li>
-          <li><span class="material-icons-round">check</span>Early access — 2hrs ahead</li>
-          <li><span class="material-icons-round">check</span>High-confidence picks</li>
-          <li><span class="material-icons-round">check</span>Telegram VIP channel</li>
-          <li><span class="material-icons-round">check</span>Priority support</li>
-        </ul>
-        <button class="btn btn-primary pay-btn" style="width:100%;justify-content:center;" data-plan="quarterly" data-provider="paystack">
-          <span class="material-icons-round">credit_card</span>Get Quarterly VIP
-        </button>
-        <p class="trial-note">Billed every 3 months.</p>
-      </div>
-
-      <!-- Annual -->
       <div class="pricing-card">
-        <div class="pricing-plan-name">Annual</div>
-        <div class="pricing-price" id="sub-annual-price">NGN 150,000</div><p id="sub-annual-equivalent" style="font-size:0.8rem;color:var(--muted);"></p>
-        <div class="pricing-period">per year</div>
-        <div class="pricing-save" id="sub-annual-save">Save ~17% — Best value</div>
-        <ul class="pricing-features" id="sub-annual-features">
-          <li><span class="material-icons-round">check</span>Everything in Quarterly</li>
-          <li><span class="material-icons-round">check</span>Full VIP prediction cards</li>
-          <li><span class="material-icons-round">check</span>Early access — 2hrs ahead</li>
-          <li><span class="material-icons-round">check</span>High-confidence picks</li>
-          <li><span class="material-icons-round">check</span>Telegram VIP channel</li>
-          <li><span class="material-icons-round">check</span>VIP badge on profile</li>
-        </ul>
-        <button class="btn btn-dark pay-btn" style="width:100%;justify-content:center;" data-plan="annual" data-provider="paystack">
-          <span class="material-icons-round">credit_card</span>Get Annual VIP
-        </button>
-        <p class="trial-note">Billed once per year.</p>
+        <div class="pricing-plan-name">Deluxe Plan</div>
+        <div class="pricing-price" id="sub-deluxe-price">NGN 25,000</div>
+        <p id="sub-deluxe-equivalent" style="font-size:0.8rem;color:var(--muted);"></p>
+        <div class="pricing-period">per month</div>
+        <ul class="pricing-features" id="sub-deluxe-features"><li><span class="material-icons-round">check</span>Access to Standard Plan</li><li><span class="material-icons-round">check</span>Daily 2 - 5+ odds picks</li><li><span class="material-icons-round">check</span>Instant support</li><li><span class="material-icons-round">check</span>Free 5+ odds on weekends</li></ul>
+        <button class="btn btn-primary pay-btn" style="width:100%;justify-content:center;" data-plan="deluxe" disabled>Checking subscription...</button>
+        <p class="trial-note">30 days of access.</p>
       </div>
     </div>
 
@@ -199,8 +157,8 @@
       <h2 style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;text-align:center;margin-bottom:24px;">Frequently Asked Questions</h2>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <details style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;">
-          <summary style="font-weight:600;font-size:0.9rem;list-style:none;display:flex;justify-content:space-between;align-items:center;">How does the 3-day free trial work? <span class="material-icons-round" style="font-size:1rem;color:var(--muted);">expand_more</span></summary>
-          <p style="font-size:0.875rem;color:var(--muted);margin-top:10px;line-height:1.7;">Sign up for the monthly plan and enjoy full VIP access for 3 days completely free. You will not be charged until day 4. Cancel anytime during the trial to avoid any charge.</p>
+          <summary style="font-weight:600;font-size:0.9rem;list-style:none;display:flex;justify-content:space-between;align-items:center;">How long does it take to get approved after payment? <span class="material-icons-round" style="font-size:1rem;color:var(--muted);">expand_more</span></summary>
+          <p style="font-size:0.875rem;color:var(--muted);margin-top:10px;line-height:1.7;">Your subscription will be approved once your payment has been verified. This takes between 2 and 12 hours. If you have not been approved within 12 hours, kindly contact our 24/7 support team via Telegram or email.</p>
         </details>
         <details style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;">
           <summary style="font-weight:600;font-size:0.9rem;list-style:none;display:flex;justify-content:space-between;align-items:center;">Can I cancel at any time? <span class="material-icons-round" style="font-size:1rem;color:var(--muted);">expand_more</span></summary>
@@ -368,9 +326,8 @@
         `<li><span class="material-icons-round">check</span>${f.trim()}</li>`
       ).join('');
     }
-    setFeatures('sub-monthly-features',   x.monthly_features);
-    setFeatures('sub-quarterly-features', x.quarterly_features);
-    setFeatures('sub-annual-features',    x.annual_features);
+    setFeatures('sub-standard-features', x.standard_features);
+    setFeatures('sub-deluxe-features', x.deluxe_features);
 
     // SEO meta
     if (p.page_title) document.title = p.page_title;

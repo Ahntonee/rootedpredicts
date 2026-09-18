@@ -10,6 +10,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../config/db');
+const { maskPrediction } = require('../services/membership');
 const { asyncHandler, successResponse, errorResponse, parsePagination, paginate } = require('../utils/helpers');
 const { optionalAuth, authenticate, requireAdmin } = require('../middleware/auth');
 
@@ -134,7 +135,8 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     order = 'ASC',
   } = req.query;
 
-  const { page, limit, offset } = parsePagination(req.query);
+  const homepage = req.query.homepage === '1';
+  const { page, limit, offset } = parsePagination(homepage ? { page: 1, limit: 10 } : req.query);
 
   // Base query joining leagues table for meta
   let sql = `
@@ -142,7 +144,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
       p.id, p.fixture_id, p.league_id, p.home_team, p.away_team,
       p.home_team_logo, p.away_team_logo, p.match_date,
       p.tip, p.market, p.odds, p.confidence_score,
-      p.category, p.visibility, p.result, p.slug, p.published_at,
+      p.category, p.visibility, p.access_tier, p.result, p.slug, p.published_at,
       p.home_score, p.away_score, p.status_short, p.elapsed,
       p.home_form, p.away_form, p.h2h_summary,
       l.name as league_name, l.country as league_country,
@@ -153,6 +155,10 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
       AND p.result != 'void'
   `;
   const args = [];
+  if (homepage) {
+    sql += ` AND p.access_tier='free' AND (p.visibility='free' OR p.category='Banker of the Day') AND EXISTS (SELECT 1 FROM homepage_picks h
+      WHERE h.prediction_id=p.id AND h.pick_date=DATE(p.match_date))`;
+  }
 
   // Date filter
   // Predictions for games that kicked off more than 24 hours ago are never
@@ -244,14 +250,18 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   };
   let categorySort = null;
   const category = (req.query.category || '').toLowerCase();
-  if (category && category !== 'free' && category !== 'all') {
+  if (category && category !== 'all') {
+    const categoryExpression = require('../services/homepagePicks').categorySql;
+    if (category === 'free') {
+      sql += ' AND (' + categoryExpression + ") = 'Free Pick' AND p.access_tier='free' AND p.visibility='free'";
+    } else
     if (category === 'banker') {
       sql += " AND p.category = 'Banker of the Day'";
       categorySort = 'confidence_score DESC';
     } else {
       const dbCat = CATEGORY_MAP[category];
       if (dbCat) {
-        sql += ' AND p.category = ?';
+        sql += ' AND (' + categoryExpression + ') = ?';
         args.push(dbCat);
       }
     }
@@ -280,14 +290,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   ]);
   const total = (countRows[0] && countRows[0].total) || 0;
 
-  // Mask VIP tip content for non-VIP users
-  const isVip = req.user && ['vip', 'admin'].includes(req.user.role);
-  const masked = predictions.map(p => {
-    if (p.visibility === 'vip' && p.category !== 'Banker of the Day' && !isVip) {
-      return { ...p, tip: null, odds: null, analysis: null, locked: true };
-    }
-    return { ...p, locked: false };
-  });
+  const masked = predictions.map(p => maskPrediction(p, req.user));
 
   return successResponse(res, {
     predictions: masked,
@@ -312,16 +315,7 @@ router.get('/:slug', optionalAuth, asyncHandler(async (req, res) => {
 
   const prediction = await require('../services/recentForm').fillRecentForm(rows[0]);
 
-  // Mask VIP content
-  const isVip = req.user && ['vip', 'admin'].includes(req.user.role);
-  if (prediction.visibility === 'vip' && prediction.category !== 'Banker of the Day' && !isVip) {
-    prediction.tip      = null;
-    prediction.odds     = null;
-    prediction.analysis = null;
-    prediction.locked   = true;
-  } else {
-    prediction.locked = false;
-  }
+  Object.assign(prediction, maskPrediction(prediction, req.user));
 
   // Fetch comments count
   const [[{ comment_count }]] = await db.query(

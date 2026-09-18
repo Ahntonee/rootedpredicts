@@ -344,7 +344,7 @@ async function me(req, res) {
       subscription = subs[0] || null;
     }
 
-    return successResponse(res, { ...rows[0], subscription });
+    return successResponse(res, { ...rows[0], role: req.user.role, membership_tier: req.user.membership_tier || 'free', subscription });
   } catch (error) {
     console.error('[AUTH] Me error:', error.message);
     return errorResponse(res, 'Failed to fetch user data.', 500);
