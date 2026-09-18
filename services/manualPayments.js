@@ -8,12 +8,13 @@ function methods() {
     usdt: { label: 'USDT', currency: 'USDT', account_number: '0xb4bb5688c25e185d89817f39bfcd5f435b8f3fc0', network: process.env.USDT_NETWORK || '', enabled: !!process.env.USDT_NETWORK },
   };
 }
-async function createQuote(userId, plan, method) {
+async function createQuote(userId, plan, method, duration = 'monthly') {
   if (!Object.hasOwn(pricing.plans, plan)) throw new Error('Choose Standard or Deluxe.');
   const destination = methods()[method];
   if (!destination || !destination.enabled) throw new Error('This payment method is not available yet.');
-  const amount = method === 'usdt' ? pricing.usdAmounts[plan] : (await pricing.quote(destination.currency)).plans[plan].amount;
-  const data = { purpose: 'payment-proof', userId, plan, method, amount, currency: destination.currency, destination, ngn: pricing.amounts[plan] };
+  const prices = await pricing.quote(method === 'usdt' ? 'USD' : destination.currency, duration);
+  const amount = prices.plans[plan].amount;
+  const data = { purpose: 'payment-proof', userId, plan, method, amount, currency: destination.currency, destination, ngn: prices.plans[plan].ngn, duration, days: prices.days };
   const token = jwt.sign(data, process.env.JWT_SECRET, { expiresIn: '24h', audience: 'manual-payment' });
   return { ...data, token, expires_at: new Date(Date.now() + 86400000).toISOString() };
 }

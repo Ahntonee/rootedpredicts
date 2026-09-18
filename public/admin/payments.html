@@ -172,7 +172,7 @@ async function loadSubmissions(status, page) {
       var actions = '';
       if (r.status === 'pending') {
         actions =
-          '<button class="btn btn-sm" style="background:var(--green);color:#fff;margin-right:6px;" onclick="approveSubmission(' + r.id + ')">Approve</button>' +
+          '<button class="btn btn-sm" style="background:var(--green);color:#fff;margin-right:6px;" onclick="approveSubmission(' + r.id + ',&quot;' + ((typeof r.payment_details === 'string' ? JSON.parse(r.payment_details) : r.payment_details)?.duration === 'biweekly' ? 'biweekly' : 'monthly') + '&quot;)">Approve</button>' +
           '<button class="btn btn-sm btn-outline" style="color:var(--red);border-color:var(--red);" onclick="openRejectModal(' + r.id + ')">Reject</button>';
       } else {
         actions = statusBadge + (r.notes ? '<br><small style="color:var(--muted);">' + r.notes + '</small>' : '');
@@ -223,9 +223,9 @@ function viewReceipt(id) {
   img.src = '/api/admin/payment-submissions/' + id + '/image?' + Date.now();
 }
 
-function approveSubmission(id) {
+function approveSubmission(id, duration) {
   document.getElementById('approve-id').value = id;
-  document.getElementById('approve-duration').value = 'monthly';
+  document.getElementById('approve-duration').value = duration || 'monthly';
   Admin.showModal('approve-modal');
 }
 document.getElementById('approve-confirm-btn').addEventListener('click', async function() {

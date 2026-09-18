@@ -13,10 +13,12 @@ router.get('/bank-details', asyncHandler(ctrl.getBankDetails));
 router.get('/pricing', asyncHandler(async (req, res) => {
   const pricing = require('../services/planPricing');
   const currency = String(req.query.currency || 'NGN').toUpperCase();
+  const duration = req.query.duration || 'monthly';
+  if (!['monthly', 'biweekly'].includes(duration)) return res.status(400).json({success:false,message:'Invalid billing period'});
   try {
-    return res.json({ success: true, data: await pricing.quote(currency) });
+    return res.json({ success: true, data: await pricing.quote(currency, duration) });
   } catch (_) {
-    return res.json({ success: true, data: { ...await pricing.quote('NGN'), notice: 'Conversion is unavailable. Showing the exact naira price.' } });
+    return res.json({ success: true, data: await pricing.quote(currency === 'NGN' ? 'NGN' : 'USD', duration) });
   }
 }));
 
@@ -49,7 +51,7 @@ router.post('/notifications/:id/read', asyncHandler(async (req, res) => {
 }));
 router.post('/manual/quote', asyncHandler(async (req, res) => {
   try {
-    const data = await require('../services/manualPayments').createQuote(req.user.id, req.body.plan, req.body.method);
+    const data = await require('../services/manualPayments').createQuote(req.user.id, req.body.plan, req.body.method, req.body.duration);
     res.json({success:true,data});
   } catch (e) { res.status(400).json({success:false,message:e.message}); }
 }));

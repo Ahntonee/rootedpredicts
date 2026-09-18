@@ -15,16 +15,12 @@
       } catch (_) { currency = currency || 'USD'; }
       try {
         var data = await quote(currency);
-        vipPrice.textContent = 'From ' + money(data.plans.monthly.amount, data.currency) + '/month';
-        var periods = document.createElement('p');
-        periods.style.cssText = 'color:#fff;font-size:0.8rem;margin-top:10px;';
-        periods.textContent = 'Quarterly: ' + money(data.plans.quarterly.amount, data.currency) + ' / Annual: ' + money(data.plans.annual.amount, data.currency);
-        vipPrice.after(periods);
-      } catch (_) { vipPrice.textContent = 'From NGN 15,000/month'; }
+        vipPrice.textContent = 'From ' + money(data.plans.standard.amount, data.currency) + '/month';
+      } catch (_) { vipPrice.textContent = currency === 'NGN' ? 'From NGN 15,000/month' : 'From USD 30/month'; }
     });
     return;
   }
-  var manual = false, version = 0, usd = null;
+  var manual = false, version = 0;
   var choices = Array.from(new Set(Object.values(countries))).sort();
   var names;
   try { names = new Intl.DisplayNames(navigator.languages, { type:'currency' }); } catch (_) {}
@@ -38,25 +34,24 @@
   function money(amount, currency) {
     return new Intl.NumberFormat(navigator.languages, { style:'currency', currency:currency, currencyDisplay:'code' }).format(amount);
   }
+  function duration() { var el = document.getElementById('pricing-duration'); return el ? el.value : 'monthly'; }
   async function quote(currency) {
-    var response = await fetch('/api/subscriptions/pricing?currency=' + encodeURIComponent(currency));
+    var response = await fetch('/api/subscriptions/pricing?currency=' + encodeURIComponent(currency) + '&duration=' + duration());
     var json = await response.json();
     if (!response.ok || !json.success) throw new Error('Prices unavailable');
     return json.data;
   }
   function render(data) {
     select.value = data.currency;
+    var biweekly = duration() === 'biweekly';
+    if (document.querySelectorAll) {
+      document.querySelectorAll('.pricing-card .pricing-period').forEach(function(el) { el.textContent = biweekly ? 'every 2 weeks' : 'per month'; });
+      document.querySelectorAll('.pricing-card .trial-note').forEach(function(el) { el.textContent = biweekly ? '14 days of access.' : '30 days of access.'; });
+    }
     Object.keys(data.plans).forEach(function (plan) {
       var price = data.plans[plan];
       document.getElementById('sub-' + plan + '-price').textContent = money(price.amount, data.currency);
-      document.getElementById('sub-' + plan + '-equivalent').textContent = data.currency !== 'NGN'
-        ? 'Base price: ' + money(price.ngn, 'NGN')
-        : usd && usd.currency === 'USD' ? 'Approx. ' + money(usd.plans[plan].amount, 'USD') : '';
     });
-    document.getElementById('currency-note').textContent = data.notice || (data.currency === 'NGN'
-      ? 'Exact naira prices. Dollar equivalents are estimates; bank fees may differ.'
-      : 'Estimated conversion. Bank transfers are paid in NGN; your bank rate and fees may differ.') +
-      (data.updated_at ? ' Rates dated ' + new Date(data.updated_at).toLocaleDateString() + '.' : '');
   }
   async function update() {
     var request = ++version;
@@ -65,17 +60,28 @@
       if (request === version) render(data);
     } catch (_) {
       if (request === version) {
-        render({ currency:'NGN', plans:{ standard:{ngn:15000,amount:15000}, deluxe:{ngn:25000,amount:25000} }, notice:'Conversion unavailable. Showing the exact naira price.' });
+        var naira = select.value === 'NGN';
+        render({ currency: naira ? 'NGN' : 'USD', plans: { standard: { amount: (naira ? 15000 : 30) * (duration() === 'biweekly' ? 0.5 : 1) }, deluxe: { amount: (naira ? 25000 : 45) * (duration() === 'biweekly' ? 0.5 : 1) } } });
       }
     }
   }
+  var durationSelect = document.getElementById('pricing-duration');
+  if (durationSelect) durationSelect.addEventListener('change', update);
   select.addEventListener('change', function () {
     manual = true;
     try { localStorage.setItem('pricing_currency', select.value); } catch (_) {}
     update();
   });
   window.PricingCurrency = { setCountry: function (country) {
-    var currency = countries[String(country || '').toUpperCase()];
+    var code = String(country || '').trim().toUpperCase();
+    var currency = countries[code];
+    if (!currency && code) {
+      try {
+        var regions = new Intl.DisplayNames(['en'], { type: 'region' });
+        var match = Object.keys(countries).find(function(key) { return regions.of(key).toUpperCase() === code; });
+        currency = countries[match] || 'USD';
+      } catch (_) { currency = code === 'NIGERIA' ? 'NGN' : 'USD'; }
+    }
     if (!manual && currency && select.value !== currency) { select.value = currency; update(); }
   } };
   var region;
@@ -85,6 +91,5 @@
     var saved = localStorage.getItem('pricing_currency');
     if (choices.includes(saved)) { select.value = saved; manual = true; }
   } catch (_) {}
-  quote('USD').then(function (data) { usd = data; if (select.value === 'NGN') update(); }).catch(function () {});
   update();
 })();

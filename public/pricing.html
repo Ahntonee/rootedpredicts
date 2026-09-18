@@ -79,9 +79,6 @@
     <div style="max-width:900px;margin:0 auto;text-align:center;">
       <label for="pricing-currency">Show prices in</label>
       <select id="pricing-currency" class="form-control" style="display:inline-block;width:auto;max-width:100%;margin:8px;"><option value="NGN">NGN - Nigerian naira</option></select>
-      <p id="currency-note" aria-live="polite" style="font-size:0.85rem;color:var(--muted);">Prices are based on naira. Bank transfers are paid in NGN.</p>
-      <p style="font-size:0.75rem;color:var(--muted);">Currency suggested from your account country or browser settings; you can change it.
-        <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Rates by ExchangeRate-API</a></p>
     </div>
     <style>
       .pricing-card { min-width: 0; container-type: inline-size; }
@@ -94,13 +91,19 @@
         overflow-wrap: normal;
       }
     </style>
+    <div style="text-align:center;margin:16px 0;">
+      <label for="pricing-duration">Billing period</label>
+      <select id="pricing-duration" class="form-control" style="display:inline-block;width:auto;margin:8px;">
+        <option value="monthly">Monthly (30 days)</option>
+        <option value="biweekly">Bi-weekly (14 days)</option>
+      </select>
+    </div>
     <!-- Pricing cards -->
     <div class="pricing-grid" style="max-width:900px;margin:32px auto;">
 
       <div class="pricing-card">
         <div class="pricing-plan-name">Standard Plan</div>
         <div class="pricing-price" id="sub-standard-price">NGN 15,000</div>
-        <p id="sub-standard-equivalent" style="font-size:0.8rem;color:var(--muted);"></p>
         <div class="pricing-period">per month</div>
         <ul class="pricing-features" id="sub-standard-features"><li><span class="material-icons-round">check</span>Daily 2+ odds picks</li><li><span class="material-icons-round">check</span>24/7 support</li><li><span class="material-icons-round">check</span>Free 10+ odds on weekends</li></ul>
         <button class="btn btn-primary pay-btn" style="width:100%;justify-content:center;" data-plan="standard" disabled>Checking subscription...</button>
@@ -109,7 +112,6 @@
       <div class="pricing-card">
         <div class="pricing-plan-name">Deluxe Plan</div>
         <div class="pricing-price" id="sub-deluxe-price">NGN 25,000</div>
-        <p id="sub-deluxe-equivalent" style="font-size:0.8rem;color:var(--muted);"></p>
         <div class="pricing-period">per month</div>
         <ul class="pricing-features" id="sub-deluxe-features"><li><span class="material-icons-round">check</span>Access to Standard Plan</li><li><span class="material-icons-round">check</span>Daily 2 - 5+ odds picks</li><li><span class="material-icons-round">check</span>Instant support</li><li><span class="material-icons-round">check</span>Free 5+ odds on weekends</li></ul>
         <button class="btn btn-primary pay-btn" style="width:100%;justify-content:center;" data-plan="deluxe" disabled>Checking subscription...</button>

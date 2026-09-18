@@ -433,7 +433,7 @@ async function manualSubmit(req, res) {
 
     await db.query(
       `INSERT INTO payment_submissions (user_id, plan, amount_ngn, image_path, image_mime, payment_method, payment_currency, payment_amount, payment_details, payment_reference) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [req.user.id, plan, payment.ngn, filename, mime, payment.method, payment.currency, payment.amount, JSON.stringify(payment.destination), reference.trim()]
+      [req.user.id, plan, payment.ngn, filename, mime, payment.method, payment.currency, payment.amount, JSON.stringify({ ...payment.destination, duration: payment.duration || 'monthly' }), reference.trim()]
     );
 
     // Email admin — fire-and-forget so slow SMTP doesn't block the response
@@ -534,7 +534,8 @@ async function adminApproveSubmission(req, res) {
     }
 
     let days;
-    try { days = require('../services/subscriptionExpiry').durationDays(req.body.duration); }
+    const details = typeof sub.payment_details === 'string' ? JSON.parse(sub.payment_details) : (sub.payment_details || {});
+    try { days = require('../services/subscriptionExpiry').durationDays(req.body.duration || details.duration); }
     catch (e) { return res.status(400).json({ success: false, message: e.message }); }
     await _activateSubscription(sub.user_id, sub.plan, {
       days,

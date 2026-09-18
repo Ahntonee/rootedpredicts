@@ -44,7 +44,7 @@
     if (!el) return;
 
     if (!_paymentQuote || _paymentQuote.plan !== plan) return;
-    document.getElementById('bm-plan-label').textContent = plan === 'standard' ? 'Standard Plan' : 'Deluxe Plan';
+    document.getElementById('bm-plan-label').textContent = (plan === 'standard' ? 'Standard Plan' : 'Deluxe Plan') + (_paymentQuote.duration === 'biweekly' ? ' - Bi-weekly (14 days)' : ' - Monthly (30 days)');
     document.getElementById('bm-amount').textContent = _paymentQuote.currency + ' ' + Number(_paymentQuote.amount).toLocaleString('en-NG');
     document.getElementById('bm-bank-name').textContent = _paymentQuote.destination.provider;
     document.getElementById('bm-acct-name').textContent = _paymentQuote.destination.account_name;
@@ -240,7 +240,7 @@
         if (btn.disabled) return;
         try {
           setButtonLoading(btn, true);
-          var quote = await apiFetch('POST', '/api/subscriptions/manual/quote', { plan: btn.dataset.plan, method: 'moniepoint' });
+          var quote = await apiFetch('POST', '/api/subscriptions/manual/quote', { plan: btn.dataset.plan, method: 'moniepoint', duration: document.getElementById('pricing-duration').value });
           if (!quote.success) throw new Error(quote.message || 'Unable to load payment details.');
           _paymentQuote = quote.data;
           showBankModal(btn.dataset.plan);
