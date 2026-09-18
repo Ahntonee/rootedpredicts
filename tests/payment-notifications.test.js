@@ -64,11 +64,21 @@ test('Notification routes require authentication and scope reads and acknowledge
     '../config/db': { query: async (sql, args) => { queries.push({ sql, args }); return [[]]; } },
   });
   assert.ok(calls.indexOf(authenticate) < calls.indexOf('/notifications'));
-  const res = { setHeader() {}, json() {} };
+  let userResponse;
+  const res = { setHeader() {}, json(value) { userResponse = value; } };
+  let adminResponse;
+  await handlers['get/notifications']({ user: { id: 1, role: 'admin' } }, {
+    setHeader() {}, json(value) { adminResponse = value; }
+  });
+  assert.equal(adminResponse.success, true);
+  assert.equal(adminResponse.data.length, 0);
+  assert.equal(queries.length, 0);
   await handlers['get/notifications']({ user: { id: 42 } }, res);
+  assert.equal(userResponse.data.length, 0, 'Users without a notification receive no popup data');
   await handlers['post/notifications/:id/read']({ user: { id: 42 }, params: { id: '7' } }, res);
   assert.deepEqual(Array.from(queries[0].args), [42]);
   assert.match(queries[0].sql, /notification_read_at IS NULL/);
+  assert.match(queries[0].sql, /WHERE user_id = \? AND status IN \('approved', 'rejected'\)/);
   assert.deepEqual(Array.from(queries.at(-1).args), ['7', 42]);
   assert.match(queries.at(-1).sql, /WHERE id = \? AND user_id = \?/);
   await handlers['post/notifications/:id/read']({ user: { id: 42 }, params: { id: 'expiry-3' } }, res);

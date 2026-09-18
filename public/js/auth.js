@@ -15,6 +15,7 @@
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error('Notifications unavailable');
       for (const notice of result.data) {
+        if (!['approved', 'rejected', 'expired'].includes(notice.status)) continue;
         await new Promise(resolve => {
           const dialog = document.createElement('dialog');
           dialog.setAttribute('aria-labelledby', 'payment-review-title');
@@ -78,7 +79,7 @@
         const user = json.data;
         window.currentUser = user;
         updateHeaderForUser(user);
-        void showReviewNotifications();
+        if (user.role !== 'admin') void showReviewNotifications();
         return user;
       }
     } catch (e) {

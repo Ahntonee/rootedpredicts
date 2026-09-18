@@ -161,7 +161,7 @@ async function prerenderPage(req, res, next, file, containerId) {
       WHERE DATE(p.match_date) = CURDATE()
         AND p.published_at IS NOT NULL
         AND p.access_tier = 'free' AND (p.visibility <> 'vip' OR p.category = 'Banker of the Day')
-        ${category !== 'free' ? 'AND p.category = ?' : ''}
+        ${category !== 'free' ? 'AND (' + require('./services/homepagePicks').categorySql + ') = ?' : ''}
       ORDER BY p.confidence_score DESC
       ${file === 'index.html' ? 'LIMIT 15' : ''}
     `, category !== 'free' ? [dbCategories[category]] : []);

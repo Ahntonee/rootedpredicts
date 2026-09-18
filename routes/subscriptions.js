@@ -23,13 +23,14 @@ router.get('/pricing', asyncHandler(async (req, res) => {
 // All routes below require a logged-in user
 router.use(authenticate);
 router.get('/notifications', asyncHandler(async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (req.user.role === 'admin') return res.json({ success: true, data: [] });
   const db = require('../config/db');
   await require('../services/subscriptionExpiry').expireDue(db, req.user.id);
   const [rows] = await db.query(
     `SELECT id, plan, status, notes, reviewed_at FROM payment_submissions
      WHERE user_id = ? AND status IN ('approved', 'rejected') AND notification_read_at IS NULL
      ORDER BY reviewed_at ASC, id ASC`, [req.user.id]);
-  res.setHeader('Cache-Control', 'no-store');
   const [expired] = await db.query(`SELECT CONCAT('expiry-', id) AS id, plan, 'expired' AS status, created_at AS reviewed_at
     FROM subscription_expiry_notifications WHERE user_id=? AND read_at IS NULL ORDER BY id`, [req.user.id]);
   res.json({ success: true, data: [...rows, ...expired] });

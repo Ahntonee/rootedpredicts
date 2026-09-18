@@ -958,7 +958,7 @@ async function runMigrations() {
         }
         console.log(`[MIGRATE] ✓ Done: ${migration.name}`);
       } catch (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
+        if (['ER_DUP_ENTRY', 'ER_DUP_FIELDNAME', 'ER_DUP_KEYNAME'].includes(err.code)) {
           console.log(`[MIGRATE] ↷ Skipped (already exists): ${migration.name}`);
         } else if (err.code === 'ER_ACCESS_DENIED_ERROR' || migration.name === 'Set database charset') {
           console.log(`[MIGRATE] ↷ Skipped (no privilege): ${migration.name}`);

@@ -29,15 +29,18 @@ async function selectHomepagePick(db, id, selected) {
   } catch (error) { await conn.rollback(); throw error; }
   finally { conn.release(); }
 }
-// Older Free Pick records still belong to their betting-market category.
-const categorySql = `CASE WHEN p.category IS NOT NULL AND p.category NOT IN ('','Free Pick') THEN p.category
-  WHEN p.tip REGEXP '(Over|Under) 1[.]5' THEN '1.5 Goals'
-  WHEN p.tip REGEXP '(Over|Under) 2[.]5' THEN '2.5 Goals'
-  WHEN p.tip REGEXP '(Over|Under) 3[.]5' THEN '3.5 Goals'
+// Follow the actual tip when a standard market's saved category is stale.
+// Safe Tips and Acca are intentional editorial groupings, not single markets.
+const categorySql = `CASE WHEN p.category IN ('Banker of the Day','Acca Tips') THEN p.category
+  WHEN LOWER(TRIM(p.tip)) REGEXP '^(over|under) +1[.]5$' THEN '1.5 Goals'
+  WHEN LOWER(TRIM(p.tip)) REGEXP '^(over|under) +2[.]5$' THEN '2.5 Goals'
+  WHEN LOWER(TRIM(p.tip)) REGEXP '^(over|under) +3[.]5$' THEN '3.5 Goals'
+  WHEN LOWER(TRIM(p.tip)) REGEXP '^btts( +|-|$)' THEN 'BTTS'
   WHEN p.market='BTTS' THEN 'BTTS'
   WHEN p.market='Double Chance' THEN 'Double Chance'
   WHEN p.market='Accumulator' THEN 'Acca Tips'
   WHEN p.tip='Home Win' THEN 'Home Win'
   WHEN p.tip='Away Win' THEN 'Away Win'
+  WHEN p.category IS NOT NULL AND p.category NOT IN ('','Free Pick') THEN p.category
   ELSE 'Free Pick' END`;
 module.exports = { selectHomepagePick, categorySql };
