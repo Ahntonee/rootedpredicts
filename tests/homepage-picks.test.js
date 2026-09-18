@@ -19,7 +19,8 @@ test('Public homepage is capped at ten while category results keep independent p
       : id === '../config/db' ? { query: async (sql, args) => { queries.push({ sql, args }); return sql.includes('COUNT(*)') ? [[{ total: 30 }]] : [[]]; } }
       : localRequire(id)
   });
-  const res = { set() {}, status() { return this; }, json() {} };
+  let response;
+  const res = { set() {}, status() { return this; }, json(value) { response = value; } };
   await handlers['/']({ query: { homepage: '1', limit: '100', date: '2026-09-18' } }, res, error => { throw error; });
   // asyncHandler returns the handler promise.
   const home = queries.find(q => q.sql.includes('LIMIT ?'));
@@ -32,6 +33,17 @@ test('Public homepage is capped at ten while category results keep independent p
   assert.deepEqual(Array.from(category.args.slice(-2)), [100, 0]);
   assert.ok(category.args.includes('BTTS'));
   assert.ok(!category.sql.includes('homepage_picks'));
+  for (const [page, requestedLimit, expectedLimit, expectedOffset, hasNext] of [[1,100,20,0,false],[1,15,15,0,true],[2,15,5,15,false],[3,15,0,30,false]]) {
+    queries.length = 0;
+    await handlers['/']({ query: { category: 'free', page: String(page), limit: String(requestedLimit), date: '2026-09-18' } }, res, error => { throw error; });
+    const free = queries.find(q => q.sql.includes('LIMIT ?'));
+    assert.deepEqual(Array.from(free.args.slice(-2)), [expectedLimit, expectedOffset]);
+    assert.match(free.sql, /ORDER BY EXISTS .*homepage_picks/s);
+    assert.match(free.sql, /p.access_tier='free'/);
+    assert.ok(!free.sql.includes("= 'Free Pick'"));
+    assert.equal(response.data.pagination.total, 20);
+    assert.equal(response.data.pagination.hasNext, hasNext);
+  }
 });
 
 function database(count = 0, overrides = {}) {

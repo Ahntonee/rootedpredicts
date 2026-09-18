@@ -2,6 +2,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { publicSlug } = require('./categoryUrls');
 const categories = {
   "free": "Free Pick",
   "1-5-goals": "Over 1.5",
@@ -23,7 +24,7 @@ function renderArticles(html, category, overrides = {}) {
   html = html.replace(/<!-- category-article:([a-z0-9-]+) -->/g, (_, slug) => categories[slug] && (!category || slug === category) ? content(slug) : '');
   html = html.replace(/(<div class="seo-block" id="seo-[^"]+"[^>]*>)\s*(<\/div>)/g, '$1$2');
   return html.replace('<!-- home-category-articles -->', '<section class="seo-content-block"><h2>Prediction category guides</h2>' +
-    Object.entries(categories).filter(([slug]) => content(slug).trim()).map(([slug, label]) => `<details><summary style="cursor:pointer;padding:12px 0;font-weight:700;">${label}</summary><a href="/predictions/${slug}">View ${label} predictions</a>${content(slug)}</details>`).join('') + '</section>');
+    Object.entries(categories).filter(([slug]) => content(slug).trim()).map(([slug, label]) => `<details><summary style="cursor:pointer;padding:12px 0;font-weight:700;">${label}</summary><a href="/predictions/${publicSlug(slug)}">View ${label} predictions</a>${content(slug)}</details>`).join('') + '</section>');
 }
 async function loadArticleOverrides(db) {
   return Object.fromEntries(Object.entries(await loadCategoryOverrides(db)).map(([slug, p]) => [slug, p.content]));
@@ -35,7 +36,7 @@ async function loadCategoryOverrides(db) {
 function categoryPage(slug) {
   if (!Object.hasOwn(categories, slug)) return null;
   const meta = require('./categoryMetadata.json')[slug];
-  return { slug: 'category-' + slug, kind: 'category', label: categories[slug], url: '/predictions/' + slug,
+  return { slug: 'category-' + slug, kind: 'category', label: categories[slug], url: '/predictions/' + publicSlug(slug),
     page_title: meta.title, meta_description: meta.desc, hero_title: meta.h1, hero_subtitle: meta.sub, content: article(slug) };
 }
 function mergeCategoryPage(slug, saved = {}) {

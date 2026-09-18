@@ -60,7 +60,7 @@ test('Site Pages lists all ten category defaults with exact existing HTML', asyn
   for (const slug of Object.keys(shared.categories)) {
     const p = response.pages.find(p => p.slug === 'category-' + slug);
     assert.equal(p.content, fs.readFileSync(path.join(root, 'public/content/categories', slug + '.html'), 'utf8'));
-    assert.equal(p.url, '/predictions/' + slug);
+    assert.equal(p.url, '/predictions/' + require('../services/categoryUrls').publicSlug(slug));
   }
 });
 
@@ -141,6 +141,7 @@ test('category headings and metadata persist and render on server and browser', 
   const end = source.indexOf("app.get(['/', '/index.html']", start);
   const render = vm.runInNewContext(source.slice(start,end)+'\nrenderCategoryMeta', {
     categoryMetadata: require('../services/categoryMetadata.json'), process:{env:{}},
+    publicSlug: require('../services/categoryUrls').publicSlug,
     escHtml: s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'),
   });
   const rendered = render(fs.readFileSync(path.join(root,'public/predictions.html'),'utf8'),'1-5-goals',page);

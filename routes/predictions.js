@@ -136,7 +136,11 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   } = req.query;
 
   const homepage = req.query.homepage === '1';
-  const { page, limit, offset } = parsePagination(homepage ? { page: 1, limit: 10 } : req.query);
+  const freePicks = (req.query.category || '').toLowerCase() === 'free';
+  const pagination = parsePagination(homepage ? { page: 1, limit: 10 } : req.query);
+  const page = pagination.page;
+  const limit = freePicks ? Math.min(pagination.limit, 20) : pagination.limit;
+  const offset = (page - 1) * limit;
 
   // Base query joining leagues table for meta
   let sql = `
@@ -253,7 +257,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   if (category && category !== 'all') {
     const categoryExpression = require('../services/homepagePicks').categorySql;
     if (category === 'free') {
-      sql += ' AND (' + categoryExpression + ") = 'Free Pick' AND p.access_tier='free' AND p.visibility='free'";
+      sql += " AND p.access_tier='free' AND (p.visibility='free' OR p.category='Banker of the Day')";
     } else
     if (category === 'banker') {
       sql += " AND p.category = 'Banker of the Day'";
@@ -272,7 +276,8 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const allowedOrder = ['ASC', 'DESC'];
   const safeSort  = allowedSort.includes(sort)   ? sort  : 'match_date';
   const safeOrder = allowedOrder.includes(order.toUpperCase()) ? order.toUpperCase() : 'ASC';
-  sql += categorySort ? ` ORDER BY p.${categorySort}, p.id ASC` : ` ORDER BY p.${safeSort} ${safeOrder}, p.id ASC`;
+  const sortClause = categorySort ? `p.${categorySort}, p.id ASC` : `p.${safeSort} ${safeOrder}, p.id ASC`;
+  sql += ' ORDER BY ' + (freePicks ? `EXISTS (SELECT 1 FROM homepage_picks h WHERE h.prediction_id=p.id AND h.pick_date=DATE(p.match_date)) DESC, ` : '') + sortClause;
 
   // Count query
   const countSql = sql.replace(
@@ -282,10 +287,10 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
 
   // Apply pagination
   sql += ' LIMIT ? OFFSET ?';
-  args.push(limit, offset);
+  args.push(freePicks ? Math.max(0, Math.min(limit, 20 - offset)) : limit, offset);
 
   const [[countRows], [predictions]] = await Promise.all([
-    db.query(countSql.split('LIMIT')[0], args.slice(0, -2)),
+    db.query(countSql.split(' ORDER BY ')[0], args.slice(0, -2)),
     db.query(sql, args),
   ]);
   const total = (countRows[0] && countRows[0].total) || 0;
@@ -294,7 +299,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
 
   return successResponse(res, {
     predictions: masked,
-    pagination:  paginate(parseInt(total), page, limit),
+    pagination:  paginate(freePicks ? Math.min(parseInt(total), 20) : parseInt(total), page, limit),
   });
 }));
 

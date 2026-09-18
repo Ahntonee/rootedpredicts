@@ -97,6 +97,7 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 const { categories, dbCategories, renderArticles, loadCategoryOverrides } = require('./services/categoryPages');
 const categoryMetadata = require('./services/categoryMetadata.json');
+const { publicSlug, categoryKey } = require('./services/categoryUrls');
 
 function isSearchBot(req) {
   const ua = req.headers['user-agent'] || '';
@@ -162,8 +163,8 @@ async function prerenderPage(req, res, next, file, containerId) {
         AND p.published_at IS NOT NULL
         AND p.access_tier = 'free' AND (p.visibility <> 'vip' OR p.category = 'Banker of the Day')
         ${category !== 'free' ? 'AND (' + require('./services/homepagePicks').categorySql + ') = ?' : ''}
-      ORDER BY p.confidence_score DESC
-      ${file === 'index.html' ? 'LIMIT 15' : ''}
+      ORDER BY ${file === 'predictions.html' && category === 'free' ? 'EXISTS (SELECT 1 FROM homepage_picks h WHERE h.prediction_id=p.id AND h.pick_date=DATE(p.match_date)) DESC,' : ''} p.confidence_score DESC
+      ${file === 'index.html' ? 'LIMIT 15' : category === 'free' ? 'LIMIT 20' : ''}
     `, category !== 'free' ? [dbCategories[category]] : []);
 
     if (preds.length) {
@@ -177,7 +178,7 @@ async function prerenderPage(req, res, next, file, containerId) {
         '@type': 'ItemList',
         'name': `Football Predictions for ${today}`,
         'description': 'Free football predictions and betting tips updated daily.',
-        'url': `${BASE}/predictions/${category}`,
+        'url': `${BASE}/predictions/${publicSlug(category)}`,
         'numberOfItems': preds.length,
         'itemListElement': preds.map((p, i) => ({
           '@type': 'ListItem',
@@ -203,7 +204,7 @@ async function prerenderPage(req, res, next, file, containerId) {
 function renderCategoryMeta(html, category, page) {
   const defaults = categoryMetadata[category];
   const meta = page ? { ...defaults, title: page.page_title, desc: page.meta_description, h1: page.hero_title, sub: page.hero_subtitle } : defaults;
-  const canonical = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '') + '/predictions/' + category;
+  const canonical = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '') + '/predictions/' + publicSlug(category);
   html = html.replace(/(<title[^>]*>)[\s\S]*?<\/title>/, (_, start) => start + escHtml(meta.title) + '</title>');
   html = html.replace(/(<meta name="description"[^>]*content=")[^"]*/, '$1' + escHtml(meta.desc));
   html = html.replace(/(<link rel="canonical"[^>]*href=")[^"]*/, '$1' + canonical);
@@ -219,12 +220,20 @@ function renderCategoryMeta(html, category, page) {
 }
 app.get(['/', '/index.html'], (req, res, next) => prerenderPage(req, res, next, 'index.html', 'free-picks-list'));
 app.get('/predictions.html', (req, res) => {
-  const category = Object.hasOwn(categories, req.query.category) ? req.query.category : 'free';
+  const requestedCategory = categoryKey(req.query.category);
+  const category = Object.hasOwn(categories, requestedCategory) ? requestedCategory : 'free';
   const params = new URLSearchParams(req.query);
   params.delete('category');
-  res.redirect(301, '/predictions/' + category + (params.size ? '?' + params.toString() : ''));
+  res.redirect(301, '/predictions/' + publicSlug(category) + (params.size ? '?' + params.toString() : ''));
 });
 app.get('/predictions/:category', (req, res, next) => {
+  const requested = req.params.category;
+  const category = categoryKey(requested);
+  if (Object.hasOwn(categories, category) && requested !== publicSlug(category)) {
+    const query = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+    return res.redirect(301, '/predictions/' + publicSlug(category) + query);
+  }
+  req.params.category = category;
   if (!Object.hasOwn(categories, req.params.category)) return res.status(404).type('html').send('<h1>Category not found</h1><a href="/predictions/free">View predictions</a>');
   return prerenderPage(req, res, next, 'predictions.html', 'picks-list');
 });
@@ -493,7 +502,7 @@ app.get('/sitemap.xml', async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
 
   const staticPages = [
-    ...Object.keys(categories).map(category => ({ url: '/predictions/' + category, changefreq: 'daily', priority: '0.9' })),
+    ...Object.keys(categories).map(category => ({ url: '/predictions/' + publicSlug(category), changefreq: 'daily', priority: '0.9' })),
     { url: '/',               changefreq: 'daily',   priority: '1.0' },
     { url: '/predictions.html', changefreq: 'daily',   priority: '0.9' },
     { url: '/leagues.html',   changefreq: 'weekly',  priority: '0.7' },
