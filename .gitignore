@@ -27,3 +27,6 @@ build/
 
 # One-off admin utility — contains credentials passed at runtime, not for version control
 reset-admin.js
+
+# Local deployment notes
+/docs/request-limits.md

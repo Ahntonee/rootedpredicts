@@ -11,7 +11,7 @@ const cors         = require('cors');
 const morgan       = require('morgan');
 const compression  = require('compression');
 const cookieParser = require('cookie-parser');
-const rateLimit    = require('express-rate-limit');
+const { createApiLimiter } = require('./middleware/rateLimits');
 const path         = require('path');
 const { randomUUID } = require('crypto');
 
@@ -28,7 +28,9 @@ const predictionRoutes = require('./routes/predictions');
 const syncRoutes       = require('./routes/sync');
 
 const app  = express();
-app.set('trust proxy', 1);
+// Set to the actual proxy hop count or trusted proxy addresses for this deployment.
+const proxySetting = process.env.TRUST_PROXY || '1';
+app.set('trust proxy', /^\d+$/.test(proxySetting) ? Number(proxySetting) : proxySetting.split(',').map(value => value.trim()));
 const PORT = process.env.PORT || 3000;
 
 // ── Security
@@ -59,29 +61,9 @@ app.use(cors({
 }));
 
 // ── Rate limiting
-const apiLimiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max:      parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 200,
-  standardHeaders: true, legacyHeaders: false,
-  message: { success: false, message: 'Too many requests. Please try again later.' },
-});
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 10,
-  message: { success: false, message: 'Too many auth attempts. Try again in 15 minutes.' },
-});
-// Admin and sync routes get a separate high-capacity limiter so dashboard
-// operations (sync, auto-predict, bulk edits) never hit the public quota.
-const adminLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, max: 4000,
-  standardHeaders: true, legacyHeaders: false,
-  message: { success: false, message: 'Too many admin requests. Please slow down.' },
-});
-
-app.use('/api/admin', adminLimiter);
-app.use('/api/sync',  adminLimiter);
-app.use('/api/',      apiLimiter);
-app.use('/api/auth/login',    authLimiter);
-app.use('/api/auth/register', authLimiter);
+// Parse signed session cookies before choosing one independent request quota.
+app.use(cookieParser());
+app.use('/api', createApiLimiter());
 
 // ── Request ID — attach to every request for log correlation
 app.use((req, _res, next) => { req.id = randomUUID(); next(); });
@@ -105,7 +87,6 @@ app.use((req, res, next) => {
   express.json({ limit: large ? '10mb' : '10kb' })(req, res, next);
 });
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-app.use(cookieParser());
 
 // ── SEO: Bot detection + dynamic rendering
 // Googlebot crawls in two waves: Wave 1 (raw HTML, no JS) and Wave 2 (JS,

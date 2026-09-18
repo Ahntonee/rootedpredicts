@@ -14,6 +14,12 @@ router.use(authenticate, requireAdmin);
 
 // ── Dashboard ──────────────────────────────────────────────────
 router.get('/stats', asyncHandler(admin.getStats));
+router.get('/request-diagnostics', requireAdminRole('superadmin'), (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ success: true, data: { client_ip: req.ip, proxy_chain: req.ips,
+    socket_ip: req.socket.remoteAddress, trust_proxy: req.app.get('trust proxy'),
+    account_quota: req.rateLimitSession ? 'account:' + req.rateLimitSession.id : 'ip' } });
+});
 router.put('/predictions/:id/homepage', requireAdminRole('superadmin','editor'), asyncHandler(async (req, res) => {
   try {
     await require('../services/homepagePicks').selectHomepagePick(require('../config/db'), req.params.id, req.body.selected);
