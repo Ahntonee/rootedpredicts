@@ -32,7 +32,10 @@
     select.appendChild(option);
   });
   function money(amount, currency) {
-    return new Intl.NumberFormat(navigator.languages, { style:'currency', currency:currency, currencyDisplay:'code' }).format(amount);
+    return new Intl.NumberFormat(navigator.languages, {
+      style:'currency', currency:currency, currencyDisplay:'code',
+      ...(Number.isInteger(Number(amount)) ? { minimumFractionDigits: 0 } : {}),
+    }).format(amount);
   }
   function duration() { var el = document.getElementById('pricing-duration'); return el ? el.value : 'monthly'; }
   async function quote(currency) {

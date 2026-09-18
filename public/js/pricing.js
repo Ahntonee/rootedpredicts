@@ -240,7 +240,8 @@
         if (btn.disabled) return;
         try {
           setButtonLoading(btn, true);
-          var quote = await apiFetch('POST', '/api/subscriptions/manual/quote', { plan: btn.dataset.plan, method: 'moniepoint', duration: document.getElementById('pricing-duration').value });
+          var durationSelect = document.getElementById(btn.dataset.durationSelect || 'pricing-duration');
+          var quote = await apiFetch('POST', '/api/subscriptions/manual/quote', { plan: btn.dataset.plan, method: 'moniepoint', duration: durationSelect.value });
           if (!quote.success) throw new Error(quote.message || 'Unable to load payment details.');
           _paymentQuote = quote.data;
           showBankModal(btn.dataset.plan);

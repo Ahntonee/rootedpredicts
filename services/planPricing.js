@@ -3,7 +3,7 @@ const axios = require('axios');
 const amounts = Object.freeze({ standard: 15000, deluxe: 25000 });
 const usdAmounts = Object.freeze({ standard: 30, deluxe: 45 });
 const plans = Object.freeze({
-  standard: { label: 'Standard Plan', days: 30, features: ['Daily 2+ odds picks', '95% Accuracy', '24/7 support', 'Free 10+ odds on weekends'] },
+  standard: { label: 'Standard Plan', days: 30, features: ['Higher-confidence odds', 'Daily 2+ odds picks', '95% Accuracy', '24/7 support', 'Free 10+ odds on weekends'] },
   deluxe: { label: 'Deluxe Plan', days: 30, features: ['Access to Standard Plan', 'Daily 2 - 5+ odds picks', '97% Accuracy', 'Instant support', 'Free 5+ odds on weekends'] },
 });
 let cached = null;

@@ -81,6 +81,15 @@
       <select id="pricing-currency" class="form-control" style="display:inline-block;width:auto;max-width:100%;margin:8px;"><option value="NGN">NGN - Nigerian naira</option></select>
     </div>
     <style>
+      .subscription-plans {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        max-width: 1000px;
+        margin: 32px auto;
+      }
+      @media (max-width: 700px) {
+        .subscription-plans { grid-template-columns: 1fr; max-width: 500px; }
+      }
       .pricing-card { min-width: 0; container-type: inline-size; }
       .pricing-card .pricing-price {
         font-size: 1.5rem;
@@ -99,13 +108,13 @@
       </select>
     </div>
     <!-- Pricing cards -->
-    <div class="pricing-grid" style="max-width:900px;margin:32px auto;">
+    <div class="pricing-grid subscription-plans">
 
       <div class="pricing-card">
         <div class="pricing-plan-name">Standard Plan</div>
         <div class="pricing-price" id="sub-standard-price">NGN 15,000</div>
         <div class="pricing-period">per month</div>
-        <ul class="pricing-features" id="sub-standard-features"><li><span class="material-icons-round">check</span>Daily 2+ odds picks</li><li><span class="material-icons-round">check</span>24/7 support</li><li><span class="material-icons-round">check</span>Free 10+ odds on weekends</li></ul>
+        <ul class="pricing-features" id="sub-standard-features"><li><span class="material-icons-round">check</span>Higher-confidence odds</li><li><span class="material-icons-round">check</span>Daily 2+ odds picks</li><li><span class="material-icons-round">check</span>24/7 support</li><li><span class="material-icons-round">check</span>Free 10+ odds on weekends</li></ul>
         <button class="btn btn-primary pay-btn" style="width:100%;justify-content:center;" data-plan="standard" disabled>Checking subscription...</button>
         <p class="trial-note">30 days of access.</p>
       </div>
@@ -113,7 +122,7 @@
         <div class="pricing-plan-name">Deluxe Plan</div>
         <div class="pricing-price" id="sub-deluxe-price">NGN 25,000</div>
         <div class="pricing-period">per month</div>
-        <ul class="pricing-features" id="sub-deluxe-features"><li><span class="material-icons-round">check</span>Access to Standard Plan</li><li><span class="material-icons-round">check</span>Daily 2 - 5+ odds picks</li><li><span class="material-icons-round">check</span>Instant support</li><li><span class="material-icons-round">check</span>Free 5+ odds on weekends</li></ul>
+        <ul class="pricing-features" id="sub-deluxe-features"><li><span class="material-icons-round">check</span>Highest confidence odds</li><li><span class="material-icons-round">check</span>Daily 2 - 5+ odds picks</li><li><span class="material-icons-round">check</span>Instant support</li><li><span class="material-icons-round">check</span>Free 5+ odds on weekends</li></ul>
         <button class="btn btn-primary pay-btn" style="width:100%;justify-content:center;" data-plan="deluxe" disabled>Checking subscription...</button>
         <p class="trial-note">30 days of access.</p>
       </div>
@@ -122,12 +131,27 @@
     <!-- African payment option -->
     <div style="max-width:600px;margin:0 auto 40px;text-align:center;padding:24px;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius-lg);">
       <span class="material-icons-round" style="font-size:1.5rem;color:var(--red);">credit_card</span>
-      <h3 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin:8px 0 6px;">Pay by bank transfer</h3>
-      <p style="font-size:0.875rem;color:var(--muted);margin-bottom:16px;">Transfer the exact naira amount shown below, then upload your receipt for verification.</p>
+      <h3 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin:8px 0 6px;">Pay by bank transfer or Cryptocurrency</h3>
+      <p style="font-size:0.875rem;color:var(--muted);margin-bottom:16px;">Pay by Bank Transfer or Cryptocurrency
+Send the exact amount, then upload your payment receipt for verification.
+For instant verification, send your receipt (or your TxID, for crypto payments) to us on Telegram at @rootedpredictsupport or by email at rootedpredict@gmail.com</p>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-        <button class="btn btn-outline btn-sm pay-btn" data-plan="monthly"   data-provider="paystack"><span class="material-icons-round">payment</span>Monthly — ₦15,000</button>
-        <button class="btn btn-outline btn-sm pay-btn" data-plan="quarterly" data-provider="paystack"><span class="material-icons-round">payment</span>Quarterly — ₦45,000</button>
-        <button class="btn btn-outline btn-sm pay-btn" data-plan="annual"    data-provider="paystack"><span class="material-icons-round">payment</span>Annual — 150,000</button>
+        <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:180px;max-width:240px;">
+          <label for="bank-standard-duration">Standard billing period</label>
+          <select id="bank-standard-duration" class="form-control">
+            <option value="monthly">Monthly — ₦15,000</option>
+            <option value="biweekly">Bi-weekly — ₦7,500</option>
+          </select>
+          <button class="btn btn-outline btn-sm pay-btn" data-plan="standard" data-duration-select="bank-standard-duration" disabled>Get Standard VIP</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:180px;max-width:240px;">
+          <label for="bank-deluxe-duration">Deluxe billing period</label>
+          <select id="bank-deluxe-duration" class="form-control">
+            <option value="monthly">Monthly — ₦25,000</option>
+            <option value="biweekly">Bi-weekly — ₦12,500</option>
+          </select>
+          <button class="btn btn-outline btn-sm pay-btn" data-plan="deluxe" data-duration-select="bank-deluxe-duration" disabled>Get Deluxe VIP</button>
+        </div>
       </div>
     </div>
 
