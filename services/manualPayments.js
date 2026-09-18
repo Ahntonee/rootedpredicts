@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken');
 function methods() {
   return {
     moniepoint: { label: 'Moniepoint bank transfer', currency: 'NGN', account_name: 'Anthony Ikpe', account_number: '9077025895', provider: 'Moniepoint Microfinance Bank', enabled: true },
-    momo: { label: 'MoMo', currency: process.env.MOMO_CURRENCY || '', account_name: 'Anthony Ikpe', account_number: '0590583485', provider: process.env.MOMO_PROVIDER || '', country: process.env.MOMO_COUNTRY || '', enabled: !!(process.env.MOMO_CURRENCY && process.env.MOMO_PROVIDER && process.env.MOMO_COUNTRY) },
-    usdt: { label: 'USDT', currency: 'USDT', account_number: '0xb4bb5688c25e185d89817f39bfcd5f435b8f3fc0', network: process.env.USDT_NETWORK || '', enabled: !!process.env.USDT_NETWORK },
+    momo: { label: 'MoMo', currency: process.env.MOMO_CURRENCY || 'NGN', account_name: 'Anthony Ikpe', account_number: '0590583485', provider: process.env.MOMO_PROVIDER || 'MTN MoMo PSB', country: process.env.MOMO_COUNTRY || 'Nigeria', enabled: true },
+    usdt: { label: 'USDT', currency: 'USDT', account_number: '0xb4bb5688c25e185d89817f39bfcd5f435b8f3fc0', network: process.env.USDT_NETWORK || 'BEP-20 (BNB Smart Chain)', enabled: true },
   };
 }
 async function createQuote(userId, plan, method, duration = 'monthly') {

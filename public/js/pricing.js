@@ -46,8 +46,13 @@
     if (!_paymentQuote || _paymentQuote.plan !== plan) return;
     document.getElementById('bm-plan-label').textContent = (plan === 'standard' ? 'Standard Plan' : 'Deluxe Plan') + (_paymentQuote.duration === 'biweekly' ? ' - Bi-weekly (14 days)' : ' - Monthly (30 days)');
     document.getElementById('bm-amount').textContent = _paymentQuote.currency + ' ' + Number(_paymentQuote.amount).toLocaleString('en-NG');
-    document.getElementById('bm-bank-name').textContent = _paymentQuote.destination.provider;
-    document.getElementById('bm-acct-name').textContent = _paymentQuote.destination.account_name;
+    var destination = _paymentQuote.destination;
+    document.getElementById('bm-title').textContent = destination.label;
+    document.getElementById('bm-provider-label').textContent = _paymentQuote.method === 'usdt' ? 'Network' : 'Provider';
+    document.getElementById('bm-number-label').textContent = _paymentQuote.method === 'usdt' ? 'Wallet address' : 'Account number';
+    document.getElementById('bm-bank-name').textContent = destination.network || [destination.provider, destination.country].filter(Boolean).join(' ? ');
+    document.getElementById('bm-instructions').textContent = _paymentQuote.method === 'usdt' ? 'Send USDT only on the ' + destination.network + ' network to this address. Upload your transfer receipt for verification.' : 'Pay the exact amount in ' + _paymentQuote.currency + ' to the account shown, then upload your receipt for verification.';
+    document.getElementById('bm-acct-name').textContent = _paymentQuote.destination.account_name || '?';
     document.getElementById('bm-acct-number').textContent = _paymentQuote.destination.account_number;
     document.getElementById('bm-sort-row').style.display = 'none';
 
@@ -204,6 +209,17 @@
     apiFetch('GET', '/api/subscriptions/bank-details').then(function(json) {
       if (json.success) {
         _bankDetails = json.data;
+        var methodSelect = document.getElementById('payment-method');
+        if (methodSelect && json.data.methods) {
+          methodSelect.textContent = '';
+          Object.entries(json.data.methods).forEach(function(entry) {
+            var option = document.createElement('option');
+            option.value = entry[0];
+            option.disabled = !entry[1].enabled;
+            option.textContent = entry[1].label + (entry[1].enabled ? ' (' + entry[1].currency + ')' : ' ? unavailable');
+            methodSelect.appendChild(option);
+          });
+        }
         // Refresh if modal is already open
         if (document.getElementById('bank-modal') &&
             document.getElementById('bank-modal').style.display === 'flex' &&
@@ -241,7 +257,7 @@
         try {
           setButtonLoading(btn, true);
           var durationSelect = document.getElementById(btn.dataset.durationSelect || 'pricing-duration');
-          var quote = await apiFetch('POST', '/api/subscriptions/manual/quote', { plan: btn.dataset.plan, method: 'moniepoint', duration: durationSelect.value });
+          var quote = await apiFetch('POST', '/api/subscriptions/manual/quote', { plan: btn.dataset.plan, method: document.getElementById('payment-method').value, duration: durationSelect.value });
           if (!quote.success) throw new Error(quote.message || 'Unable to load payment details.');
           _paymentQuote = quote.data;
           showBankModal(btn.dataset.plan);
