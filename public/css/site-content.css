@@ -1,0 +1,8 @@
+#page-content h1, #page-content h2, #page-content h3, #page-content h4,
+.seo-block h1, .seo-block h3, .seo-block h4 { margin:1.4em 0 .6em; line-height:1.3; }
+#page-content p { margin:0 0 1em; line-height:1.8; }
+#page-content ul, #page-content ol, .seo-content-block ol { padding-left:1.6em; margin:0 0 1em; }
+#page-content li { margin:.4em 0; }
+#page-content blockquote, .seo-block blockquote, .seo-content-block blockquote { margin:1em 0; border-left:4px solid var(--green); padding-left:1em; }
+#page-content, .seo-block, .seo-content-block { overflow-wrap:anywhere; }
+.seo-block:empty { display:none !important; }

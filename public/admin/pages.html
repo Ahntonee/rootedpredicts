@@ -317,8 +317,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('meta-count').textContent = this.value.length;
   });
 
-  await loadAllPages();
-  renderPage('home');
+  pageEditor = new PageEditor(document.getElementById('f-content'), markDirty);
+  document.getElementById('editor-wrap').addEventListener('input', markDirty);
+  if (await loadAllPages()) renderPage('home');
 });
 
 async function loadAllPages() {
@@ -549,4 +550,3 @@ async function savePage() {
 <style>@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }</style>
 </body>
 </html>
-

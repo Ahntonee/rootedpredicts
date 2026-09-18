@@ -44,7 +44,7 @@ router.get('/admin/list', authenticate, requireAdmin, async (req, res) => {
 // ─────────────────────────────────────────────
 router.put('/admin/:slug', authenticate, requireAdmin, requireAdminRole('superadmin', 'editor'), async (req, res) => {
   const { slug } = req.params;
-  const { page_title, meta_description, hero_title, hero_subtitle, last_updated, content, extra } = req.body;
+  const { content, extra } = req.body;
   try {
     if (slug.startsWith('category-')) {
       const page = categoryPage(slug.slice(9));
