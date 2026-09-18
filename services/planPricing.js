@@ -23,15 +23,15 @@ async function rates() {
     .finally(() => { pending = null; });
   return pending;
 }
-async function quote(currency = 'NGN', duration = 'monthly') {
+async function quote(currency = 'NGN', duration = 'monthly', international = false) {
   if (!['monthly', 'biweekly'].includes(duration)) throw new Error('Invalid billing period');
   const factor = duration === 'biweekly' ? 0.5 : 1;
   if (!/^[A-Z]{3}$/.test(currency)) throw new Error('Invalid currency');
-  const data = ['NGN', 'USD'].includes(currency) ? null : await rates();
+  const data = (currency === 'USD' || (currency === 'NGN' && !international)) ? null : await rates();
   const rate = data ? data.rates[currency] : 1;
   if (!Number.isFinite(rate) || rate <= 0) throw new Error('Currency unavailable');
   const digits = new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits;
-  return { currency, duration, days: duration === 'biweekly' ? 14 : 30, base_currency: currency === 'NGN' ? 'NGN' : 'USD', updated_at: data ? new Date(data.time_last_update_unix * 1000).toISOString() : null,
-    plans: Object.fromEntries(Object.entries(amounts).map(([plan, ngn]) => [plan, { ngn: ngn * factor, usd: usdAmounts[plan] * factor, label: plans[plan].label, amount: Number(((currency === 'NGN' ? ngn : usdAmounts[plan]) * factor * rate).toFixed(digits)) }])) };
+  return { currency, duration, days: duration === 'biweekly' ? 14 : 30, base_currency: currency === 'NGN' && !international ? 'NGN' : 'USD', updated_at: data ? new Date(data.time_last_update_unix * 1000).toISOString() : null,
+    plans: Object.fromEntries(Object.entries(amounts).map(([plan, ngn]) => [plan, { ngn: ngn * factor, usd: usdAmounts[plan] * factor, label: plans[plan].label, amount: Number(((currency === 'NGN' && !international ? ngn : usdAmounts[plan]) * factor * rate).toFixed(digits)) }])) };
 }
 module.exports = { amounts, usdAmounts, plans, quote };

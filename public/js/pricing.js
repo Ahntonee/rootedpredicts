@@ -3,6 +3,7 @@
 (function () {
   'use strict';
 
+  var _sessionUser = null;
   var _selectedPlan = null;
   var _paymentQuote = null;
   var _bankDetails  = null;
@@ -52,6 +53,12 @@
     document.getElementById('bm-number-label').textContent = _paymentQuote.method === 'usdt' ? 'Wallet address' : 'Account number';
     document.getElementById('bm-bank-name').textContent = destination.network || [destination.provider, destination.country].filter(Boolean).join(' ? ');
     document.getElementById('bm-instructions').textContent = _paymentQuote.method === 'usdt' ? 'Send USDT only on the ' + destination.network + ' network to this address. Upload your transfer receipt for verification.' : 'Pay the exact amount in ' + _paymentQuote.currency + ' to the account shown, then upload your receipt for verification.';
+    var transferLink = document.getElementById('bm-transfer-link');
+    if (transferLink) transferLink.style.display = destination.international ? 'inline-flex' : 'none';
+    if (destination.international) {
+      document.getElementById('bm-title').textContent = 'International MoMo transfer';
+      document.getElementById('bm-instructions').textContent = 'Open Lightway, select Nigeria and Direct to MoMo Wallet, and enter the receiving account below. Set the recipient amount to ' + _paymentQuote.currency + ' ' + Number(_paymentQuote.amount).toLocaleString('en-NG') + '. Choose an available payment option in your local currency. Lightway confirms country availability, exchange rates and fees before you pay. Return here to upload your receipt. If your country or payment option is unavailable, choose USDT instead.';
+    }
     document.getElementById('bm-acct-name').textContent = _paymentQuote.destination.account_name || '?';
     document.getElementById('bm-acct-number').textContent = _paymentQuote.destination.account_number;
     document.getElementById('bm-sort-row').style.display = 'none';
@@ -181,6 +188,17 @@
     }
   }
 
+  function updatePaymentMethods() {
+    var select = document.getElementById('payment-method');
+    if (!select || !select.options) return;
+    var country = String(_sessionUser && _sessionUser.country || '').trim().toUpperCase();
+    var foreign = country && country !== 'NG' && country !== 'NIGERIA';
+    Array.from(select.options).forEach(function(option) {
+      if (option.value === 'moniepoint') { option.hidden = !!foreign; option.disabled = !!foreign; }
+    });
+    if (foreign && select.value === 'moniepoint') select.value = 'momo';
+  }
+
   function applyMembership(user) {
     var tier = user && user.membership_tier || 'free';
     var admin = user && user.role === 'admin';
@@ -216,10 +234,11 @@
             var option = document.createElement('option');
             option.value = entry[0];
             option.disabled = !entry[1].enabled;
-            option.textContent = entry[1].label + (entry[1].enabled ? ' (' + entry[1].currency + ')' : ' ? unavailable');
+            option.textContent = (entry[0] === 'momo' ? 'MoMo / International transfer' : entry[1].label) + (entry[1].enabled ? ' (' + entry[1].currency + ')' : ' ? unavailable');
             methodSelect.appendChild(option);
           });
         }
+        updatePaymentMethods();
         // Refresh if modal is already open
         if (document.getElementById('bank-modal') &&
             document.getElementById('bank-modal').style.display === 'flex' &&
@@ -231,6 +250,8 @@
 
     // Check session once on load
     getSessionUser().then(function(user) {
+      _sessionUser = user;
+      updatePaymentMethods();
       if (window.PricingCurrency) window.PricingCurrency.setCountry(user && user.country);
       applyMembership(user);
     });

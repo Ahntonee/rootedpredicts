@@ -51,7 +51,7 @@ router.post('/notifications/:id/read', asyncHandler(async (req, res) => {
 }));
 router.post('/manual/quote', asyncHandler(async (req, res) => {
   try {
-    const data = await require('../services/manualPayments').createQuote(req.user.id, req.body.plan, req.body.method, req.body.duration);
+    const data = await require('../services/manualPayments').createQuote(req.user.id, req.body.plan, req.body.method, req.body.duration, req.user.country || null);
     res.json({success:true,data});
   } catch (e) { res.status(400).json({success:false,message:e.message}); }
 }));

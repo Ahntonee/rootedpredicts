@@ -93,7 +93,7 @@
   select.value = countries[region] || 'USD';
   try {
     var saved = localStorage.getItem('pricing_currency');
-    if (choices.includes(saved)) { select.value = saved; manual = true; }
+    if (choices.includes(saved)) { select.value = saved; }
   } catch (_) {}
   update();
 })();
