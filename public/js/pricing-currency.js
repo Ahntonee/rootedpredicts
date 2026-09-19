@@ -21,7 +21,7 @@
     });
     return;
   }
-  var manual = false, version = 0;
+  var version = 0, nigerian = false;
   var choices = Array.from(new Set(Object.values(countries))).sort();
   var names;
   try { names = new Intl.DisplayNames(navigator.languages, { type:'currency' }); } catch (_) {}
@@ -39,13 +39,13 @@
     }).format(amount);
   }
   function duration() { var el = document.getElementById('pricing-duration'); return el ? el.value : 'monthly'; }
-  async function quote(currency) {
-    var response = await fetch('/api/subscriptions/pricing?currency=' + encodeURIComponent(currency) + '&duration=' + duration());
+  async function quote(currency, period) {
+    var response = await fetch('/api/subscriptions/pricing?currency=' + encodeURIComponent(currency) + '&duration=' + (period || duration()));
     var json = await response.json();
     if (!response.ok || !json.success) throw new Error('Prices unavailable');
     return json.data;
   }
-  function render(data) {
+  function render(data, other) {
     select.value = data.currency;
     var biweekly = duration() === 'biweekly';
     if (document.querySelectorAll) {
@@ -54,25 +54,46 @@
     }
     Object.keys(data.plans).forEach(function (plan) {
       var price = data.plans[plan];
-      document.getElementById('sub-' + plan + '-price').textContent = money(price.amount, data.currency);
+      var usd = price.usd == null ? (plan === 'standard' ? 30 : 45) * (biweekly ? 0.5 : 1) : price.usd;
+      document.getElementById('sub-' + plan + '-price').textContent = nigerian ? money(price.amount, 'NGN') : money(usd, 'USD');
+      var local = document.getElementById('sub-' + plan + '-local-price');
+      if (local) local.textContent = !nigerian && data.currency !== 'USD' ? money(price.amount, data.currency) : '';
+      var billing = document.getElementById('bank-' + plan + '-duration');
+      if (billing && billing.options) Array.from(billing.options).forEach(function(option) {
+        var period = option.value;
+        var periodData = period === duration() ? data : other;
+        if (!periodData) return;
+        var periodPrice = periodData.plans[plan];
+        var dollars = periodPrice.usd == null ? (plan === 'standard' ? 30 : 45) * (period === 'biweekly' ? 0.5 : 1) : periodPrice.usd;
+        var label = nigerian ? money(periodPrice.amount, 'NGN') : money(dollars, 'USD') + (periodData.currency !== 'USD' ? ' / ' + money(periodPrice.amount, periodData.currency) : '');
+        option.textContent = (period === 'biweekly' ? 'Bi-weekly' : 'Monthly') + ' ? ' + label;
+      });
     });
+  }
+  function fallback(period) {
+    var factor = period === 'biweekly' ? 0.5 : 1;
+    return { currency: nigerian ? 'NGN' : 'USD', plans: {
+      standard: { amount: (nigerian ? 15000 : 30) * factor, usd: 30 * factor },
+      deluxe: { amount: (nigerian ? 25000 : 45) * factor, usd: 45 * factor }
+    } };
   }
   async function update() {
     var request = ++version;
+    var period = duration();
+    var otherPeriod = period === 'monthly' ? 'biweekly' : 'monthly';
+    // Country determines the price schedule; selecting NGN cannot change a foreign account's price.
+    if (nigerian) select.value = 'NGN';
+    else if (select.value === 'NGN') select.value = 'USD';
     try {
-      var data = await quote(select.value);
-      if (request === version) render(data);
+      var results = await Promise.all([quote(select.value, period), quote(select.value, otherPeriod)]);
+      if (request === version) render(results[0], results[1]);
     } catch (_) {
-      if (request === version) {
-        var naira = select.value === 'NGN';
-        render({ currency: naira ? 'NGN' : 'USD', plans: { standard: { amount: (naira ? 15000 : 30) * (duration() === 'biweekly' ? 0.5 : 1) }, deluxe: { amount: (naira ? 25000 : 45) * (duration() === 'biweekly' ? 0.5 : 1) } } });
-      }
+      if (request === version) render(fallback(period), fallback(otherPeriod));
     }
   }
   var durationSelect = document.getElementById('pricing-duration');
   if (durationSelect) durationSelect.addEventListener('change', update);
   select.addEventListener('change', function () {
-    manual = true;
     try { localStorage.setItem('pricing_currency', select.value); } catch (_) {}
     update();
   });
@@ -86,14 +107,19 @@
         currency = countries[match] || 'USD';
       } catch (_) { currency = code === 'NIGERIA' ? 'NGN' : 'USD'; }
     }
-    if (!manual && currency && select.value !== currency) { select.value = currency; update(); }
+    if (currency) {
+      nigerian = currency === 'NGN';
+      select.disabled = nigerian;
+      if (select.options) Array.from(select.options).forEach(function(option) {
+        if (option.value === 'NGN') { option.disabled = !nigerian; option.hidden = !nigerian; }
+      });
+      select.value = currency;
+      update();
+    }
   } };
   var region;
   try { region = zones[Intl.DateTimeFormat().resolvedOptions().timeZone] || new Intl.Locale(navigator.language).region; } catch (_) {}
   select.value = countries[region] || 'USD';
-  try {
-    var saved = localStorage.getItem('pricing_currency');
-    if (choices.includes(saved)) { select.value = saved; }
-  } catch (_) {}
-  update();
+  nigerian = select.value === 'NGN';
+  window.PricingCurrency.setCountry(region || 'US');
 })();

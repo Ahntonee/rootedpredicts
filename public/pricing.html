@@ -120,7 +120,8 @@
 
       <div class="pricing-card">
         <div class="pricing-plan-name">Standard Plan</div>
-        <div class="pricing-price" id="sub-standard-price">NGN 15,000</div>
+        <div class="pricing-price" id="sub-standard-price">Loading...</div>
+        <div id="sub-standard-local-price" style="font-size:0.9rem;color:var(--muted);"></div>
         <div class="pricing-period">per month</div>
         <ul class="pricing-features" id="sub-standard-features"><li><span class="material-icons-round">check</span>Higher-confidence odds</li><li><span class="material-icons-round">check</span>Daily 2+ odds picks</li><li><span class="material-icons-round">check</span>24/7 support</li><li><span class="material-icons-round">check</span>Free 10+ odds on weekends</li></ul>
         <button class="btn btn-primary pay-btn" style="width:100%;justify-content:center;" data-plan="standard" disabled>Checking subscription...</button>
@@ -128,7 +129,8 @@
       </div>
       <div class="pricing-card">
         <div class="pricing-plan-name">Deluxe Plan</div>
-        <div class="pricing-price" id="sub-deluxe-price">NGN 25,000</div>
+        <div class="pricing-price" id="sub-deluxe-price">Loading...</div>
+        <div id="sub-deluxe-local-price" style="font-size:0.9rem;color:var(--muted);"></div>
         <div class="pricing-period">per month</div>
         <ul class="pricing-features" id="sub-deluxe-features"><li><span class="material-icons-round">check</span>Highest confidence odds</li><li><span class="material-icons-round">check</span>Daily 2 - 5+ odds picks</li><li><span class="material-icons-round">check</span>Instant support</li><li><span class="material-icons-round">check</span>Free 5+ odds on weekends</li></ul>
         <button class="btn btn-primary pay-btn" style="width:100%;justify-content:center;" data-plan="deluxe" disabled>Checking subscription...</button>
@@ -147,16 +149,16 @@
         <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:180px;max-width:240px;">
           <label for="bank-standard-duration">Standard billing period</label>
           <select id="bank-standard-duration" class="form-control">
-            <option value="monthly">Monthly — ₦15,000</option>
-            <option value="biweekly">Bi-weekly — ₦7,500</option>
+            <option value="monthly">Monthly</option>
+            <option value="biweekly">Bi-weekly</option>
           </select>
           <button class="btn btn-outline btn-sm pay-btn" data-plan="standard" data-duration-select="bank-standard-duration" disabled>Get Standard VIP</button>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:180px;max-width:240px;">
           <label for="bank-deluxe-duration">Deluxe billing period</label>
           <select id="bank-deluxe-duration" class="form-control">
-            <option value="monthly">Monthly — ₦25,000</option>
-            <option value="biweekly">Bi-weekly — ₦12,500</option>
+            <option value="monthly">Monthly</option>
+            <option value="biweekly">Bi-weekly</option>
           </select>
           <button class="btn btn-outline btn-sm pay-btn" data-plan="deluxe" data-duration-select="bank-deluxe-duration" disabled>Get Deluxe VIP</button>
         </div>
@@ -261,8 +263,7 @@
     </p>
 
     <div style="display:flex;flex-wrap:wrap;gap:10px;">
-      <button id="bm-cancel-btn" class="btn btn-outline btn-sm" style="flex:1;">Cancel</button>
-      <a id="bm-transfer-link" class="btn btn-outline" href="https://www.lightwayfinance.com/" target="_blank" rel="noopener noreferrer" style="display:none;flex:1 1 auto;justify-content:center;white-space:normal;text-align:center;">Open Lightway</a>
+      <button id="bm-cancel-btn" class="btn btn-outline btn-sm" style="flex:1;justify-content:center;text-align:center;">Cancel</button>
       <button id="bm-paid-btn" class="btn btn-primary" style="flex:2 1 auto;max-width:100%;white-space:normal;justify-content:center;">
         <span class="material-icons-round">upload_file</span>I Have Made Payment
       </button>

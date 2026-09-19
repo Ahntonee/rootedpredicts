@@ -53,11 +53,9 @@
     document.getElementById('bm-number-label').textContent = _paymentQuote.method === 'usdt' ? 'Wallet address' : 'Account number';
     document.getElementById('bm-bank-name').textContent = destination.network || [destination.provider, destination.country].filter(Boolean).join(' ? ');
     document.getElementById('bm-instructions').textContent = _paymentQuote.method === 'usdt' ? 'Send USDT only on the ' + destination.network + ' network to this address. Upload your transfer receipt for verification.' : 'Pay the exact amount in ' + _paymentQuote.currency + ' to the account shown, then upload your receipt for verification.';
-    var transferLink = document.getElementById('bm-transfer-link');
-    if (transferLink) transferLink.style.display = destination.international ? 'inline-flex' : 'none';
     if (destination.international) {
       document.getElementById('bm-title').textContent = 'International MoMo transfer';
-      document.getElementById('bm-instructions').textContent = 'Open Lightway, select Nigeria and Direct to MoMo Wallet, and enter the receiving account below. Set the recipient amount to ' + _paymentQuote.currency + ' ' + Number(_paymentQuote.amount).toLocaleString('en-NG') + '. Choose an available payment option in your local currency. Lightway confirms country availability, exchange rates and fees before you pay. Return here to upload your receipt. If your country or payment option is unavailable, choose USDT instead.';
+      document.getElementById('bm-instructions').textContent = 'Send a transfer to the MoMo account shown above. The receiving account must receive ' + _paymentQuote.currency + ' ' + Number(_paymentQuote.amount).toLocaleString('en-NG') + '. Check that your payment service supports transfers to this Nigerian MoMo account before paying, then upload your receipt. You can also choose USDT on the BEP-20 network.';
     }
     document.getElementById('bm-acct-name').textContent = _paymentQuote.destination.account_name || '?';
     document.getElementById('bm-acct-number').textContent = _paymentQuote.destination.account_number;

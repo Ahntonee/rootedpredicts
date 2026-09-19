@@ -22,7 +22,6 @@ async function createQuote(userId, plan, method, duration = 'monthly', country) 
     }
   }
   if (remittance) {
-    destination.transfer_url = 'https://www.lightwayfinance.com/';
     destination.international = true;
   }
   const prices = await pricing.quote(method === 'usdt' ? 'USD' : destination.currency, duration, remittance);

@@ -60,7 +60,7 @@ test('International MoMo uses dollar-based settlement and preserves transfer ins
         assert.equal(verified.ngn, verified.amount);
         assert.equal(verified.currency, 'NGN');
         assert.equal(verified.destination.international, true);
-        assert.equal(verified.destination.transfer_url, 'https://www.lightwayfinance.com/');
+        assert.equal(verified.destination.transfer_url, undefined);
       }
     }
     assert.equal((await payments.createQuote(7, 'standard', 'momo', 'monthly', 'NG')).amount, 15000);
