@@ -243,7 +243,7 @@ async function _activateSubscription(userId, plan, opts = {}) {
   // Expire any existing active subs for this user
   await db.query(
     `UPDATE subscriptions SET status='expired', updated_at=NOW()
-     WHERE user_id=? AND status IN ('active','trialing')`,
+     WHERE user_id=? AND status IN ('active','trialing','cancelled')`,
     [userId]
   );
 

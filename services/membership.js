@@ -4,12 +4,12 @@ function tierForPlan(plan) {
   return ['monthly', 'quarterly', 'annual'].includes(plan) ? (process.env.LEGACY_VIP_TIER || 'deluxe') : 'free';
 }
 async function attachMembership(db, user) {
-  if (!user || user.role !== 'vip') return user;
-  await require('./subscriptionExpiry').expireDue(db, user.id);
+  if (!user || user.role === 'admin') return user;
+  if (user.role === 'vip') await require('./subscriptionExpiry').expireDue(db, user.id);
   const [rows] = await db.query("SELECT plan, expires_at FROM subscriptions WHERE user_id=? AND status IN ('active','trialing','cancelled') AND expires_at > NOW() AND (status <> 'trialing' OR trial_ends_at IS NULL OR trial_ends_at > NOW()) ORDER BY expires_at DESC", [user.id]);
   const tiers = rows.map(row => tierForPlan(row.plan));
   user.membership_tier = tiers.includes('deluxe') ? 'deluxe' : tiers.includes('standard') ? 'standard' : 'free';
-  if (user.membership_tier === 'free') user.role = 'user';
+  user.role = user.membership_tier === 'free' ? 'user' : 'vip';
   return user;
 }
 function requiredTier(prediction) {

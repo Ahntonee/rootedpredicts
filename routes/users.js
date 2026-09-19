@@ -35,17 +35,18 @@ router.get('/profile', asyncHandler(async (req, res) => {
   if (!rows.length) return errorResponse(res, 'User not found', 404);
 
   let subscription = null;
-  if (rows[0].role === 'vip' || rows[0].role === 'admin') {
+  if (req.user.role === 'vip' || req.user.role === 'admin') {
     const [subs] = await db.query(
       `SELECT plan, status, expires_at, trial_ends_at, amount, currency
-       FROM subscriptions WHERE user_id = ? AND status IN ('active','trialing')
-       ORDER BY created_at DESC LIMIT 1`,
+       FROM subscriptions WHERE user_id = ? AND status IN ('active','trialing','cancelled') AND expires_at > NOW()
+       AND (status <> 'trialing' OR trial_ends_at IS NULL OR trial_ends_at > NOW())
+       ORDER BY CASE WHEN plan='deluxe' THEN 0 WHEN plan='standard' THEN 1 ELSE 2 END, expires_at DESC LIMIT 1`,
       [req.user.id]
     );
     subscription = subs[0] || null;
   }
 
-  return successResponse(res, { ...rows[0], subscription });
+  return successResponse(res, { ...rows[0], role: req.user.role, membership_tier: req.user.membership_tier || 'free', subscription });
 }));
 
 // ── PUT /api/users/profile
@@ -131,7 +132,7 @@ router.get('/bookmarks', asyncHandler(async (req, res) => {
   const [rows] = await db.query(
     `SELECT b.id, b.created_at,
        p.id as prediction_id, p.home_team, p.away_team, p.home_team_logo, p.away_team_logo,
-       p.match_date, p.tip, p.market, p.odds, p.confidence_score, p.visibility,
+       p.match_date, p.tip, p.market, p.odds, p.confidence_score, p.visibility, p.access_tier, p.category,
        p.result, p.slug,
        l.name as league_name, l.logo_url as league_logo, l.country as league_country
      FROM bookmarks b
@@ -144,7 +145,7 @@ router.get('/bookmarks', asyncHandler(async (req, res) => {
   );
 
   return successResponse(res, {
-    bookmarks:  rows,
+    bookmarks: rows.map(p => require('../services/membership').maskPrediction(p, req.user)),
     pagination: paginate(parseInt(total), page, limit),
   });
 }));

@@ -99,7 +99,7 @@ async function loadUsers(page) {
       <td style="font-size:0.82rem;">${u.country||'â€”'}</td>
       <td style="font-size:0.78rem;color:var(--muted);">${Admin.fmtDate(u.created_at)}</td>
       <td>${u.is_banned?'<span class="badge badge-lost">BANNED</span>':'<span class="badge badge-won">Active</span>'}</td>
-      <td><button onclick="editUser(${u.id},'${u.name}','${u.role}',${u.is_banned})" class="btn btn-outline btn-sm" style="padding:4px 8px;"><span class="material-icons-round" style="font-size:0.9rem;">edit</span></button></td>
+      <td><button onclick="editUser(${u.id},'${u.name}','${u.role}',${u.is_banned},'${u.membership_tier || 'free'}')" class="btn btn-outline btn-sm" style="padding:4px 8px;"><span class="material-icons-round" style="font-size:0.9rem;">edit</span></button></td>
     </tr>`).join('');
   const pages = Math.ceil(d.total/20);
   if (pages>1) {
@@ -110,11 +110,12 @@ async function loadUsers(page) {
   }
 }
 
-function editUser(id,name,role,banned) {
+function editUser(id,name,role,banned,tier) {
   document.getElementById('u-edit-id').value=id;
   document.getElementById('u-edit-name').textContent=name;
   document.getElementById('u-role').value=role;
-  document.getElementById('u-plan').value='standard';
+  document.getElementById('u-plan').value=tier === 'deluxe' ? 'deluxe' : 'standard';
+  document.getElementById('u-plan').dataset.original = tier || 'free';
   document.getElementById('u-duration').value='monthly';
   document.getElementById('u-banned').checked=!!banned;
   Admin.showModal('user-modal');
@@ -149,6 +150,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('save-user-btn').addEventListener('click', async () => {
     const id   = document.getElementById('u-edit-id').value;
     const body = { role: document.getElementById('u-role').value, is_banned: document.getElementById('u-banned').checked };
+    const planSelect = document.getElementById('u-plan');
+    if (body.role === 'vip' && planSelect.value !== planSelect.dataset.original) {
+      const grant = await Admin.api('POST', '/api/admin/users/' + id + '/grant-vip', { plan: planSelect.value, duration: document.getElementById('u-duration').value });
+      if (!grant.success) { Admin.toast(grant.message || 'Unable to activate plan.', 'error'); return; }
+    }
     const json = await Admin.api('PUT','/api/admin/users/'+id,body);
     if (json.success) { Admin.toast('User updated'); Admin.hideModal('user-modal'); loadUsers(userPage); }
     else Admin.toast(json.message||'Failed','error');

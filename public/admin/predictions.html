@@ -670,6 +670,7 @@ async function editPred(id) {
   const json = await Admin.api('GET', '/api/admin/predictions/'+id);
   const p = json.data;
   if (!p) return;
+  document.getElementById('m-access-tier').value = p.access_tier === 'standard' || p.access_tier === 'deluxe' ? p.access_tier : (p.visibility === 'vip' && p.category !== 'Banker of the Day' ? 'standard' : 'free');
   editingId = id;
   setModalMode(true);
   document.getElementById('modal-title').textContent = 'Edit Prediction';
@@ -1109,7 +1110,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cat = document.getElementById('cat-sel-' + id).value;
     const json = await Admin.api('PUT', '/api/admin/predictions/' + id, {
       category: cat,
-      access_tier: document.getElementById('m-access-tier').value,
       visibility: cat === 'Banker of the Day' ? 'vip' : 'free',
     });
     if (json.success) {
@@ -1329,6 +1329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       odds_data,
       confidence_score: parseInt(document.getElementById('m-conf').value) || null,
       visibility,
+      access_tier: document.getElementById('m-access-tier').value,
       category,
       result:    document.getElementById('m-result').value,
       analysis:  document.getElementById('m-analysis').value.trim(),

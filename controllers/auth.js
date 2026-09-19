@@ -334,11 +334,12 @@ async function me(req, res) {
 
     // Get active subscription if VIP
     let subscription = null;
-    if (rows[0].role === 'vip') {
+    if (req.user.role === 'vip') {
       const [subs] = await db.query(
         `SELECT plan, status, expires_at, trial_ends_at
-         FROM subscriptions WHERE user_id = ? AND status IN ('active','trialing')
-         ORDER BY created_at DESC LIMIT 1`,
+         FROM subscriptions WHERE user_id = ? AND status IN ('active','trialing','cancelled') AND expires_at > NOW()
+         AND (status <> 'trialing' OR trial_ends_at IS NULL OR trial_ends_at > NOW())
+         ORDER BY CASE WHEN plan='deluxe' THEN 0 WHEN plan='standard' THEN 1 ELSE 2 END, expires_at DESC LIMIT 1`,
         [rows[0].id]
       );
       subscription = subs[0] || null;

@@ -305,6 +305,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
 
 // ── GET /api/predictions/:slug — Single prediction detail
 router.get('/:slug', optionalAuth, asyncHandler(async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
   const [rows] = await db.query(
     `SELECT
        p.*, l.name as league_name, l.country as league_country,

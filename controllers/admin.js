@@ -204,9 +204,10 @@ async function updatePrediction(req, res) {
     // Category → visibility: Banker of the Day = vip, rest = free
     if (category !== undefined) {
       updates.push('category=?'); args.push(category||null);
-      const derivedVis = category === 'Banker of the Day' ? 'vip' : 'free';
-      updates.push('visibility=?'); args.push(derivedVis);
-    } else if (visibility) {
+    }
+    if (access_tier !== undefined) {
+      updates.push('visibility=?'); args.push(access_tier === 'free' ? 'free' : 'vip');
+    } else if (visibility && category === undefined) {
       updates.push('visibility=?'); args.push(visibility);
     }
     if (result)           { updates.push('result=?');           args.push(result); }
@@ -354,7 +355,7 @@ async function getUsers(req, res) {
     const { attachMembership } = require('../services/membership');
     const users = await Promise.all(rows.map(async user => {
       const membership = await attachMembership(db, { ...user });
-      return { ...user, membership_tier: membership.membership_tier || 'free' };
+      return { ...membership, membership_tier: membership.membership_tier || 'free' };
     }));
     res.json({ success:true, data:{ users, total:parseInt(total), page:parseInt(page) }});
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
@@ -364,6 +365,9 @@ async function getUsers(req, res) {
 async function updateUser(req, res) {
   try {
     const { role, is_banned } = req.body;
+    if (role === 'user') {
+      await db.query("UPDATE subscriptions SET status='expired', updated_at=NOW() WHERE user_id=? AND status IN ('active','trialing','cancelled')", [req.params.id]);
+    }
     const updates=[]; const args=[];
     if (role)           { updates.push('role=?');      args.push(role); }
     if (is_banned!==undefined){ updates.push('is_banned=?'); args.push(is_banned?1:0); }
