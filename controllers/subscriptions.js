@@ -92,9 +92,10 @@ async function stripeCreateCheckout(req, res) {
 }
 
 // ── POST /api/subscriptions/paystack/initialize
+// ── POST /api/subscriptions/paystack/initialize
 async function paystackInitialize(req, res) {
   try {
-    const { plan, duration = 'monthly' } = req.body;
+    const { plan, duration = 'monthly', currency = 'NGN' } = req.body;
     if (!PLANS[plan]) {
       return res.status(400).json({ success: false, message: 'Invalid plan.' });
     }
@@ -105,13 +106,28 @@ async function paystackInitialize(req, res) {
     }
 
     const billingPeriod = duration === 'biweekly' ? 'biweekly' : 'monthly';
-    const planPricing = require('../services/planPricing');
-    const priceQuote = await planPricing.quote('NGN', billingPeriod);
-    const amountNgn = priceQuote.plans[plan].amount;
-    const amountKobo = Math.round(amountNgn * 100);
+    const userCountry   = String(req.user.country || '').trim().toUpperCase();
+    const isNigerian    = userCountry === 'NG' || userCountry === 'NIGERIA';
+
+    let chargeCurrency = 'NGN';
+    let amountMinor = 0;
+
+    if (isNigerian) {
+      // Nigerian registered accounts pay in NGN
+      const factor    = billingPeriod === 'biweekly' ? 0.5 : 1;
+      const amountNgn = NGN_AMOUNTS[plan] * factor;
+      chargeCurrency  = 'NGN';
+      amountMinor     = Math.round(amountNgn * 100); // kobo
+    } else {
+      // Non-Nigerian accounts pay USD base ($30/$15 standard, $45/$22.50 deluxe)
+      const factor   = billingPeriod === 'biweekly' ? 0.5 : 1;
+      const baseUsd  = usdAmounts[plan] * factor;
+      chargeCurrency = 'USD';
+      amountMinor    = Math.round(baseUsd * 100); // cents
+    }
 
     const reference = `RP-${req.user.id}-${plan}-${billingPeriod}-${Date.now()}`;
-    const baseUrl = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '');
+    const baseUrl   = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '');
 
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method:  'POST',
@@ -121,14 +137,15 @@ async function paystackInitialize(req, res) {
       },
       body: JSON.stringify({
         email:        req.user.email,
-        amount:       amountKobo,
+        amount:       amountMinor,
         reference,
-        currency:     'NGN',
+        currency:     chargeCurrency,
         callback_url: `${baseUrl}/dashboard.html?vip=success&plan=${plan}&provider=paystack`,
         metadata: {
           user_id:       req.user.id,
           plan,
           duration:      billingPeriod,
+          currency:      chargeCurrency,
           cancel_action: `${baseUrl}/pricing.html`,
         },
       }),
@@ -136,16 +153,24 @@ async function paystackInitialize(req, res) {
 
     const data = await response.json();
     if (!data.status) {
-      return res.status(502).json({ success: false, message: data.message || 'Paystack error' });
+      return res.status(502).json({ success: false, message: data.message || 'Paystack initialization failed.' });
     }
 
-    return res.json({ success: true, data: { url: data.data.authorization_url, reference } });
+    return res.json({
+      success: true,
+      data: {
+        url:          data.data.authorization_url,
+        access_code:  data.data.access_code,
+        reference:    data.data.reference,
+        public_key:   process.env.PAYSTACK_PUBLIC_KEY || '',
+      },
+    });
   } catch (e) {
     return res.status(500).json({ success: false, message: e.message });
   }
 }
 
-// ── POST /api/subscriptions/paystack/verify  (called after redirect)
+// ── POST /api/subscriptions/paystack/verify  (called after redirect or inline popup)
 async function paystackVerify(req, res) {
   try {
     const { reference } = req.body;
@@ -178,11 +203,11 @@ async function paystackVerify(req, res) {
     await _activateSubscription(userId, plan, {
       paystack_reference: reference,
       amount:   data.data.amount / 100,
-      currency: 'NGN',
+      currency: data.data.currency || 'USD',
       days,
     });
 
-    return res.json({ success: true, message: 'VIP activated successfully!' });
+    return res.json({ success: true, message: 'Payment verified successfully and VIP activated!' });
   } catch (e) {
     return res.status(500).json({ success: false, message: e.message });
   }

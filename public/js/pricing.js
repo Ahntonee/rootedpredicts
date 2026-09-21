@@ -284,18 +284,60 @@
         var durationSelect = document.getElementById(btn.dataset.durationSelect || 'pricing-duration');
         var durationVal = durationSelect ? durationSelect.value : 'monthly';
 
-        // ── Paystack Checkout ────────────────────────────────────
+        // ── Paystack Checkout (Inline Popup Modal) ───────────────
         if (selectedMethod === 'paystack') {
           try {
             setButtonLoading(btn, true);
+            var selectedCurrency = (document.getElementById('pricing-currency') || {}).value || 'NGN';
             var initRes = await apiFetch('POST', '/api/subscriptions/paystack/initialize', {
-              plan: btn.dataset.plan,
-              duration: durationVal
+              plan:     btn.dataset.plan,
+              duration: durationVal,
+              currency: selectedCurrency,
             });
-            if (!initRes.success || !initRes.data || !initRes.data.url) {
+
+            if (!initRes.success || !initRes.data) {
               throw new Error(initRes.message || 'Unable to start Paystack checkout.');
             }
-            window.location.href = initRes.data.url;
+
+            var payData = initRes.data;
+
+            // If Paystack Inline SDK is loaded, open popup modal directly on-site
+            if (window.PaystackPop && (payData.access_code || payData.public_key)) {
+              var popupConfig = {
+                key:         payData.public_key,
+                access_code: payData.access_code,
+                onClose: function() {
+                  setButtonLoading(btn, false);
+                  applyMembership(user);
+                  showToast('Payment window closed.', 'info');
+                },
+                callback: async function(response) {
+                  try {
+                    setButtonLoading(btn, true);
+                    var vRes = await apiFetch('POST', '/api/subscriptions/paystack/verify', {
+                      reference: response.reference || payData.reference
+                    });
+                    if (vRes.success) {
+                      showToast('Payment verified! VIP active.', 'success');
+                      setTimeout(function() { window.location.href = '/dashboard.html?vip=success'; }, 1200);
+                    } else {
+                      showToast(vRes.message || 'Verification pending.', 'error');
+                      setButtonLoading(btn, false);
+                    }
+                  } catch (err) {
+                    showToast('Verification error. Please check dashboard.', 'error');
+                    setButtonLoading(btn, false);
+                  }
+                },
+              };
+              var handler = PaystackPop.setup(popupConfig);
+              handler.openIframe();
+            } else if (payData.url) {
+              // Fallback redirect if inline SDK fails to load
+              window.location.href = payData.url;
+            } else {
+              throw new Error('Paystack checkout initialization failed.');
+            }
           } catch (err) {
             showToast(err.message, 'error');
             setButtonLoading(btn, false);
