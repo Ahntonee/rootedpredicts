@@ -306,6 +306,7 @@
               var popupConfig = {
                 key:         payData.public_key,
                 access_code: payData.access_code,
+                email:       (user && user.email) || payData.email,
                 onClose: function() {
                   setButtonLoading(btn, false);
                   applyMembership(user);
