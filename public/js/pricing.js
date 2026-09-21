@@ -136,7 +136,6 @@
     submitBtn.textContent = 'Submitting...';
     statusEl.textContent  = '';
 
-    // Convert file to base64
     var reader = new FileReader();
     reader.onload = async function(e) {
       try {
@@ -243,7 +242,6 @@
           methodSelect.value = currentVal;
         }
         updatePaymentMethods();
-        // Refresh if modal is already open
         if (document.getElementById('bank-modal') &&
             document.getElementById('bank-modal').style.display === 'flex' &&
             _selectedPlan) {
@@ -302,34 +300,43 @@
             var payData = initRes.data;
 
             // If Paystack Inline SDK is loaded, open popup modal directly on-site
-            if (window.PaystackPop && (payData.access_code || payData.public_key)) {
-              var popupConfig = {
-                key:         payData.public_key,
-                access_code: payData.access_code,
-                onClose: function() {
-                  setButtonLoading(btn, false);
-                  applyMembership(user);
-                  showToast('Payment window closed.', 'info');
-                },
-                callback: async function(response) {
-                  try {
-                    setButtonLoading(btn, true);
-                    var vRes = await apiFetch('POST', '/api/subscriptions/paystack/verify', {
-                      reference: response.reference || payData.reference
-                    });
+            if (window.PaystackPop && payData.access_code) {
+              var handleSuccess = function(response) {
+                setButtonLoading(btn, true);
+                var ref = (response && (response.reference || response.trxref)) || payData.reference;
+                apiFetch('POST', '/api/subscriptions/paystack/verify', { reference: ref })
+                  .then(function(vRes) {
                     if (vRes.success) {
                       showToast('Payment verified! VIP active.', 'success');
-                      setTimeout(function() { window.location.href = '/dashboard.html?vip=success'; }, 1200);
+                      setTimeout(function() { window.location.href = '/dashboard.html?vip=success'; }, 1000);
                     } else {
                       showToast(vRes.message || 'Verification pending.', 'error');
                       setButtonLoading(btn, false);
                     }
-                  } catch (err) {
+                  })
+                  .catch(function() {
                     showToast('Verification error. Please check dashboard.', 'error');
                     setButtonLoading(btn, false);
-                  }
-                },
+                  });
               };
+
+              var handleClose = function() {
+                setButtonLoading(btn, false);
+                applyMembership(user);
+              };
+
+              var popupConfig = {
+                access_code: payData.access_code,
+                callback:    handleSuccess,
+                onSuccess:   handleSuccess,
+                onClose:     handleClose,
+                onCancel:    handleClose
+              };
+
+              if (payData.public_key && typeof payData.public_key === 'string' && payData.public_key.trim().length > 5) {
+                popupConfig.key = payData.public_key.trim();
+              }
+
               var handler = PaystackPop.setup(popupConfig);
               handler.openIframe();
             } else if (payData.url) {
