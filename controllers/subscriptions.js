@@ -57,7 +57,6 @@ async function stripeCreateCheckout(req, res) {
     }
 
     const planConfig = PLANS[plan];
-    // Ensure Stripe customer exists
     let customerId = req.user.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -79,7 +78,6 @@ async function stripeCreateCheckout(req, res) {
       subscription_data: { metadata: { user_id: String(req.user.id), plan } },
     };
 
-    // Add 3-day trial for monthly plan
     if (plan === 'monthly' && planConfig.trial_days > 0) {
       sessionParams.subscription_data.trial_period_days = planConfig.trial_days;
     }
@@ -92,10 +90,9 @@ async function stripeCreateCheckout(req, res) {
 }
 
 // ── POST /api/subscriptions/paystack/initialize
-// ── POST /api/subscriptions/paystack/initialize
 async function paystackInitialize(req, res) {
   try {
-    const { plan, duration = 'monthly', currency = 'NGN' } = req.body;
+    const { plan, duration = 'monthly' } = req.body;
     if (!PLANS[plan]) {
       return res.status(400).json({ success: false, message: 'Invalid plan.' });
     }
@@ -106,25 +103,9 @@ async function paystackInitialize(req, res) {
     }
 
     const billingPeriod = duration === 'biweekly' ? 'biweekly' : 'monthly';
-    const userCountry   = String(req.user.country || '').trim().toUpperCase();
-    const isNigerian    = userCountry === 'NG' || userCountry === 'NIGERIA';
-
-    let chargeCurrency = 'NGN';
-    let amountMinor = 0;
-
-    if (isNigerian) {
-      // Nigerian registered accounts pay in NGN
-      const factor    = billingPeriod === 'biweekly' ? 0.5 : 1;
-      const amountNgn = NGN_AMOUNTS[plan] * factor;
-      chargeCurrency  = 'NGN';
-      amountMinor     = Math.round(amountNgn * 100); // kobo
-    } else {
-      // Non-Nigerian accounts pay USD base ($30/$15 standard, $45/$22.50 deluxe)
-      const factor   = billingPeriod === 'biweekly' ? 0.5 : 1;
-      const baseUsd  = usdAmounts[plan] * factor;
-      chargeCurrency = 'USD';
-      amountMinor    = Math.round(baseUsd * 100); // cents
-    }
+    const factor        = billingPeriod === 'biweekly' ? 0.5 : 1;
+    const amountNgn     = NGN_AMOUNTS[plan] * factor;
+    const amountKobo    = Math.round(amountNgn * 100);
 
     const reference = `RP-${req.user.id}-${plan}-${billingPeriod}-${Date.now()}`;
     const baseUrl   = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '');
@@ -137,15 +118,14 @@ async function paystackInitialize(req, res) {
       },
       body: JSON.stringify({
         email:        req.user.email,
-        amount:       amountMinor,
+        amount:       amountKobo,
         reference,
-        currency:     chargeCurrency,
+        currency:     'NGN',
         callback_url: `${baseUrl}/dashboard.html?vip=success&plan=${plan}&provider=paystack`,
         metadata: {
           user_id:       req.user.id,
           plan,
           duration:      billingPeriod,
-          currency:      chargeCurrency,
           cancel_action: `${baseUrl}/pricing.html`,
         },
       }),
@@ -159,10 +139,10 @@ async function paystackInitialize(req, res) {
     return res.json({
       success: true,
       data: {
-        url:          data.data.authorization_url,
-        access_code:  data.data.access_code,
-        reference:    data.data.reference,
-        public_key:   process.env.PAYSTACK_PUBLIC_KEY || '',
+        url:         data.data.authorization_url,
+        access_code: data.data.access_code,
+        reference:   data.data.reference,
+        public_key:  process.env.PAYSTACK_PUBLIC_KEY || '',
       },
     });
   } catch (e) {
@@ -203,7 +183,7 @@ async function paystackVerify(req, res) {
     await _activateSubscription(userId, plan, {
       paystack_reference: reference,
       amount:   data.data.amount / 100,
-      currency: data.data.currency || 'USD',
+      currency: 'NGN',
       days,
     });
 
@@ -224,7 +204,6 @@ async function cancelSubscription(req, res) {
 
     const sub = rows[0];
 
-    // Cancel on Stripe if applicable
     if (stripe && sub.stripe_subscription_id) {
       await stripe.subscriptions.update(sub.stripe_subscription_id, { cancel_at_period_end: true });
     }
@@ -234,7 +213,6 @@ async function cancelSubscription(req, res) {
       [sub.id]
     );
 
-    // Keep VIP role until expires_at, demote only if already past
     if (!sub.expires_at || new Date(sub.expires_at) < new Date()) {
       await db.query(`UPDATE users SET role='user', updated_at=NOW() WHERE id=?`, [req.user.id]);
     }
@@ -279,7 +257,6 @@ async function _activateSubscription(userId, plan, opts = {}) {
   const now        = new Date();
   const expiresAt  = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
-  // Expire any existing active subs for this user
   await db.query(
     `UPDATE subscriptions SET status='expired', updated_at=NOW()
      WHERE user_id=? AND status IN ('active','trialing','cancelled')`,
@@ -442,7 +419,6 @@ async function manualSubmit(req, res) {
       return res.status(400).json({ success: false, message: 'Payment proof image is required.' });
     }
 
-    // Parse and validate data URL
     const match = imageData.match(/^data:([\w+/-]+);base64,(.+)$/s);
     if (!match) {
       return res.status(400).json({ success: false, message: 'Invalid image format. Upload a JPEG or PNG screenshot.' });
@@ -457,19 +433,17 @@ async function manualSubmit(req, res) {
       return res.status(400).json({ success: false, message: 'Image must be under 5 MB.' });
     }
 
-    // Write file to disk safely (UUID filename — no user input in path)
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
     const ext      = mime === 'image/jpeg' ? 'jpg' : mime.split('/')[1].replace(/\+.+/, '');
     const filename = `${randomUUID()}.${ext}`;
     fs.writeFileSync(path.join(UPLOADS_DIR, filename), buffer);
 
-    // Check for duplicate pending submission from same user
     const [existing] = await db.query(
       `SELECT id FROM payment_submissions WHERE user_id = ? AND status = 'pending' LIMIT 1`,
       [req.user.id]
     );
     if (existing.length) {
-      fs.unlinkSync(path.join(UPLOADS_DIR, filename)); // clean up the file we just saved
+      fs.unlinkSync(path.join(UPLOADS_DIR, filename));
       return res.status(409).json({
         success: false,
         message: 'You already have a pending payment submission. Please wait for admin review.',
@@ -481,7 +455,6 @@ async function manualSubmit(req, res) {
       [req.user.id, plan, payment.ngn, filename, mime, payment.method, payment.currency, payment.amount, JSON.stringify({ ...payment.destination, duration: payment.duration || 'monthly' }), reference.trim()]
     );
 
-    // Email admin — fire-and-forget so slow SMTP doesn't block the response
     const adminEmail  = process.env.ADMIN_EMAIL || 'rootedpredict@gmail.com';
     const siteUrl     = process.env.SITE_URL    || 'https://www.rootedpredict.com';
     const paymentSummary = planLabel(plan) + ' / ' + payment.method + ' / ' + payment.currency + ' ' + payment.amount;
@@ -594,7 +567,6 @@ async function adminApproveSubmission(req, res) {
       [req.user.id, req.body.notes || null, sub.id]
     );
 
-    // Use the same email provider as account verification and password resets.
     const siteUrl = process.env.SITE_URL || 'https://www.rootedpredict.com';
     const planLabels = Object.fromEntries(['standard','deluxe','monthly','quarterly','annual'].map(plan => [plan, planLabel(plan)]));
     const emailResult = await sendEmail({
