@@ -75,7 +75,6 @@
 <main>
   <div class="container" style="padding-top:40px;padding-bottom:60px;">
 
-
     <div style="max-width:900px;margin:0 auto;text-align:center;">
       <label for="pricing-currency">Show prices in</label>
       <select id="pricing-currency" class="form-control" style="display:inline-block;width:auto;max-width:100%;margin:8px;"><option value="NGN">NGN - Nigerian naira</option></select>
@@ -110,9 +109,10 @@
     <div style="text-align:center;margin:16px 0;">
       <label for="payment-method">Payment method</label>
       <select id="payment-method" class="form-control" style="display:inline-block;width:auto;max-width:100%;margin:8px;">
-        <option value="moniepoint">Bank transfer (NGN)</option>
-        <option value="momo" disabled>MoMo ? unavailable</option>
-        <option value="usdt" disabled>USDT ? unavailable</option>
+        <option value="paystack">Paystack (Card, Mobile Money, Bank Transfer)</option>
+        <option value="moniepoint">Manual Bank transfer (NGN)</option>
+        <option value="momo" disabled>MoMo — unavailable</option>
+        <option value="usdt" disabled>USDT — unavailable</option>
       </select>
     </div>
     <!-- Pricing cards -->

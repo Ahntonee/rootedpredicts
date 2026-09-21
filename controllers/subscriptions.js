@@ -7,7 +7,7 @@ const fs     = require('fs');
 const path   = require('path');
 const { randomUUID } = require('crypto');
 const { sendMail }   = require('../services/mailer');
-const { sendEmail } = require('../utils/email');
+const { sendEmail }  = require('../utils/email');
 const escapeEmailHtml = value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'payment-proofs');
@@ -25,11 +25,8 @@ const PLANS = {
   standard: { amount: NGN_AMOUNTS.standard, days: 30, trial_days: 0 },
   deluxe: { amount: NGN_AMOUNTS.deluxe, days: 30, trial_days: 0 },
 };
-const LEGACY_PLANS = { monthly: {amount:15000,days:30}, quarterly:{amount:45000,days:90}, annual:{amount:150000,days:365} };
-const planLabel = plan => MEMBERSHIP_PLANS[plan]?.label || ({monthly:'Legacy Monthly',quarterly:'Legacy Quarterly',annual:'Legacy Annual'}[plan] || plan);
-
-// Paystack charges the canonical naira prices in kobo.
-const PAYSTACK_AMOUNTS = Object.fromEntries(Object.entries(NGN_AMOUNTS).map(([plan, amount]) => [plan, amount * 100]));
+const LEGACY_PLANS = { monthly: { amount: 15000, days: 30 }, quarterly: { amount: 45000, days: 90 }, annual: { amount: 150000, days: 365 } };
+const planLabel = plan => MEMBERSHIP_PLANS[plan]?.label || ({ monthly: 'Legacy Monthly', quarterly: 'Legacy Quarterly', annual: 'Legacy Annual' }[plan] || plan);
 
 // ── GET /api/subscriptions/status
 async function getStatus(req, res) {
@@ -97,7 +94,7 @@ async function stripeCreateCheckout(req, res) {
 // ── POST /api/subscriptions/paystack/initialize
 async function paystackInitialize(req, res) {
   try {
-    const { plan } = req.body;
+    const { plan, duration = 'monthly' } = req.body;
     if (!PLANS[plan]) {
       return res.status(400).json({ success: false, message: 'Invalid plan.' });
     }
@@ -107,8 +104,14 @@ async function paystackInitialize(req, res) {
       return res.status(503).json({ success: false, message: 'Paystack is not configured on this server yet.' });
     }
 
-    const reference = `RP-${req.user.id}-${plan}-${Date.now()}`;
-    const amount    = PAYSTACK_AMOUNTS[plan];
+    const billingPeriod = duration === 'biweekly' ? 'biweekly' : 'monthly';
+    const planPricing = require('../services/planPricing');
+    const priceQuote = await planPricing.quote('NGN', billingPeriod);
+    const amountNgn = priceQuote.plans[plan].amount;
+    const amountKobo = Math.round(amountNgn * 100);
+
+    const reference = `RP-${req.user.id}-${plan}-${billingPeriod}-${Date.now()}`;
+    const baseUrl = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '');
 
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method:  'POST',
@@ -118,14 +121,15 @@ async function paystackInitialize(req, res) {
       },
       body: JSON.stringify({
         email:        req.user.email,
-        amount,
+        amount:       amountKobo,
         reference,
         currency:     'NGN',
-        callback_url: `${process.env.SITE_URL}/dashboard.html?vip=success&plan=${plan}&provider=paystack`,
+        callback_url: `${baseUrl}/dashboard.html?vip=success&plan=${plan}&provider=paystack`,
         metadata: {
-          user_id:  req.user.id,
+          user_id:       req.user.id,
           plan,
-          cancel_action: `${process.env.SITE_URL}/pricing.html`,
+          duration:      billingPeriod,
+          cancel_action: `${baseUrl}/pricing.html`,
         },
       }),
     });
@@ -148,24 +152,34 @@ async function paystackVerify(req, res) {
     if (!reference) return res.status(400).json({ success: false, message: 'Reference required' });
 
     const paystackKey = process.env.PAYSTACK_SECRET_KEY;
-    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+    if (!paystackKey || paystackKey.includes('your_')) {
+      return res.status(503).json({ success: false, message: 'Paystack is not configured on this server yet.' });
+    }
+
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
       headers: { Authorization: `Bearer ${paystackKey}` },
     });
     const data = await response.json();
 
     if (!data.status || data.data.status !== 'success') {
-      return res.status(402).json({ success: false, message: 'Payment not confirmed.' });
+      return res.status(402).json({ success: false, message: data.message || 'Payment not confirmed.' });
     }
 
-    // Extract plan from reference: RP-{userId}-{plan}-{ts}
     const parts = reference.split('-');
-    const plan  = parts[2];
+    const userId = parseInt(parts[1]) || (data.data.metadata && parseInt(data.data.metadata.user_id)) || req.user.id;
+    const plan  = parts[2] || (data.data.metadata && data.data.metadata.plan);
+    const hasDuration = parts.length >= 5 && ['monthly', 'biweekly'].includes(parts[3]);
+    const duration = hasDuration ? parts[3] : (data.data.metadata && data.data.metadata.duration) || 'monthly';
+
     if (!PLANS[plan]) return res.status(400).json({ success: false, message: 'Unknown plan in reference.' });
 
-    await _activateSubscription(req.user.id, plan, {
+    const days = duration === 'biweekly' ? 14 : 30;
+
+    await _activateSubscription(userId, plan, {
       paystack_reference: reference,
       amount:   data.data.amount / 100,
       currency: 'NGN',
+      days,
     });
 
     return res.json({ success: true, message: 'VIP activated successfully!' });
@@ -335,6 +349,9 @@ async function stripeWebhook(req, res) {
 async function paystackWebhook(req, res) {
   try {
     const paystackKey = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackKey || paystackKey.includes('your_')) {
+      return res.status(400).send('Paystack key not configured');
+    }
     const hash = require('crypto')
       .createHmac('sha512', paystackKey)
       .update(JSON.stringify(req.body))
@@ -348,13 +365,18 @@ async function paystackWebhook(req, res) {
     if (event.event === 'charge.success') {
       const reference = event.data.reference;
       const parts     = reference.split('-');
-      const userId    = parseInt(parts[1]);
-      const plan      = parts[2];
+      const userId    = parseInt(parts[1]) || (event.data.metadata && parseInt(event.data.metadata.user_id));
+      const plan      = parts[2] || (event.data.metadata && event.data.metadata.plan);
+      const hasDuration = parts.length >= 5 && ['monthly', 'biweekly'].includes(parts[3]);
+      const duration = hasDuration ? parts[3] : (event.data.metadata && event.data.metadata.duration) || 'monthly';
+      const days = duration === 'biweekly' ? 14 : 30;
+
       if (userId && PLANS[plan]) {
         await _activateSubscription(userId, plan, {
           paystack_reference: reference,
           amount:   event.data.amount / 100,
           currency: 'NGN',
+          days,
         });
       }
     }
@@ -428,8 +450,6 @@ async function manualSubmit(req, res) {
         message: 'You already have a pending payment submission. Please wait for admin review.',
       });
     }
-
-    const ngnAmounts = NGN_AMOUNTS;
 
     await db.query(
       `INSERT INTO payment_submissions (user_id, plan, amount_ngn, image_path, image_mime, payment_method, payment_currency, payment_amount, payment_details, payment_reference) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

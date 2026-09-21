@@ -1,5 +1,5 @@
 // public/js/pricing.js
-// Rooted Predictions — Pricing page: bank-transfer payment flow
+// Rooted Predictions — Pricing page: payment flow (Paystack + Bank Transfer)
 (function () {
   'use strict';
 
@@ -51,13 +51,13 @@
     document.getElementById('bm-title').textContent = destination.label;
     document.getElementById('bm-provider-label').textContent = _paymentQuote.method === 'usdt' ? 'Network' : 'Provider';
     document.getElementById('bm-number-label').textContent = _paymentQuote.method === 'usdt' ? 'Wallet address' : 'Account number';
-    document.getElementById('bm-bank-name').textContent = destination.network || [destination.provider, destination.country].filter(Boolean).join(' ? ');
+    document.getElementById('bm-bank-name').textContent = destination.network || [destination.provider, destination.country].filter(Boolean).join(' - ');
     document.getElementById('bm-instructions').textContent = _paymentQuote.method === 'usdt' ? 'Send USDT only on the ' + destination.network + ' network to this address. Upload your transfer receipt for verification.' : 'Pay the exact amount in ' + _paymentQuote.currency + ' to the account shown, then upload your receipt for verification.';
     if (destination.international) {
       document.getElementById('bm-title').textContent = 'International MoMo transfer';
       document.getElementById('bm-instructions').textContent = 'Send a transfer to the MoMo account shown above. The receiving account must receive ' + _paymentQuote.currency + ' ' + Number(_paymentQuote.amount).toLocaleString('en-NG') + '. Check that your payment service supports transfers to this Nigerian MoMo account before paying, then upload your receipt. You can also choose USDT on the BEP-20 network.';
     }
-    document.getElementById('bm-acct-name').textContent = _paymentQuote.destination.account_name || '?';
+    document.getElementById('bm-acct-name').textContent = _paymentQuote.destination.account_name || '—';
     document.getElementById('bm-acct-number').textContent = _paymentQuote.destination.account_number;
     document.getElementById('bm-sort-row').style.display = 'none';
 
@@ -141,9 +141,9 @@
     reader.onload = async function(e) {
       try {
         var json = await apiFetch('POST', '/api/subscriptions/manual/submit', {
-          plan:      _selectedPlan,
+          plan:       _selectedPlan,
           quoteToken: _paymentQuote && _paymentQuote.token,
-          imageData: e.target.result,
+          imageData:  e.target.result,
         });
 
         if (json.success) {
@@ -194,7 +194,7 @@
     Array.from(select.options).forEach(function(option) {
       if (option.value === 'moniepoint') { option.hidden = !!foreign; option.disabled = !!foreign; }
     });
-    if (foreign && select.value === 'moniepoint') select.value = 'momo';
+    if (foreign && select.value === 'moniepoint') select.value = 'paystack';
   }
 
   function applyMembership(user) {
@@ -221,20 +221,26 @@
       document.head.appendChild(s);
     }
 
-    // Load bank details once in background
+    // Load bank details once in background & preserve Paystack in dropdown
     apiFetch('GET', '/api/subscriptions/bank-details').then(function(json) {
       if (json.success) {
         _bankDetails = json.data;
         var methodSelect = document.getElementById('payment-method');
         if (methodSelect && json.data.methods) {
+          var currentVal = methodSelect.value || 'paystack';
           methodSelect.textContent = '';
+          var paystackOpt = document.createElement('option');
+          paystackOpt.value = 'paystack';
+          paystackOpt.textContent = 'Paystack (Card, Mobile Money, Bank Transfer)';
+          methodSelect.appendChild(paystackOpt);
           Object.entries(json.data.methods).forEach(function(entry) {
             var option = document.createElement('option');
             option.value = entry[0];
             option.disabled = !entry[1].enabled;
-            option.textContent = (entry[0] === 'momo' ? 'MoMo / International transfer' : entry[1].label) + (entry[1].enabled ? ' (' + entry[1].currency + ')' : ' ? unavailable');
+            option.textContent = (entry[0] === 'momo' ? 'MoMo / International transfer' : entry[1].label) + (entry[1].enabled ? ' (' + entry[1].currency + ')' : ' — unavailable');
             methodSelect.appendChild(option);
           });
+          methodSelect.value = currentVal;
         }
         updatePaymentMethods();
         // Refresh if modal is already open
@@ -254,7 +260,7 @@
       applyMembership(user);
     });
 
-    // Wire up all pay buttons to show bank modal
+    // Wire up all pay buttons
     document.querySelectorAll('.pay-btn').forEach(function(btn) {
       btn.addEventListener('click', async function() {
         if (btn.disabled) return;
@@ -273,10 +279,39 @@
 
         applyMembership(user);
         if (btn.disabled) return;
+
+        var selectedMethod = document.getElementById('payment-method').value;
+        var durationSelect = document.getElementById(btn.dataset.durationSelect || 'pricing-duration');
+        var durationVal = durationSelect ? durationSelect.value : 'monthly';
+
+        // ── Paystack Checkout ────────────────────────────────────
+        if (selectedMethod === 'paystack') {
+          try {
+            setButtonLoading(btn, true);
+            var initRes = await apiFetch('POST', '/api/subscriptions/paystack/initialize', {
+              plan: btn.dataset.plan,
+              duration: durationVal
+            });
+            if (!initRes.success || !initRes.data || !initRes.data.url) {
+              throw new Error(initRes.message || 'Unable to start Paystack checkout.');
+            }
+            window.location.href = initRes.data.url;
+          } catch (err) {
+            showToast(err.message, 'error');
+            setButtonLoading(btn, false);
+            applyMembership(user);
+          }
+          return;
+        }
+
+        // ── Manual Bank Transfer / USDT ──────────────────────────
         try {
           setButtonLoading(btn, true);
-          var durationSelect = document.getElementById(btn.dataset.durationSelect || 'pricing-duration');
-          var quote = await apiFetch('POST', '/api/subscriptions/manual/quote', { plan: btn.dataset.plan, method: document.getElementById('payment-method').value, duration: durationSelect.value });
+          var quote = await apiFetch('POST', '/api/subscriptions/manual/quote', {
+            plan: btn.dataset.plan,
+            method: selectedMethod,
+            duration: durationVal
+          });
           if (!quote.success) throw new Error(quote.message || 'Unable to load payment details.');
           _paymentQuote = quote.data;
           showBankModal(btn.dataset.plan);
