@@ -184,6 +184,8 @@ async function paystackInitialize(req, res) {
         reference:    data.data.reference,
         email:        userEmail,
         public_key:   process.env.PAYSTACK_PUBLIC_KEY || '',
+        amount:       amountMinor,
+        currency:     chargeCurrency,
       },
     });
   } catch (e) {

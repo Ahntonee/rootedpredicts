@@ -306,6 +306,9 @@
               var popupConfig = {
                 key:         payData.public_key,
                 access_code: payData.access_code,
+                amount:      payData.amount,
+                currency:    payData.currency,
+                ref:         payData.reference,
                 email:       (user && user.email) || payData.email,
                 onClose: function() {
                   setButtonLoading(btn, false);
