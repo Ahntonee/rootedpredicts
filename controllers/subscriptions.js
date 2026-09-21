@@ -17,7 +17,7 @@ const stripe = process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.i
   ? require('stripe')(process.env.STRIPE_SECRET_KEY)
   : null;
 
-const { amounts: NGN_AMOUNTS, usdAmounts, plans: MEMBERSHIP_PLANS } = require('../services/planPricing');
+const { amounts: NGN_AMOUNTS, usdAmounts, plans: MEMBERSHIP_PLANS, quote: quotePlan } = require('../services/planPricing');
 const manualPayments = require('../services/manualPayments');
 
 // Plan config
@@ -92,7 +92,7 @@ async function stripeCreateCheckout(req, res) {
 // ── POST /api/subscriptions/paystack/initialize
 async function paystackInitialize(req, res) {
   try {
-    const { plan, duration = 'monthly', currency = 'NGN' } = req.body;
+    const { plan, duration = 'monthly' } = req.body;
     if (!PLANS[plan]) {
       return res.status(400).json({ success: false, message: 'Invalid plan.' });
     }
@@ -110,17 +110,16 @@ async function paystackInitialize(req, res) {
     const billingPeriod = duration === 'biweekly' ? 'biweekly' : 'monthly';
     const userCountry   = String(req.user.country || '').trim().toUpperCase();
     const isNigerian    = userCountry === 'NG' || userCountry === 'NIGERIA';
+    const factor        = billingPeriod === 'biweekly' ? 0.5 : 1;
 
     let chargeCurrency = 'NGN';
-    let amountMinor = 0;
+    let amountMinor    = 0;
 
     if (isNigerian) {
-      const factor    = billingPeriod === 'biweekly' ? 0.5 : 1;
       const amountNgn = NGN_AMOUNTS[plan] * factor;
       chargeCurrency  = 'NGN';
       amountMinor     = Math.round(amountNgn * 100); // kobo
     } else {
-      const factor   = billingPeriod === 'biweekly' ? 0.5 : 1;
       const baseUsd  = usdAmounts[plan] * factor;
       chargeCurrency = 'USD';
       amountMinor    = Math.round(baseUsd * 100); // cents
@@ -129,30 +128,50 @@ async function paystackInitialize(req, res) {
     const reference = `RP-${req.user.id}-${plan}-${billingPeriod}-${Date.now()}`;
     const baseUrl   = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '');
 
-    const response = await fetch('https://api.paystack.co/transaction/initialize', {
-      method:  'POST',
-      headers: {
-        Authorization:  `Bearer ${paystackKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email:        userEmail,
-        amount:       amountMinor,
-        reference,
-        currency:     chargeCurrency,
-        callback_url: `${baseUrl}/dashboard.html?vip=success&plan=${plan}&provider=paystack`,
-        metadata: {
-          user_id:       req.user.id,
-          email:         userEmail,
-          plan,
-          duration:      billingPeriod,
-          currency:      chargeCurrency,
-          cancel_action: `${baseUrl}/pricing.html`,
+    async function callPaystackInit(curr, amt) {
+      const response = await fetch('https://api.paystack.co/transaction/initialize', {
+        method:  'POST',
+        headers: {
+          Authorization:  `Bearer ${paystackKey}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          email:        userEmail,
+          amount:       amt,
+          reference,
+          currency:     curr,
+          callback_url: `${baseUrl}/dashboard.html?vip=success&plan=${plan}&provider=paystack`,
+          metadata: {
+            user_id:       req.user.id,
+            email:         userEmail,
+            plan,
+            duration:      billingPeriod,
+            currency:      curr,
+            cancel_action: `${baseUrl}/pricing.html`,
+          },
+        }),
+      });
+      return await response.json();
+    }
 
-    const data = await response.json();
+    let data = await callPaystackInit(chargeCurrency, amountMinor);
+
+    // If USD charge failed because Paystack merchant account only supports NGN, fallback to NGN equivalent
+    if (!data.status && chargeCurrency === 'USD') {
+      const msg = String(data.message || '').toLowerCase();
+      if (msg.includes('currency') || msg.includes('merchant') || msg.includes('supported')) {
+        try {
+          const quoteRes = await quotePlan('NGN', billingPeriod, true);
+          const ngnPrice = quoteRes && quoteRes.plans[plan] ? quoteRes.plans[plan].amount : (NGN_AMOUNTS[plan] * factor);
+          chargeCurrency = 'NGN';
+          amountMinor    = Math.round(ngnPrice * 100);
+          data           = await callPaystackInit(chargeCurrency, amountMinor);
+        } catch (err) {
+          console.error('[PAYSTACK] Fallback quote/init failed:', err.message);
+        }
+      }
+    }
+
     if (!data.status) {
       return res.status(502).json({ success: false, message: data.message || 'Paystack initialization failed.' });
     }
@@ -205,7 +224,7 @@ async function paystackVerify(req, res) {
     await _activateSubscription(userId, plan, {
       paystack_reference: reference,
       amount:   data.data.amount / 100,
-      currency: data.data.currency || 'USD',
+      currency: data.data.currency || 'NGN',
       days,
     });
 
@@ -399,7 +418,7 @@ async function paystackWebhook(req, res) {
         await _activateSubscription(userId, plan, {
           paystack_reference: reference,
           amount:   event.data.amount / 100,
-          currency: event.data.currency || 'USD',
+          currency: event.data.currency || 'NGN',
           days,
         });
       }
