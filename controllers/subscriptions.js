@@ -103,12 +103,26 @@ async function paystackInitialize(req, res) {
     }
 
     const billingPeriod = duration === 'biweekly' ? 'biweekly' : 'monthly';
-    const factor        = billingPeriod === 'biweekly' ? 0.5 : 1;
-    const amountNgn     = NGN_AMOUNTS[plan] * factor;
-    const amountKobo    = Math.round(amountNgn * 100);
+    const userCountry   = String(req.user.country || '').trim().toUpperCase();
+    const isNigerian    = userCountry === 'NG' || userCountry === 'NIGERIA';
 
-    const reference = `RP-${req.user.id}-${plan}-${billingPeriod}-${Date.now()}`;
-    const baseUrl   = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '');
+    let amountNgn = 0;
+
+    if (isNigerian) {
+      // Local Nigerian pricing (15,000 NGN monthly / 7,500 NGN bi-weekly for Standard)
+      const factor = billingPeriod === 'biweekly' ? 0.5 : 1;
+      amountNgn = NGN_AMOUNTS[plan] * factor;
+    } else {
+      // Foreign accounts: base price is USD ($30 / $15 for Standard, $45 / $22.50 for Deluxe).
+      // We convert the USD rate into NGN using live rates for Paystack processing.
+      const planPricing = require('../services/planPricing');
+      const quote = await planPricing.quote('NGN', billingPeriod, true);
+      amountNgn = quote.plans[plan].amount;
+    }
+
+    const amountKobo = Math.round(amountNgn * 100);
+    const reference  = `RP-${req.user.id}-${plan}-${billingPeriod}-${Date.now()}`;
+    const baseUrl    = (process.env.SITE_URL || 'https://www.rootedpredict.com').replace(/\/$/, '');
 
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method:  'POST',
