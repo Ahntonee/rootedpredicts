@@ -220,7 +220,6 @@
       document.head.appendChild(s);
     }
 
-    // Load bank details once in background & preserve Paystack in dropdown
     apiFetch('GET', '/api/subscriptions/bank-details').then(function(json) {
       if (json.success) {
         _bankDetails = json.data;
@@ -250,7 +249,6 @@
       }
     }).catch(function() {});
 
-    // Check session once on load
     getSessionUser().then(function(user) {
       _sessionUser = user;
       updatePaymentMethods();
@@ -258,7 +256,6 @@
       applyMembership(user);
     });
 
-    // Wire up all pay buttons
     document.querySelectorAll('.pay-btn').forEach(function(btn) {
       btn.addEventListener('click', async function() {
         if (btn.disabled) return;
@@ -299,48 +296,39 @@
 
             var payData = initRes.data;
 
-            // If Paystack Inline SDK is loaded, open popup modal directly on-site
-            if (window.PaystackPop && payData.access_code) {
-              var handleSuccess = function(response) {
-                setButtonLoading(btn, true);
-                var ref = (response && (response.reference || response.trxref)) || payData.reference;
-                apiFetch('POST', '/api/subscriptions/paystack/verify', { reference: ref })
-                  .then(function(vRes) {
+            // Open inline popup modal with user's email explicitly attached
+            if (window.PaystackPop && (payData.access_code || payData.public_key)) {
+              var popupConfig = {
+                key:         payData.public_key,
+                access_code: payData.access_code,
+                email:       user.email || payData.email,
+                onClose: function() {
+                  setButtonLoading(btn, false);
+                  applyMembership(user);
+                  showToast('Payment window closed.', 'info');
+                },
+                callback: async function(response) {
+                  try {
+                    setButtonLoading(btn, true);
+                    var vRes = await apiFetch('POST', '/api/subscriptions/paystack/verify', {
+                      reference: response.reference || payData.reference
+                    });
                     if (vRes.success) {
                       showToast('Payment verified! VIP active.', 'success');
-                      setTimeout(function() { window.location.href = '/dashboard.html?vip=success'; }, 1000);
+                      setTimeout(function() { window.location.href = '/dashboard.html?vip=success'; }, 1200);
                     } else {
                       showToast(vRes.message || 'Verification pending.', 'error');
                       setButtonLoading(btn, false);
                     }
-                  })
-                  .catch(function() {
+                  } catch (err) {
                     showToast('Verification error. Please check dashboard.', 'error');
                     setButtonLoading(btn, false);
-                  });
+                  }
+                },
               };
-
-              var handleClose = function() {
-                setButtonLoading(btn, false);
-                applyMembership(user);
-              };
-
-              var popupConfig = {
-                access_code: payData.access_code,
-                callback:    handleSuccess,
-                onSuccess:   handleSuccess,
-                onClose:     handleClose,
-                onCancel:    handleClose
-              };
-
-              if (payData.public_key && typeof payData.public_key === 'string' && payData.public_key.trim().length > 5) {
-                popupConfig.key = payData.public_key.trim();
-              }
-
               var handler = PaystackPop.setup(popupConfig);
               handler.openIframe();
             } else if (payData.url) {
-              // Fallback redirect if inline SDK fails to load
               window.location.href = payData.url;
             } else {
               throw new Error('Paystack checkout initialization failed.');
@@ -369,34 +357,27 @@
       });
     });
 
-    // Bank modal: "I Have Made Payment" button
     var paidBtn = document.getElementById('bm-paid-btn');
     if (paidBtn) paidBtn.addEventListener('click', showUploadModal);
 
-    // Bank modal: Cancel
     var bmCancelBtn = document.getElementById('bm-cancel-btn');
     if (bmCancelBtn) bmCancelBtn.addEventListener('click', hideBankModal);
 
-    // Upload modal: file change
     var fileInput = document.getElementById('um-file');
     if (fileInput) fileInput.addEventListener('change', handleFileChange);
 
-    // Upload modal: submit
     var umSubmitBtn = document.getElementById('um-submit-btn');
     if (umSubmitBtn) umSubmitBtn.addEventListener('click', submitProof);
 
-    // Upload modal: back / cancel
     var umBackBtn   = document.getElementById('um-back-btn');
     if (umBackBtn) umBackBtn.addEventListener('click', function() { hideUploadModal(); showBankModal(_selectedPlan); });
 
     var umCancelBtn = document.getElementById('um-cancel-btn');
     if (umCancelBtn) umCancelBtn.addEventListener('click', hideUploadModal);
 
-    // Success modal: close
     var smCloseBtn = document.getElementById('sm-close-btn');
     if (smCloseBtn) smCloseBtn.addEventListener('click', hideSuccessModal);
 
-    // Close modals on backdrop click
     ['bank-modal', 'upload-modal', 'success-modal'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) {
@@ -406,7 +387,6 @@
       }
     });
 
-    // Copy account number to clipboard
     var copyBtn = document.getElementById('bm-copy-btn');
     if (copyBtn) {
       copyBtn.addEventListener('click', function() {
@@ -420,7 +400,6 @@
       });
     }
 
-    // Show cancelled toast if redirected back
     var params = new URLSearchParams(window.location.search);
     if (params.get('cancelled') === '1') {
       showToast('Checkout cancelled. No charge was made.', 'info');

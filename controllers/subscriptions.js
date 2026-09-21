@@ -102,6 +102,11 @@ async function paystackInitialize(req, res) {
       return res.status(503).json({ success: false, message: 'Paystack is not configured on this server yet.' });
     }
 
+    const userEmail = String(req.user.email || '').trim();
+    if (!userEmail || !userEmail.includes('@')) {
+      return res.status(400).json({ success: false, message: 'Your user profile does not have a valid email address.' });
+    }
+
     const billingPeriod = duration === 'biweekly' ? 'biweekly' : 'monthly';
     const userCountry   = String(req.user.country || '').trim().toUpperCase();
     const isNigerian    = userCountry === 'NG' || userCountry === 'NIGERIA';
@@ -109,12 +114,9 @@ async function paystackInitialize(req, res) {
     let amountNgn = 0;
 
     if (isNigerian) {
-      // Local Nigerian pricing (15,000 NGN monthly / 7,500 NGN bi-weekly for Standard)
       const factor = billingPeriod === 'biweekly' ? 0.5 : 1;
       amountNgn = NGN_AMOUNTS[plan] * factor;
     } else {
-      // Foreign accounts: base price is USD ($30 / $15 for Standard, $45 / $22.50 for Deluxe).
-      // We convert the USD rate into NGN using live rates for Paystack processing.
       const planPricing = require('../services/planPricing');
       const quote = await planPricing.quote('NGN', billingPeriod, true);
       amountNgn = quote.plans[plan].amount;
@@ -131,13 +133,14 @@ async function paystackInitialize(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email:        req.user.email,
+        email:        userEmail,
         amount:       amountKobo,
         reference,
         currency:     'NGN',
         callback_url: `${baseUrl}/dashboard.html?vip=success&plan=${plan}&provider=paystack`,
         metadata: {
           user_id:       req.user.id,
+          email:         userEmail,
           plan,
           duration:      billingPeriod,
           cancel_action: `${baseUrl}/pricing.html`,
@@ -156,6 +159,7 @@ async function paystackInitialize(req, res) {
         url:         data.data.authorization_url,
         access_code: data.data.access_code,
         reference:   data.data.reference,
+        email:       userEmail,
         public_key:  process.env.PAYSTACK_PUBLIC_KEY || '',
       },
     });
