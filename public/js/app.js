@@ -329,6 +329,7 @@
 
   // ── Telegram channel popup
   function initTelegramPopup() {
+    if (window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')) return;
     var overlay = document.createElement('div');
     overlay.id = 'tg-popup-overlay';
     overlay.style.cssText = [

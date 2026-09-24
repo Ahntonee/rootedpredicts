@@ -24,7 +24,7 @@
     </table>
   </div>
 </main>
-<script src="/js/app.min.js"></script>
+<script src="/js/app.min.js?v=20260924-admin-popup"></script>
 <script src="/js/admin.js"></script>
 <script>
 const theme=localStorage.getItem('afro_theme')||'light';document.documentElement.setAttribute('data-theme',theme);
@@ -53,4 +53,3 @@ async function toggleLeague(id,field,current){
 document.addEventListener('DOMContentLoaded',async()=>{const u=await Admin.requireAdmin();if(!u)return;Admin.buildSidebar(u);if(u)loadLeagues();});
 </script>
 </body></html>
-
