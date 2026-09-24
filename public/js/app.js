@@ -244,7 +244,11 @@
             </div>
             <div class="footer-tg-placement">
               <strong style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.07em;">Textlink / Guestpost Placement:</strong><br>
-              <a href="https://signal.me/#eu/NH6wGYU5CHSJDNz60GYtmOb3BEt6ZQb6qSVb_6vsszXca9R4mO9Lp4m_c0A-AC9w" target="_blank" rel="noopener noreferrer">Contact us via Signal</a>
+              <a href="https://t.me/rootedpredictsupport" target="_blank" rel="noopener noreferrer">Contact via Telegram</a>
+              <div style="margin-top:18px;">
+                <strong style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.07em;">Signal:</strong><br>
+                <a href="https://signal.me/#eu/NH6wGYU5CHSJDNz60GYtmOb3BEt6ZQb6qSVb_6vsszXca9R4mO9Lp4m_c0A-AC9w" target="_blank" rel="noopener noreferrer">Click to Chat on Signal</a>
+              </div>
             </div>
           </div>
 
@@ -836,24 +840,25 @@
       wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored">' +
         '<img src="'+ad.image_data+'" alt="'+escText(ad.name)+'" loading="lazy" decoding="async" width="400" height="200" style="max-width:100%;height:auto;display:block;border-radius:8px;aspect-ratio:2/1;"></a>';
     } else if (ad.type === 'code' && ad.content) {
-      // Scripts added through innerHTML are inert. Recreate them as live script
-      // nodes while preserving the rest of the administrator-supplied markup.
-      var template = document.createElement('template');
-      template.innerHTML = ad.content;
-      Array.from(template.content.querySelectorAll('script')).forEach(function(oldScript) {
+      wrap.innerHTML = ad.content;
+    } else if (ad.type === 'text' && ad.link_url) {
+      wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored" ' +
+        'style="font-size:0.85rem;color:var(--text-soft);text-decoration:underline;">'+escText(ad.name)+'</a>';
+    }
+    return wrap;
+  }
+
+  // innerHTML-created scripts are inert. Activate them only after their wrapper
+  // is connected to the live document so provider bootstraps execute reliably.
+  function activateAdScripts(wrap) {
+    Array.from(wrap.querySelectorAll('script')).forEach(function(oldScript) {
         var liveScript = document.createElement('script');
         Array.from(oldScript.attributes).forEach(function(attr) {
           liveScript.setAttribute(attr.name, attr.value);
         });
         liveScript.textContent = oldScript.textContent;
         oldScript.replaceWith(liveScript);
-      });
-      wrap.appendChild(template.content);
-    } else if (ad.type === 'text' && ad.link_url) {
-      wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored" ' +
-        'style="font-size:0.85rem;color:var(--text-soft);text-decoration:underline;">'+escText(ad.name)+'</a>';
-    }
-    return wrap;
+    });
   }
 
   async function injectAds() {
@@ -870,22 +875,16 @@
         }
       }
       allAds.forEach(function(ad) {
-        var slot = document.getElementById('ad-slot-' + ad._slot);
+        var isMobileSidebar = ad._slot === 'sidebar' && window.matchMedia('(max-width: 768px)').matches;
+        var slot = document.getElementById(isMobileSidebar ? 'ad-slot-mobile' : 'ad-slot-' + ad._slot);
         if (!slot) return;
         var wrap = buildAdWrap(ad);
-        if (wrap.innerHTML) {
+        if (wrap.hasChildNodes()) {
           slot.appendChild(wrap);
+          if (ad.type === 'code') activateAdScripts(wrap);
           fetch('/api/marketing/ads/'+ad.id+'/impression', {method:'POST'}).catch(function(){});
         }
       });
-      // Mirror sidebar ads to the mobile-only slot (sidebar is hidden on small screens)
-      var mobileSlot = document.getElementById('ad-slot-mobile');
-      if (mobileSlot) {
-        allAds.filter(function(ad){ return ad._slot === 'sidebar'; }).forEach(function(ad) {
-          var wrap = buildAdWrap(ad);
-          if (wrap.innerHTML) mobileSlot.appendChild(wrap);
-        });
-      }
     } catch(_) {}
   }
 

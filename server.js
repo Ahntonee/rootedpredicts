@@ -39,13 +39,17 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net', 'www.googletagmanager.com', 'www.google-analytics.com', 'pagead2.googlesyndication.com', '*.googlesyndication.com', 'https://js.paystack.co'],
+      // Code ads are entered by authorised dashboard editors and commonly load
+      // their provider runtime from a dynamic HTTPS CDN (for example
+      // cdn.ftd.agency). Permit HTTPS runtimes so new providers work without a
+      // server deployment for every hostname.
+      scriptSrc:   ["'self'", "'unsafe-inline'", 'https:'],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc:    ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net'],
       fontSrc:     ["'self'", 'fonts.gstatic.com', 'fonts.googleapis.com'],
       imgSrc:      ["'self'", 'data:', 'https:', 'media.api-sports.io'],
-      connectSrc:  ["'self'", 'www.googletagmanager.com', 'www.google-analytics.com', 'analytics.google.com', 'stats.g.doubleclick.net', '*.googlesyndication.com', 'https://api.paystack.co'],
-      frameSrc:    ["'self'", '*.google.com', '*.googlesyndication.com', 'https://js.paystack.co', 'https://checkout.paystack.com'],
+      connectSrc:  ["'self'", 'https:'],
+      frameSrc:    ["'self'", 'https:'],
       objectSrc:   ["'none'"],
       upgradeInsecureRequests: [],
     },
