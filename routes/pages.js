@@ -97,6 +97,7 @@ router.put('/admin/:slug', authenticate, requireAdmin, requireAdminRole('superad
 // ─────────────────────────────────────────────
 router.get('/:slug', async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-store');
     const [rows] = await db.query(
       'SELECT slug, page_title, meta_description, hero_title, hero_subtitle, last_updated, content, extra FROM static_pages WHERE slug = ?',
       [req.params.slug]

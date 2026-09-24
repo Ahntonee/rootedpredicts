@@ -87,6 +87,19 @@ router.get('/stats', asyncHandler(async (req, res) => {
 }));
 
 // ── GET /api/predictions/leaderboard — real verified results breakdown
+// Public recent wins used by the homepage. The broader leaderboard remains
+// admin-only; visitors only receive the fields rendered in the winning cards.
+router.get('/recent-wins', asyncHandler(async (req, res) => {
+  const [rows] = await db.query(
+    `SELECT home_team, away_team, home_team_logo, away_team_logo,
+            tip, odds, result, home_score, away_score, match_date
+     FROM predictions
+     WHERE published_at IS NOT NULL AND result = 'won'
+     ORDER BY match_date DESC LIMIT 30`
+  );
+  return successResponse(res, rows);
+}));
+
 router.get('/leaderboard', authenticate, requireAdmin, asyncHandler(async (req, res) => {
   const decided = "published_at IS NOT NULL AND result IN ('won','lost')";
 

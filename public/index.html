@@ -10,6 +10,7 @@
   gtag('config', 'G-6753CPHM2B');
 </script>
   <meta charset="UTF-8">
+  <meta name="google-adsense-account" content="ca-pub-7149418528002808">
   <meta name="p:domain_verify" content="2c1d89fb46ea0935171c081295db273c"/>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/favicon.png">
@@ -649,7 +650,7 @@
     </div>
 
     <!-- ── SEO Long-form Content ── -->
-    <div class="seo-content-block">
+    <div class="seo-content-block" id="dashboard-home-content">
 
       <h2>Best Football Prediction Site in the World for 100 Sure Predictions</h2>
       <p>Rooted Predict is the best football prediction site in the world. There is no doubt that we are the destination for football enthusiasts and bettors looking for where to get reliable 100 sure predictions and expert strategies.</p>
@@ -1106,10 +1107,10 @@
   }
 
   function loadRecentWinnings() {
-    fetch('/api/predictions/leaderboard')
+    fetch('/api/predictions/recent-wins')
       .then(r => r.json())
       .then(j => {
-        const recent = ((j && j.data && j.data.recent) || []).filter(p => p.result === 'won');
+        const recent = (j && j.data) || [];
         document.getElementById('recent-winnings-list').innerHTML = buildWinningsHTML(recent);
       })
       .catch(() => {
@@ -1174,6 +1175,7 @@
       const p = data.page || data;
       if (p.hero_title)    document.getElementById('hero-heading').textContent    = p.hero_title;
       if (p.hero_subtitle) document.getElementById('hero-subheading').textContent = p.hero_subtitle;
+      if (p.content)       document.getElementById('dashboard-home-content').innerHTML = p.content;
       if (p.page_title)    document.title = p.page_title;
       const metaDesc = document.querySelector('meta[name="description"]');
       if (p.meta_description && metaDesc) metaDesc.setAttribute('content', p.meta_description);

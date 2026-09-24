@@ -233,7 +233,6 @@
               <div>
                 <span class="footer-contact-label">Email Us</span>
                 <a href="mailto:support@rootedpredict.com">support@rootedpredict.com</a>
-                <a href="mailto:rootedpredict@gmail.com" style="display:block;margin-top:2px;">rootedpredict@gmail.com</a>
               </div>
             </div>
             <div class="footer-contact-item">
@@ -245,7 +244,7 @@
             </div>
             <div class="footer-tg-placement">
               <strong style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.07em;">Textlink / Guestpost Placement:</strong><br>
-              <a href="https://t.me/rootedpredictsupport" target="_blank" rel="noopener">Contact via Telegram</a>
+              <a href="https://signal.me/#eu/NH6wGYU5CHSJDNz60GYtmOb3BEt6ZQb6qSVb_6vsszXca9R4mO9Lp4m_c0A-AC9w" target="_blank" rel="noopener noreferrer">Contact us via Signal</a>
             </div>
           </div>
 
@@ -837,7 +836,19 @@
       wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored">' +
         '<img src="'+ad.image_data+'" alt="'+escText(ad.name)+'" loading="lazy" decoding="async" width="400" height="200" style="max-width:100%;height:auto;display:block;border-radius:8px;aspect-ratio:2/1;"></a>';
     } else if (ad.type === 'code' && ad.content) {
-      wrap.innerHTML = ad.content;
+      // Scripts added through innerHTML are inert. Recreate them as live script
+      // nodes while preserving the rest of the administrator-supplied markup.
+      var template = document.createElement('template');
+      template.innerHTML = ad.content;
+      Array.from(template.content.querySelectorAll('script')).forEach(function(oldScript) {
+        var liveScript = document.createElement('script');
+        Array.from(oldScript.attributes).forEach(function(attr) {
+          liveScript.setAttribute(attr.name, attr.value);
+        });
+        liveScript.textContent = oldScript.textContent;
+        oldScript.replaceWith(liveScript);
+      });
+      wrap.appendChild(template.content);
     } else if (ad.type === 'text' && ad.link_url) {
       wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored" ' +
         'style="font-size:0.85rem;color:var(--text-soft);text-decoration:underline;">'+escText(ad.name)+'</a>';

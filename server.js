@@ -39,13 +39,13 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net', 'www.googletagmanager.com', 'www.google-analytics.com', 'https://js.paystack.co'],
+      scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net', 'www.googletagmanager.com', 'www.google-analytics.com', 'pagead2.googlesyndication.com', '*.googlesyndication.com', 'https://js.paystack.co'],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc:    ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net'],
       fontSrc:     ["'self'", 'fonts.gstatic.com', 'fonts.googleapis.com'],
       imgSrc:      ["'self'", 'data:', 'https:', 'media.api-sports.io'],
-      connectSrc:  ["'self'", 'www.googletagmanager.com', 'www.google-analytics.com', 'analytics.google.com', 'stats.g.doubleclick.net', 'https://api.paystack.co'],
-      frameSrc:    ["'self'", 'https://js.paystack.co', 'https://checkout.paystack.com'],
+      connectSrc:  ["'self'", 'www.googletagmanager.com', 'www.google-analytics.com', 'analytics.google.com', 'stats.g.doubleclick.net', '*.googlesyndication.com', 'https://api.paystack.co'],
+      frameSrc:    ["'self'", '*.google.com', '*.googlesyndication.com', 'https://js.paystack.co', 'https://checkout.paystack.com'],
       objectSrc:   ["'none'"],
       upgradeInsecureRequests: [],
     },
@@ -463,6 +463,13 @@ app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: process.env.NODE_ENV === 'production' ? '30d' : 0,
   etag: true,
   lastModified: true,
+  setHeaders(res, filePath) {
+    // Public pages load dashboard-managed content at runtime and must always
+    // revalidate so a previously cached document cannot hide saved changes.
+    if (path.extname(filePath).toLowerCase() === '.html') {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  },
 }));
 
 // ── API Routes
