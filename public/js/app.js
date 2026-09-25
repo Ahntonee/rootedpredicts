@@ -217,8 +217,8 @@
             <h4>Other Links</h4>
             <ul class="footer-links">
               <li><a href="/predictions.html">Today's Tips</a></li>
-              <li><a href="/predictions.html?market=over-2-5">Over 2.5 Goals</a></li>
-              <li><a href="/predictions.html?market=btts">BTTS Tips</a></li>
+              <li><a href="/predictions/over-2-5-goals">Over 2.5 Goals</a></li>
+              <li><a href="/predictions/btts">BTTS Tips</a></li>
               <li><a href="/privacy.html">Privacy Policy</a></li>
               <li><a href="/terms.html">Terms &amp; Conditions</a></li>
               <li><a href="/register.html" id="footer-register-link">Create Account</a></li>
