@@ -349,8 +349,18 @@
   }
 
   // ── Telegram channel popup
+  var telegramPopupTimer = null;
+  function scheduleTelegramPopup() {
+    if (telegramPopupTimer || document.getElementById('tg-popup-overlay')) return;
+    telegramPopupTimer = setTimeout(function() {
+      telegramPopupTimer = null;
+      initTelegramPopup();
+    }, 30000);
+  }
+
   function initTelegramPopup() {
     if (window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')) return;
+    if (document.getElementById('tg-popup-overlay')) return;
     var overlay = document.createElement('div');
     overlay.id = 'tg-popup-overlay';
     overlay.style.cssText = [
@@ -993,7 +1003,7 @@
     catch (_) {}
   }
 
-  function addAdCloseButton(host, ad, label) {
+  function addAdCloseButton(host, ad, label, dismissTarget) {
     var close = document.createElement('button');
     close.type = 'button';
     close.setAttribute('aria-label', label || 'Close advertisement');
@@ -1001,33 +1011,31 @@
     close.style.cssText = 'position:absolute;top:-12px;right:-12px;width:28px;height:28px;border-radius:50%;border:2px solid #374151;background:#fff;color:#111827;font:700 22px/22px Arial,sans-serif;cursor:pointer;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.25);';
     close.addEventListener('click', function() {
       rememberAdDismissal(ad);
-      host.remove();
+      (dismissTarget || host).remove();
     });
     host.appendChild(close);
   }
 
   function renderPopupAd(ad) {
-    if (wasAdDismissed(ad)) return false;
+    if (wasAdDismissed(ad)) {
+      scheduleTelegramPopup();
+      return false;
+    }
     var host = document.createElement('div');
     host.className = 'managed-popup-ad';
-    host.style.cssText = 'position:fixed;inset:0;z-index:2100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.64);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);';
-    var panel = document.createElement('div');
-    panel.style.cssText = 'position:relative;width:min(500px,calc(100vw - 32px));max-height:90vh;padding:44px 18px 18px;background:#0b2a4a;border:1px solid rgba(42,165,228,.55);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:hidden;';
+    host.style.cssText = 'position:fixed;inset:0;z-index:2100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.64);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .2s ease;';
     var wrap = buildAdWrap(ad);
-    wrap.style.margin = '0';
+    wrap.style.cssText = 'position:relative;width:min(500px,calc(100vw - 32px));margin:0;display:flex;align-items:center;justify-content:center;overflow:visible;';
     wrap.style.display = 'flex';
     wrap.style.alignItems = 'center';
     wrap.style.justifyContent = 'center';
     var frame = wrap.querySelector('iframe');
     if (frame) {
       frame.style.width = '100%';
-      frame.style.maxWidth = '460px';
+      frame.style.maxWidth = '500px';
     }
-    panel.appendChild(wrap);
-    addAdCloseButton(panel, ad, 'Close popup advertisement');
-    var close = panel.querySelector('button[aria-label="Close popup advertisement"]');
-    if (close) close.style.cssText = 'position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.13);color:#fff;font:400 30px/34px Arial,sans-serif;cursor:pointer;z-index:2;';
-    host.appendChild(panel);
+    host.appendChild(wrap);
+    addAdCloseButton(wrap, ad, 'Close popup advertisement', host);
     host.addEventListener('click', function(event) {
       if (event.target === host) {
         rememberAdDismissal(ad);
@@ -1035,6 +1043,56 @@
       }
     });
     document.body.appendChild(host);
+
+    if (frame) {
+      var ready = false;
+      var emptyChecks = 0;
+      var checks = 0;
+      var monitor = setInterval(function() {
+        checks++;
+        if (!host.isConnected) { clearInterval(monitor); return; }
+        var visibleCreative = false;
+        try {
+          var doc = frame.contentDocument;
+          if (doc) {
+            var candidates = doc.querySelectorAll('img,iframe,a,canvas,video,object,embed');
+            visibleCreative = Array.from(candidates).some(function(node) {
+              var rect = node.getBoundingClientRect();
+              var style = doc.defaultView.getComputedStyle(node);
+              return rect.width > 100 && rect.height > 50 && style.display !== 'none' && style.visibility !== 'hidden' && parseFloat(style.opacity || '1') > 0;
+            });
+            if (visibleCreative) {
+              var height = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight);
+              if (height > 50) frame.style.height = Math.min(height, 600) + 'px';
+            }
+          }
+        } catch (_) {}
+
+        if (visibleCreative && !ready) {
+          ready = true;
+          host.style.visibility = 'visible';
+          host.style.pointerEvents = 'auto';
+          requestAnimationFrame(function() { host.style.opacity = '1'; });
+          scheduleTelegramPopup();
+        }
+        if (ready) {
+          emptyChecks = visibleCreative ? 0 : emptyChecks + 1;
+          if (emptyChecks >= 4) {
+            clearInterval(monitor);
+            rememberAdDismissal(ad);
+            host.remove();
+          }
+        } else if (checks >= 80) {
+          clearInterval(monitor);
+          host.remove();
+        }
+      }, 250);
+    } else {
+      host.style.visibility = 'visible';
+      host.style.pointerEvents = 'auto';
+      requestAnimationFrame(function() { host.style.opacity = '1'; });
+      scheduleTelegramPopup();
+    }
     return true;
   }
 
@@ -1066,6 +1124,7 @@
           j.data.forEach(function(ad) { ad._slot = slots[i]; allAds.push(ad); });
         }
       }
+      var hasPopupAd = allAds.some(function(ad) { return ad._slot === 'popup'; });
       allAds.forEach(function(ad) {
         if (ad._slot === 'between-cards') {
           betweenCardAds.push(ad);
@@ -1104,7 +1163,8 @@
           }).observe(predictionRoot, { childList: true, subtree: true });
         }
       }
-    } catch(_) {}
+      if (!hasPopupAd) scheduleTelegramPopup();
+    } catch(_) { scheduleTelegramPopup(); }
   }
 
   // ── Init on DOM ready
@@ -1112,7 +1172,6 @@
     injectHeader();
     injectFooter();
     initCookieConsent();
-    setTimeout(initTelegramPopup, 30000);
 
     // Check auth state AFTER header is injected so updateHeaderForUser finds .header-actions
     ensureAuthLoaded(() => window.AfroAuth.checkAuthState());
