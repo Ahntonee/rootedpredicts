@@ -432,7 +432,7 @@ app.get('/tips/:slug', async (req, res) => {
   </div>
 </main>
 <footer class="site-footer" id="site-footer"></footer>
-<script src="/js/app.js?v=20260928-ads-v5"></script>
+<script src="/js/app.js?v=20260928-ads-v7"></script>
 <script>
 // Load sidebar blog posts
 (function() {

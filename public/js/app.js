@@ -1010,13 +1010,23 @@
     if (wasAdDismissed(ad)) return false;
     var host = document.createElement('div');
     host.className = 'managed-popup-ad';
-    host.style.cssText = 'position:fixed;inset:0;z-index:2100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.55);';
+    host.style.cssText = 'position:fixed;inset:0;z-index:2100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.64);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);';
     var panel = document.createElement('div');
-    panel.style.cssText = 'position:relative;width:min(900px,94vw);max-height:90vh;padding:12px;background:var(--card-bg,#fff);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:visible;';
+    panel.style.cssText = 'position:relative;width:min(500px,calc(100vw - 32px));max-height:90vh;padding:44px 18px 18px;background:#0b2a4a;border:1px solid rgba(42,165,228,.55);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:hidden;';
     var wrap = buildAdWrap(ad);
     wrap.style.margin = '0';
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.justifyContent = 'center';
+    var frame = wrap.querySelector('iframe');
+    if (frame) {
+      frame.style.width = '100%';
+      frame.style.maxWidth = '460px';
+    }
     panel.appendChild(wrap);
     addAdCloseButton(panel, ad, 'Close popup advertisement');
+    var close = panel.querySelector('button[aria-label="Close popup advertisement"]');
+    if (close) close.style.cssText = 'position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.13);color:#fff;font:400 30px/34px Arial,sans-serif;cursor:pointer;z-index:2;';
     host.appendChild(panel);
     host.addEventListener('click', function(event) {
       if (event.target === host) {
@@ -1102,7 +1112,7 @@
     injectHeader();
     injectFooter();
     initCookieConsent();
-    setTimeout(initTelegramPopup, 8000);
+    setTimeout(initTelegramPopup, 30000);
 
     // Check auth state AFTER header is injected so updateHeaderForUser finds .header-actions
     ensureAuthLoaded(() => window.AfroAuth.checkAuthState());
