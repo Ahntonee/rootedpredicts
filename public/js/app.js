@@ -1037,7 +1037,6 @@
       frame.style.maxWidth = '500px';
     }
     host.appendChild(wrap);
-    addAdCloseButton(wrap, ad, 'Close popup advertisement', host);
     host.addEventListener('click', function(event) {
       if (event.target === host) {
         rememberAdDismissal(ad);
@@ -1099,15 +1098,12 @@
   }
 
   function renderStickyFooterAd(ad) {
-    if (wasAdDismissed(ad)) return false;
-    var host = document.createElement('div');
-    host.className = 'managed-sticky-footer-ad';
-    host.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:1500;width:min(1240px,calc(100% - 28px));padding:10px;background:var(--card-bg,#fff);border:1px solid var(--border,#e5e7eb);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.28);';
+    var host = document.getElementById('ad-slot-footer');
+    if (!host) return false;
     var wrap = buildAdWrap(ad);
     wrap.style.margin = '0';
+    if (!wrap.hasChildNodes()) return false;
     host.appendChild(wrap);
-    addAdCloseButton(host, ad, 'Close sticky advertisement');
-    document.body.appendChild(host);
     return true;
   }
 
