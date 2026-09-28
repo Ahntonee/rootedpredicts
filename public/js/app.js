@@ -91,7 +91,6 @@
           <div class="ticker-track" id="ticker-track"></div>
         </div>
       </div>
-      <div id="ad-slot-header" class="ad-slot-header" aria-label="Advertisement"></div>
       <div class="container">
         <div class="header-inner">
           <a href="/" class="site-logo">
@@ -122,6 +121,16 @@
         </div>
       </div>
     `;
+
+    // Header ads belong below the sticky navigation, never inside it.
+    var headerAdSlot = document.getElementById('ad-slot-header');
+    if (!headerAdSlot) {
+      headerAdSlot = document.createElement('div');
+      headerAdSlot.id = 'ad-slot-header';
+      headerAdSlot.className = 'ad-slot-header container';
+      headerAdSlot.setAttribute('aria-label', 'Advertisement');
+      el.insertAdjacentElement('afterend', headerAdSlot);
+    }
 
     // Theme toggle
     const themeToggle = document.getElementById('theme-toggle');
@@ -182,7 +191,6 @@
     if (!el) return;
 
     el.innerHTML = `
-      <div id="ad-slot-footer" class="container" aria-label="Advertisement"></div>
       <div class="container">
         <div class="gambling-notice">
           <p><strong>Responsible Gambling Notice:</strong> Rooted Predictions provides football predictions for informational and entertainment purposes only. We do not guarantee any results. Please gamble responsibly. Only bet what you can afford to lose. If gambling is causing you problems, visit <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" style="color:var(--red);">BeGambleAware.org</a> or call <strong style="color:#fff;">0808 8020 133</strong>.</p>
@@ -269,6 +277,17 @@
         </div>
       </div>
     `;
+
+    // Footer ads belong immediately above the footer and cannot be displaced
+    // there by scripts assigned to another placement.
+    var footerAdSlot = document.getElementById('ad-slot-footer');
+    if (!footerAdSlot) {
+      footerAdSlot = document.createElement('div');
+      footerAdSlot.id = 'ad-slot-footer';
+      footerAdSlot.className = 'ad-slot-footer container';
+      footerAdSlot.setAttribute('aria-label', 'Advertisement');
+      el.insertAdjacentElement('beforebegin', footerAdSlot);
+    }
 
     // Inject partner backlinks as a centred full-width bar
     (async function injectBacklinks() {
@@ -836,32 +855,47 @@
   function escUrl(s)  { try { var u = new URL(String(s||'')); return ['http:','https:'].includes(u.protocol) ? u.href : '#'; } catch(_){ return '#'; } }
 
   // ── Inject ads into placement slots on the current page
+  function buildCodeAdFrame(ad) {
+    var frame = document.createElement('iframe');
+    var slot = ad._slot || '';
+    var initialHeight = slot === 'sidebar' ? 280 : (slot === 'between-cards' ? 250 : 110);
+    frame.title = ad.name || 'Advertisement';
+    frame.loading = 'eager';
+    frame.scrolling = 'no';
+    frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation');
+    frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    frame.style.cssText = 'display:block;width:100%;height:'+initialHeight+'px;border:0;overflow:hidden;background:transparent;';
+    frame.srcdoc = '<!doctype html><html><head><meta charset="utf-8">' +
+      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<base target="_blank"><style>html,body{margin:0;padding:0;width:100%;min-height:100%;overflow:hidden;background:transparent}body{display:flex;align-items:center;justify-content:center}img,iframe{max-width:100%}</style>' +
+      '</head><body>' + ad.content + '</body></html>';
+    frame.addEventListener('load', function() {
+      try {
+        var body = frame.contentDocument && frame.contentDocument.body;
+        var html = frame.contentDocument && frame.contentDocument.documentElement;
+        if (!body || !html) return;
+        var measured = Math.max(body.scrollHeight, body.offsetHeight, html.scrollHeight, html.offsetHeight);
+        if (measured > 0) frame.style.height = Math.max(50, Math.min(measured, 600)) + 'px';
+      } catch (_) {}
+    });
+    return frame;
+  }
+
   function buildAdWrap(ad) {
     var wrap = document.createElement('div');
-    wrap.style.cssText = 'margin:12px 0;';
+    wrap.className = 'managed-ad managed-ad-' + (ad._slot || 'unknown');
+    wrap.dataset.adId = ad.id;
+    wrap.style.cssText = 'width:100%;margin:12px 0;overflow:hidden;';
     if (ad.type === 'banner' && ad.image_data) {
       wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored">' +
         '<img src="'+ad.image_data+'" alt="'+escText(ad.name)+'" loading="lazy" decoding="async" width="400" height="200" style="max-width:100%;height:auto;display:block;border-radius:8px;aspect-ratio:2/1;"></a>';
     } else if (ad.type === 'code' && ad.content) {
-      wrap.innerHTML = ad.content;
+      wrap.appendChild(buildCodeAdFrame(ad));
     } else if (ad.type === 'text' && ad.link_url) {
       wrap.innerHTML = '<a href="/api/marketing/ads/'+ad.id+'/click" target="_blank" rel="noopener sponsored" ' +
         'style="font-size:0.85rem;color:var(--text-soft);text-decoration:underline;">'+escText(ad.name)+'</a>';
     }
     return wrap;
-  }
-
-  // innerHTML-created scripts are inert. Activate them only after their wrapper
-  // is connected to the live document so provider bootstraps execute reliably.
-  function activateAdScripts(wrap) {
-    Array.from(wrap.querySelectorAll('script')).forEach(function(oldScript) {
-        var liveScript = document.createElement('script');
-        Array.from(oldScript.attributes).forEach(function(attr) {
-          liveScript.setAttribute(attr.name, attr.value);
-        });
-        liveScript.textContent = oldScript.textContent;
-        oldScript.replaceWith(liveScript);
-    });
   }
 
   var betweenCardAds = [];
@@ -882,7 +916,6 @@
         wrap.classList.add('ad-between-predictions');
         wrap.style.cssText += 'padding:10px 16px;text-align:center;';
         card.insertAdjacentElement('afterend', wrap);
-        if (ad.type === 'code') activateAdScripts(wrap);
         fetch('/api/marketing/ads/'+ad.id+'/impression', {method:'POST'}).catch(function(){});
       });
     });
@@ -919,7 +952,6 @@
         var wrap = buildAdWrap(ad);
         if (wrap.hasChildNodes()) {
           slot.appendChild(wrap);
-          if (ad.type === 'code') activateAdScripts(wrap);
           fetch('/api/marketing/ads/'+ad.id+'/impression', {method:'POST'}).catch(function(){});
         }
       });
