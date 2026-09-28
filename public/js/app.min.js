@@ -994,11 +994,13 @@
   }
 
   function wasAdDismissed(ad) {
+    if (ad._slot === 'popup') return false;
     try { return sessionStorage.getItem(dismissalKey(ad)) === '1'; }
     catch (_) { return false; }
   }
 
   function rememberAdDismissal(ad) {
+    if (ad._slot === 'popup') return;
     try { sessionStorage.setItem(dismissalKey(ad), '1'); }
     catch (_) {}
   }
