@@ -1113,6 +1113,7 @@
   }
 
   async function injectAds() {
+    if (window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')) return;
     var placements = ['header','between-cards','sidebar','footer','sticky-footer','popup','blog'];
     var slots = placements.filter(function(p){
       return p === 'between-cards' || p === 'sticky-footer' || p === 'popup' || !!document.getElementById('ad-slot-'+p);
