@@ -91,6 +91,7 @@
           <div class="ticker-track" id="ticker-track"></div>
         </div>
       </div>
+      <div id="ad-slot-header" class="ad-slot-header" aria-label="Advertisement"></div>
       <div class="container">
         <div class="header-inner">
           <a href="/" class="site-logo">
@@ -181,6 +182,7 @@
     if (!el) return;
 
     el.innerHTML = `
+      <div id="ad-slot-footer" class="container" aria-label="Advertisement"></div>
       <div class="container">
         <div class="gambling-notice">
           <p><strong>Responsible Gambling Notice:</strong> Rooted Predictions provides football predictions for informational and entertainment purposes only. We do not guarantee any results. Please gamble responsibly. Only bet what you can afford to lose. If gambling is causing you problems, visit <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" style="color:var(--red);">BeGambleAware.org</a> or call <strong style="color:#fff;">0808 8020 133</strong>.</p>
@@ -862,9 +864,40 @@
     });
   }
 
+  var betweenCardAds = [];
+  var betweenRenderTimer = null;
+
+  function renderBetweenCardAds() {
+    document.querySelectorAll('.ad-between-predictions').forEach(function(el) { el.remove(); });
+    if (!betweenCardAds.length) return;
+    var containers = ['predictions-grid','pred-list','free-picks-list','picks-list','seo-picks-list'];
+    containers.forEach(function(id) {
+      var container = document.getElementById(id);
+      if (!container) return;
+      var cards = Array.from(container.querySelectorAll('.pred-card, .match-row'));
+      cards.forEach(function(card, index) {
+        if ((index + 1) % 4 !== 0 || index === cards.length - 1) return;
+        var ad = betweenCardAds[Math.floor(index / 4) % betweenCardAds.length];
+        var wrap = buildAdWrap(ad);
+        wrap.classList.add('ad-between-predictions');
+        wrap.style.cssText += 'padding:10px 16px;text-align:center;';
+        card.insertAdjacentElement('afterend', wrap);
+        if (ad.type === 'code') activateAdScripts(wrap);
+        fetch('/api/marketing/ads/'+ad.id+'/impression', {method:'POST'}).catch(function(){});
+      });
+    });
+  }
+
+  function scheduleBetweenCardAds() {
+    clearTimeout(betweenRenderTimer);
+    betweenRenderTimer = setTimeout(renderBetweenCardAds, 0);
+  }
+
   async function injectAds() {
     var placements = ['header','between-cards','sidebar','footer','blog'];
-    var slots = placements.filter(function(p){ return !!document.getElementById('ad-slot-'+p); });
+    var slots = placements.filter(function(p){
+      return p === 'between-cards' || !!document.getElementById('ad-slot-'+p);
+    });
     if (!slots.length) return;
     try {
       var allAds = [];
@@ -876,6 +909,10 @@
         }
       }
       allAds.forEach(function(ad) {
+        if (ad._slot === 'between-cards') {
+          betweenCardAds.push(ad);
+          return;
+        }
         var isMobileSidebar = ad._slot === 'sidebar' && window.matchMedia('(max-width: 768px)').matches;
         var slot = document.getElementById(isMobileSidebar ? 'ad-slot-mobile' : 'ad-slot-' + ad._slot);
         if (!slot) return;
@@ -886,6 +923,20 @@
           fetch('/api/marketing/ads/'+ad.id+'/impression', {method:'POST'}).catch(function(){});
         }
       });
+      if (betweenCardAds.length) {
+        scheduleBetweenCardAds();
+        var predictionRoot = document.querySelector('#predictions-grid, #pred-list, #free-picks-list, #picks-list, #seo-picks-list');
+        if (predictionRoot) {
+          new MutationObserver(function(mutations) {
+            var hasNewPredictions = mutations.some(function(mutation) {
+              return Array.from(mutation.addedNodes).some(function(node) {
+                return node.nodeType === 1 && !node.classList.contains('ad-between-predictions');
+              });
+            });
+            if (hasNewPredictions) scheduleBetweenCardAds();
+          }).observe(predictionRoot, { childList: true, subtree: true });
+        }
+      }
     } catch(_) {}
   }
 

@@ -418,36 +418,32 @@ function evaluateTip(tip, market, goals, teams) {
 // ── Local DB helpers — H2H and form from backfilled historical data ───────────
 
 async function localH2HRows(homeTeam, awayTeam, limit = 10) {
-  const h = homeTeam.slice(0, 12);
-  const a = awayTeam.slice(0, 12);
   const [rows] = await db.query(
     `SELECT home_team, away_team, home_score, away_score, match_date
      FROM predictions
      WHERE home_score IS NOT NULL AND away_score IS NOT NULL
-       AND ((home_team LIKE ? AND away_team LIKE ?)
-            OR (home_team LIKE ? AND away_team LIKE ?))
+       AND ((LOWER(home_team) = LOWER(?) AND LOWER(away_team) = LOWER(?))
+            OR (LOWER(home_team) = LOWER(?) AND LOWER(away_team) = LOWER(?)))
      ORDER BY match_date DESC LIMIT ?`,
-    [`%${h}%`, `%${a}%`, `%${a}%`, `%${h}%`, limit]
+    [homeTeam, awayTeam, awayTeam, homeTeam, limit]
   );
   return rows;
 }
 
 async function localFormRows(teamName, limit = 15) {
-  const t = teamName.slice(0, 12);
   const [rows] = await db.query(
     `SELECT home_team, away_team, home_score, away_score, match_date
      FROM predictions
      WHERE home_score IS NOT NULL AND away_score IS NOT NULL
-       AND (home_team LIKE ? OR away_team LIKE ?)
+       AND (LOWER(home_team) = LOWER(?) OR LOWER(away_team) = LOWER(?))
      ORDER BY match_date DESC LIMIT ?`,
-    [`%${t}%`, `%${t}%`, limit]
+    [teamName, teamName, limit]
   );
   return rows;
 }
 
 function localRowResult(row, teamName) {
-  const tn = teamName.toLowerCase().slice(0, 10);
-  const isHome = row.home_team.toLowerCase().includes(tn);
+  const isHome = row.home_team.toLowerCase() === teamName.toLowerCase();
   const homeWon = row.home_score > row.away_score;
   const awayWon = row.away_score > row.home_score;
   return isHome ? (homeWon ? 'W' : awayWon ? 'L' : 'D') : (awayWon ? 'W' : homeWon ? 'L' : 'D');
@@ -791,7 +787,7 @@ async function researchFixture(fixtureId) {
 
   if (useLocalHome) {
     homeForm      = localFormStr(localHome, homeTeamName, 5);
-    const atHome  = localHome.filter(r => r.home_team.toLowerCase().includes(homeTeamName.toLowerCase().slice(0, 10)));
+    const atHome  = localHome.filter(r => r.home_team.toLowerCase() === homeTeamName.toLowerCase());
     homeFormVenue = localFormStr(atHome, homeTeamName, 5);
     homeRecent    = localHome.slice(0, 5).map(r => ({
       date:   r.match_date ? new Date(r.match_date).toISOString().split('T')[0] : null,
@@ -815,7 +811,7 @@ async function researchFixture(fixtureId) {
 
   if (useLocalAway) {
     awayForm      = localFormStr(localAway, awayTeamName, 5);
-    const atAway  = localAway.filter(r => r.away_team.toLowerCase().includes(awayTeamName.toLowerCase().slice(0, 10)));
+    const atAway  = localAway.filter(r => r.away_team.toLowerCase() === awayTeamName.toLowerCase());
     awayFormVenue = localFormStr(atAway, awayTeamName, 5);
     awayRecent    = localAway.slice(0, 5).map(r => ({
       date:   r.match_date ? new Date(r.match_date).toISOString().split('T')[0] : null,

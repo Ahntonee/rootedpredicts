@@ -139,7 +139,8 @@ async function runAccuracyTracking() {
 }
 
 function startScheduler() {
-  console.log('[SCHEDULER] Football API updates are manual only.');
+  cron.schedule(SYNC_SCHEDULE, runDailySync, { timezone: 'UTC' });
+  console.log(`[SCHEDULER] Daily fixture sync + auto-predict: ${SYNC_SCHEDULE} UTC`);
   cron.schedule('45 23 * * *', runAccuracyTracking,       { timezone: 'UTC' });
   console.log('[SCHEDULER] Accuracy tracking: 23:45 UTC daily (after results sync)');
   cron.schedule('* * * * *',   runSubscriptionExpiryCheck, { timezone: 'UTC' });

@@ -360,16 +360,14 @@ router.get('/:slug/extras', optionalAuth, asyncHandler(async (req, res) => {
   const { home_team, away_team, api_league_id } = rows[0];
 
   // H2H: query local DB (free — no API cost)
-  const h = home_team.slice(0, 12);
-  const a = away_team.slice(0, 12);
   const [h2hRows] = await db.query(
     `SELECT home_team, away_team, home_score, away_score, match_date
      FROM predictions
      WHERE home_score IS NOT NULL AND away_score IS NOT NULL
-       AND ((home_team LIKE ? AND away_team LIKE ?)
-            OR (home_team LIKE ? AND away_team LIKE ?))
+       AND ((LOWER(home_team) = LOWER(?) AND LOWER(away_team) = LOWER(?))
+            OR (LOWER(home_team) = LOWER(?) AND LOWER(away_team) = LOWER(?)))
      ORDER BY match_date DESC LIMIT 10`,
-    [`%${h}%`, `%${a}%`, `%${a}%`, `%${h}%`]
+    [home_team, away_team, away_team, home_team]
   );
 
   const h2h = h2hRows.map(r => ({

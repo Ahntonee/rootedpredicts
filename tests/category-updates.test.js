@@ -37,15 +37,16 @@ test('budget survives midnight and restart; concurrent calls cannot overspend', 
   assert.doesNotMatch(fs.readFileSync(path.join(root, 'services/apiCounter.js'), 'utf8'), /new Date|todayKey|checkReset/);
 });
 
-test('scheduler registers no provider API jobs', () => {
+test('scheduler registers only the configured daily provider sync job', () => {
   const jobs = [];
   const scheduler = load('services/scheduler.js', {
     'node-cron': { schedule: (_, fn) => jobs.push(fn.name) },
     '../config/db': {}, './apiFootball': {}, './confidence': {}, './accuracy': {},
   });
   scheduler.startScheduler();
-  assert.equal(jobs.length, 4);
-  assert.ok(jobs.every(name => !['runDailySync', 'runResultsSync', 'runLiveSync', 'runTodayScores'].includes(name)));
+  assert.equal(jobs.length, 5);
+  assert.equal(jobs.filter(name => name === 'runDailySync').length, 1);
+  assert.ok(jobs.every(name => !['runResultsSync', 'runLiveSync', 'runTodayScores'].includes(name)));
 });
 
 test('guest Safe Tips and detail data are public; other VIP tips stay locked', async () => {
