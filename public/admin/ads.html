@@ -252,7 +252,8 @@ function renderTable() {
   tbody.innerHTML = ads.map(function(ad) {
     var placements = [];
     try { placements = Array.isArray(ad.placement) ? ad.placement : JSON.parse(ad.placement||'[]'); } catch(_){}
-    var plBadges = placements.map(function(p){ return '<span style="font-size:0.7rem;padding:2px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);">'+p+'</span>'; }).join(' ');
+    var placementLabels = { 'sticky-footer': 'Bottom of Website', 'between-cards': 'Between Prediction Cards', popup: 'Popup Overlay' };
+    var plBadges = placements.map(function(p){ return '<span style="font-size:0.7rem;padding:2px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);">'+(placementLabels[p] || p)+'</span>'; }).join(' ');
     var statusBadge = ad.status==='active'
       ? '<span class="badge badge-won">ACTIVE</span>'
       : '<span class="badge badge-pending">INACTIVE</span>';

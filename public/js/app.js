@@ -1098,12 +1098,17 @@
   }
 
   function renderStickyFooterAd(ad) {
-    var host = document.getElementById('ad-slot-footer');
-    if (!host) return false;
+    if (wasAdDismissed(ad)) return false;
+    var host = document.createElement('div');
+    host.className = 'managed-bottom-ad';
+    host.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:1500;width:100%;display:flex;align-items:flex-end;justify-content:center;background:transparent;';
     var wrap = buildAdWrap(ad);
-    wrap.style.margin = '0';
     if (!wrap.hasChildNodes()) return false;
+    wrap.style.cssText += 'margin:0;width:100%;display:flex;align-items:center;justify-content:center;overflow:visible;';
+    var frame = wrap.querySelector('iframe');
+    if (frame) frame.style.width = '100%';
     host.appendChild(wrap);
+    document.body.appendChild(host);
     return true;
   }
 
