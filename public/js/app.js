@@ -858,7 +858,9 @@
   function buildCodeAdFrame(ad) {
     var frame = document.createElement('iframe');
     var slot = ad._slot || '';
-    var initialHeight = slot === 'sidebar' ? 280 : (slot === 'between-cards' ? 250 : 110);
+    var initialHeight = slot === 'sidebar' || slot === 'popup'
+      ? 280
+      : (slot === 'between-cards' ? 250 : 110);
     frame.title = ad.name || 'Advertisement';
     frame.loading = 'eager';
     frame.scrolling = 'no';
@@ -977,10 +979,72 @@
     }
   }
 
+  function dismissalKey(ad) {
+    return 'managed_ad_dismissed_' + ad.id + '_' + ad._slot;
+  }
+
+  function wasAdDismissed(ad) {
+    try { return sessionStorage.getItem(dismissalKey(ad)) === '1'; }
+    catch (_) { return false; }
+  }
+
+  function rememberAdDismissal(ad) {
+    try { sessionStorage.setItem(dismissalKey(ad), '1'); }
+    catch (_) {}
+  }
+
+  function addAdCloseButton(host, ad, label) {
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.setAttribute('aria-label', label || 'Close advertisement');
+    close.textContent = '\u00d7';
+    close.style.cssText = 'position:absolute;top:-12px;right:-12px;width:28px;height:28px;border-radius:50%;border:2px solid #374151;background:#fff;color:#111827;font:700 22px/22px Arial,sans-serif;cursor:pointer;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.25);';
+    close.addEventListener('click', function() {
+      rememberAdDismissal(ad);
+      host.remove();
+    });
+    host.appendChild(close);
+  }
+
+  function renderPopupAd(ad) {
+    if (wasAdDismissed(ad)) return false;
+    var host = document.createElement('div');
+    host.className = 'managed-popup-ad';
+    host.style.cssText = 'position:fixed;inset:0;z-index:2100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.55);';
+    var panel = document.createElement('div');
+    panel.style.cssText = 'position:relative;width:min(900px,94vw);max-height:90vh;padding:12px;background:var(--card-bg,#fff);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:visible;';
+    var wrap = buildAdWrap(ad);
+    wrap.style.margin = '0';
+    panel.appendChild(wrap);
+    addAdCloseButton(panel, ad, 'Close popup advertisement');
+    host.appendChild(panel);
+    host.addEventListener('click', function(event) {
+      if (event.target === host) {
+        rememberAdDismissal(ad);
+        host.remove();
+      }
+    });
+    document.body.appendChild(host);
+    return true;
+  }
+
+  function renderStickyFooterAd(ad) {
+    if (wasAdDismissed(ad)) return false;
+    var host = document.createElement('div');
+    host.className = 'managed-sticky-footer-ad';
+    host.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:1500;width:min(1240px,calc(100% - 28px));padding:10px;background:var(--card-bg,#fff);border:1px solid var(--border,#e5e7eb);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.28);';
+    var wrap = buildAdWrap(ad);
+    wrap.style.margin = '0';
+    host.appendChild(wrap);
+    addAdCloseButton(host, ad, 'Close sticky advertisement');
+    document.body.appendChild(host);
+    return true;
+  }
+
   async function injectAds() {
-    var placements = ['header','between-cards','sidebar','footer','blog'];
+    var placements = ['header','between-cards','sidebar','footer','sticky-footer','popup','blog'];
     var slots = placements.filter(function(p){
-      return p === 'between-cards' || !!document.getElementById('ad-slot-'+p);
+      return p === 'between-cards' || p === 'sticky-footer' || p === 'popup' || !!document.getElementById('ad-slot-'+p);
     });
     if (!slots.length) return;
     try {
@@ -995,6 +1059,14 @@
       allAds.forEach(function(ad) {
         if (ad._slot === 'between-cards') {
           betweenCardAds.push(ad);
+          return;
+        }
+        if (ad._slot === 'popup') {
+          if (renderPopupAd(ad)) fetch('/api/marketing/ads/'+ad.id+'/impression', {method:'POST'}).catch(function(){});
+          return;
+        }
+        if (ad._slot === 'sticky-footer') {
+          if (renderStickyFooterAd(ad)) fetch('/api/marketing/ads/'+ad.id+'/impression', {method:'POST'}).catch(function(){});
           return;
         }
         var isMobileSidebar = ad._slot === 'sidebar' && window.matchMedia('(max-width: 768px)').matches;
