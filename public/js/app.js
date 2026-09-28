@@ -933,6 +933,9 @@
     if (!ads.length) return;
 
     if (slotName === 'header') {
+      slot.style.width = 'calc(100% - 32px)';
+      slot.style.maxWidth = '1240px';
+      slot.style.margin = '16px auto';
       slot.style.display = 'grid';
       slot.style.gridTemplateColumns = ads.length > 1 && window.innerWidth > 768
         ? 'repeat(' + ads.length + ', minmax(0, 1fr))'
@@ -952,6 +955,25 @@
         slot.dataset.layoutBound = '1';
         window.addEventListener('resize', function() { layoutManagedAdSlot('header'); });
       }
+    } else if (slotName === 'footer') {
+      slot.style.width = 'calc(100% - 32px)';
+      slot.style.maxWidth = '1240px';
+      slot.style.margin = '24px auto 32px';
+      slot.style.display = 'grid';
+      slot.style.gridTemplateColumns = ads.length > 1 && window.innerWidth > 768
+        ? 'repeat(' + ads.length + ', minmax(0, 1fr))'
+        : 'minmax(0, 1fr)';
+      slot.style.alignItems = 'center';
+      slot.style.justifyItems = 'center';
+      slot.style.gap = '24px';
+      ads.forEach(function(ad) {
+        ad.style.minWidth = '0';
+        ad.style.width = '100%';
+        ad.style.margin = '0';
+        ad.style.display = 'flex';
+        ad.style.alignItems = 'center';
+        ad.style.justifyContent = 'center';
+      });
     }
   }
 
@@ -985,6 +1007,7 @@
         }
       });
       layoutManagedAdSlot('header');
+      layoutManagedAdSlot('footer');
       if (betweenCardAds.length) {
         scheduleBetweenCardAds();
         var predictionRoot = document.querySelector('#predictions-grid, #pred-list, #free-picks-list, #picks-list, #seo-picks-list');
