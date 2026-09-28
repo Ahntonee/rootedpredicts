@@ -926,6 +926,35 @@
     betweenRenderTimer = setTimeout(renderBetweenCardAds, 0);
   }
 
+  function layoutManagedAdSlot(slotName) {
+    var slot = document.getElementById('ad-slot-' + slotName);
+    if (!slot) return;
+    var ads = Array.from(slot.querySelectorAll(':scope > .managed-ad'));
+    if (!ads.length) return;
+
+    if (slotName === 'header') {
+      slot.style.display = 'grid';
+      slot.style.gridTemplateColumns = ads.length > 1 && window.innerWidth > 768
+        ? 'repeat(' + ads.length + ', minmax(0, 1fr))'
+        : 'minmax(0, 1fr)';
+      slot.style.alignItems = 'center';
+      slot.style.justifyItems = 'stretch';
+      slot.style.gap = '24px';
+      ads.forEach(function(ad) {
+        ad.style.minWidth = '0';
+        ad.style.height = '100%';
+        ad.style.margin = '0';
+        ad.style.display = 'flex';
+        ad.style.alignItems = 'center';
+        ad.style.justifyContent = 'center';
+      });
+      if (!slot.dataset.layoutBound) {
+        slot.dataset.layoutBound = '1';
+        window.addEventListener('resize', function() { layoutManagedAdSlot('header'); });
+      }
+    }
+  }
+
   async function injectAds() {
     var placements = ['header','between-cards','sidebar','footer','blog'];
     var slots = placements.filter(function(p){
@@ -955,6 +984,7 @@
           fetch('/api/marketing/ads/'+ad.id+'/impression', {method:'POST'}).catch(function(){});
         }
       });
+      layoutManagedAdSlot('header');
       if (betweenCardAds.length) {
         scheduleBetweenCardAds();
         var predictionRoot = document.querySelector('#predictions-grid, #pred-list, #free-picks-list, #picks-list, #seo-picks-list');
