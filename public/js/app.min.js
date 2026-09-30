@@ -954,6 +954,7 @@
     document.querySelectorAll('.match-odds-pill').forEach(function(pill, index) {
       var ad = oddsPillAds[index % oddsPillAds.length];
       var creative;
+      var oddsClickUrl = '';
       if (ad.type === 'banner' && ad.image_data) {
         creative = document.createElement('img');
         creative.src = ad.image_data;
@@ -964,7 +965,17 @@
         creative = document.createElement('span');
         creative.textContent = ad.name;
       } else if (ad.type === 'code' && ad.content) {
-        creative = buildCodeAdFrame(ad);
+        var winWinUrl = String(ad.content).match(/https:\/\/slim\.link\/ROOTEDPREDICT/i);
+        if (winWinUrl) {
+          creative = document.createElement('img');
+          creative.src = '/images/winwinad.jpg';
+          creative.alt = 'WinWinBet';
+          creative.loading = 'lazy';
+          creative.decoding = 'async';
+          oddsClickUrl = winWinUrl[0];
+        } else {
+          creative = buildCodeAdFrame(ad);
+        }
       } else {
         return;
       }
@@ -974,14 +985,19 @@
       creative.style.cssText = 'display:block;width:' + compactWidth + ';min-width:' + compactWidth + ';max-width:' + compactWidth +
         ';height:' + compactHeight + ';max-height:' + compactHeight +
         ';object-fit:contain;border-radius:4px;overflow:hidden;cursor:pointer;color:#fff;font-size:.65rem;line-height:1;background:transparent;';
-      if (ad.type !== 'code') {
+      if (ad.type !== 'code' || oddsClickUrl) {
         creative.setAttribute('role', 'link');
         creative.setAttribute('tabindex', '0');
         creative.setAttribute('aria-label', (ad.name || 'Advertisement') + ' (opens in a new tab)');
         var openAd = function(event) {
           event.preventDefault();
           event.stopPropagation();
-          window.open('/api/marketing/ads/' + ad.id + '/click', '_blank', 'noopener');
+          if (oddsClickUrl) {
+            fetch('/api/marketing/ads/' + ad.id + '/click', {method:'GET'}).catch(function(){});
+            window.open(oddsClickUrl, '_blank', 'noopener');
+          } else {
+            window.open('/api/marketing/ads/' + ad.id + '/click', '_blank', 'noopener');
+          }
         };
         creative.addEventListener('click', openAd);
         creative.addEventListener('keydown', function(event) {
