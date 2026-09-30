@@ -873,7 +873,7 @@
     var slot = ad._slot || '';
     var isOddsPill = slot === 'odds-pill';
     var initialHeight = isOddsPill
-      ? 22
+      ? 36
       : slot === 'sidebar' || slot === 'popup'
       ? 280
       : (slot === 'between-cards' ? 250 : 110);
@@ -969,12 +969,11 @@
         return;
       }
       creative.className = 'managed-odds-pill-ad';
-      var compactWidth = window.matchMedia('(max-width: 360px)').matches ? '56px' :
-        (window.matchMedia('(max-width: 480px)').matches ? '68px' : '82px');
-      var compactHeight = window.matchMedia('(max-width: 360px)').matches ? '16px' :
-        (window.matchMedia('(max-width: 480px)').matches ? '18px' : '22px');
-      creative.style.cssText = 'display:block;width:auto;max-width:' + compactWidth + ';height:' + compactHeight +
-        ';max-height:' + compactHeight + ';object-fit:contain;border-radius:3px;cursor:pointer;color:#fff;font-size:.65rem;line-height:1;';
+      var compactWidth = ad.type === 'code' ? '116px' : '110px';
+      var compactHeight = ad.type === 'code' ? '36px' : '34px';
+      creative.style.cssText = 'display:block;width:' + compactWidth + ';min-width:' + compactWidth + ';max-width:' + compactWidth +
+        ';height:' + compactHeight + ';max-height:' + compactHeight +
+        ';object-fit:contain;border-radius:4px;overflow:hidden;cursor:pointer;color:#fff;font-size:.65rem;line-height:1;background:transparent;';
       if (ad.type !== 'code') {
         creative.setAttribute('role', 'link');
         creative.setAttribute('tabindex', '0');

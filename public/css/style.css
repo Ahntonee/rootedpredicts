@@ -1015,12 +1015,14 @@ img { max-width: 100%; display: block; }
 }
 .managed-odds-pill-ad {
   display: block;
-  width: auto;
-  max-width: 82px;
-  height: 22px;
-  max-height: 22px;
+  width: 116px;
+  min-width: 116px;
+  max-width: 116px;
+  height: 36px;
+  max-height: 36px;
   object-fit: contain;
-  border-radius: 3px;
+  border-radius: 4px;
+  overflow: hidden;
   cursor: pointer;
   color: #fff;
   font-size: 0.65rem;
@@ -1822,7 +1824,7 @@ img { max-width: 100%; display: block; }
   /* ── Pills row — tighter left/right min-width ── */
   .match-pills-left, .match-pills-right { min-width: 72px; }
   .match-odds-pill { font-size: 0.72rem; padding: 4px 8px; }
-  .managed-odds-pill-ad { max-width: 68px; height: 18px; max-height: 18px; }
+  .managed-odds-pill-ad { width: 116px; min-width: 116px; max-width: 116px; height: 36px; max-height: 36px; }
   .match-tip-pill  { font-size: 0.72rem; padding: 4px 8px; }
 
   /* ── WON / LOST badges ── */
@@ -1907,7 +1909,7 @@ img { max-width: 100%; display: block; }
   /* Pills row */
   .match-pills-left, .match-pills-right { min-width: 54px; }
   .match-odds-pill, .match-tip-pill { font-size: 0.63rem; padding: 4px 7px; }
-  .managed-odds-pill-ad { max-width: 56px; height: 16px; max-height: 16px; }
+  .managed-odds-pill-ad { width: 116px; min-width: 116px; max-width: 116px; height: 36px; max-height: 36px; }
   .match-won-badge, .match-lost-badge { font-size: 0.6rem; padding: 2px 5px; }
 
   /* ── Day switcher ── */
