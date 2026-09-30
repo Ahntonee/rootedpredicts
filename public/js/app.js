@@ -131,6 +131,9 @@
       headerAdSlot.setAttribute('aria-label', 'Advertisement');
       el.insertAdjacentElement('afterend', headerAdSlot);
     }
+    headerAdSlot.replaceChildren();
+    headerAdSlot.style.display = 'none';
+    headerAdSlot.setAttribute('aria-hidden', 'true');
 
     // Theme toggle
     const themeToggle = document.getElementById('theme-toggle');
@@ -942,9 +945,16 @@
     var slot = document.getElementById('ad-slot-' + slotName);
     if (!slot) return;
     var ads = Array.from(slot.querySelectorAll(':scope > .managed-ad'));
-    if (!ads.length) return;
+    if (!ads.length) {
+      if (slotName === 'header') {
+        slot.style.display = 'none';
+        slot.setAttribute('aria-hidden', 'true');
+      }
+      return;
+    }
 
     if (slotName === 'header') {
+      slot.removeAttribute('aria-hidden');
       slot.style.width = 'calc(100% - 32px)';
       slot.style.maxWidth = '1240px';
       slot.style.margin = '16px auto';
