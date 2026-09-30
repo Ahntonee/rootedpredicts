@@ -871,7 +871,10 @@
   function buildCodeAdFrame(ad) {
     var frame = document.createElement('iframe');
     var slot = ad._slot || '';
-    var initialHeight = slot === 'sidebar' || slot === 'popup'
+    var isOddsPill = slot === 'odds-pill';
+    var initialHeight = isOddsPill
+      ? 22
+      : slot === 'sidebar' || slot === 'popup'
       ? 280
       : (slot === 'between-cards' ? 250 : 110);
     frame.title = ad.name || 'Advertisement';
@@ -882,9 +885,10 @@
     frame.style.cssText = 'display:block;width:100%;height:'+initialHeight+'px;border:0;overflow:hidden;background:transparent;';
     frame.srcdoc = '<!doctype html><html><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-      '<base target="_blank"><style>html,body{margin:0;padding:0;width:100%;min-height:100%;overflow:hidden;background:transparent}body{display:flex;align-items:center;justify-content:center}img,iframe{max-width:100%}</style>' +
+      '<base target="_blank"><style>html,body{margin:0;padding:0;width:100%;height:' + (isOddsPill ? '100%' : 'auto') + ';min-height:' + (isOddsPill ? '0' : '100%') + ';overflow:hidden;background:transparent}body{display:flex;align-items:center;justify-content:center}img,iframe,video,object,embed{max-width:100%;' + (isOddsPill ? 'max-height:100%;height:100%!important;width:auto!important;' : '') + 'border:0}</style>' +
       '</head><body>' + ad.content + '</body></html>';
     frame.addEventListener('load', function() {
+      if (isOddsPill) return;
       try {
         var body = frame.contentDocument && frame.contentDocument.body;
         var html = frame.contentDocument && frame.contentDocument.documentElement;
@@ -915,6 +919,8 @@
 
   var betweenCardAds = [];
   var betweenRenderTimer = null;
+  var oddsPillAds = [];
+  var oddsPillRenderTimer = null;
 
   function renderBetweenCardAds() {
     document.querySelectorAll('.ad-between-predictions').forEach(function(el) { el.remove(); });
@@ -939,6 +945,61 @@
   function scheduleBetweenCardAds() {
     clearTimeout(betweenRenderTimer);
     betweenRenderTimer = setTimeout(renderBetweenCardAds, 0);
+  }
+
+  function renderOddsPillAds() {
+    document.querySelectorAll('.managed-odds-pill-ad').forEach(function(el) { el.remove(); });
+    if (!oddsPillAds.length) return;
+    var renderedAdIds = {};
+    document.querySelectorAll('.match-odds-pill').forEach(function(pill, index) {
+      var ad = oddsPillAds[index % oddsPillAds.length];
+      var creative;
+      if (ad.type === 'banner' && ad.image_data) {
+        creative = document.createElement('img');
+        creative.src = ad.image_data;
+        creative.alt = ad.name || 'Advertisement';
+        creative.loading = 'lazy';
+        creative.decoding = 'async';
+      } else if (ad.type === 'text' && ad.name) {
+        creative = document.createElement('span');
+        creative.textContent = ad.name;
+      } else if (ad.type === 'code' && ad.content) {
+        creative = buildCodeAdFrame(ad);
+      } else {
+        return;
+      }
+      creative.className = 'managed-odds-pill-ad';
+      var compactWidth = window.matchMedia('(max-width: 360px)').matches ? '56px' :
+        (window.matchMedia('(max-width: 480px)').matches ? '68px' : '82px');
+      var compactHeight = window.matchMedia('(max-width: 360px)').matches ? '16px' :
+        (window.matchMedia('(max-width: 480px)').matches ? '18px' : '22px');
+      creative.style.cssText = 'display:block;width:auto;max-width:' + compactWidth + ';height:' + compactHeight +
+        ';max-height:' + compactHeight + ';object-fit:contain;border-radius:3px;cursor:pointer;color:#fff;font-size:.65rem;line-height:1;';
+      if (ad.type !== 'code') {
+        creative.setAttribute('role', 'link');
+        creative.setAttribute('tabindex', '0');
+        creative.setAttribute('aria-label', (ad.name || 'Advertisement') + ' (opens in a new tab)');
+        var openAd = function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          window.open('/api/marketing/ads/' + ad.id + '/click', '_blank', 'noopener');
+        };
+        creative.addEventListener('click', openAd);
+        creative.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter' || event.key === ' ') openAd(event);
+        });
+      }
+      pill.appendChild(creative);
+      renderedAdIds[ad.id] = true;
+    });
+    Object.keys(renderedAdIds).forEach(function(id) {
+      fetch('/api/marketing/ads/' + id + '/impression', {method:'POST'}).catch(function(){});
+    });
+  }
+
+  function scheduleOddsPillAds() {
+    clearTimeout(oddsPillRenderTimer);
+    oddsPillRenderTimer = setTimeout(renderOddsPillAds, 0);
   }
 
   function layoutManagedAdSlot(slotName) {
@@ -1124,9 +1185,9 @@
 
   async function injectAds() {
     if (window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')) return;
-    var placements = ['header','between-cards','sidebar','footer','sticky-footer','popup','blog'];
+    var placements = ['header','odds-pill','between-cards','sidebar','footer','sticky-footer','popup','blog'];
     var slots = placements.filter(function(p){
-      return p === 'between-cards' || p === 'sticky-footer' || p === 'popup' || !!document.getElementById('ad-slot-'+p);
+      return p === 'odds-pill' || p === 'between-cards' || p === 'sticky-footer' || p === 'popup' || !!document.getElementById('ad-slot-'+p);
     });
     if (!slots.length) return;
     try {
@@ -1142,6 +1203,10 @@
       allAds.forEach(function(ad) {
         if (ad._slot === 'between-cards') {
           betweenCardAds.push(ad);
+          return;
+        }
+        if (ad._slot === 'odds-pill') {
+          oddsPillAds.push(ad);
           return;
         }
         if (ad._slot === 'popup') {
@@ -1176,6 +1241,19 @@
             if (hasNewPredictions) scheduleBetweenCardAds();
           }).observe(predictionRoot, { childList: true, subtree: true });
         }
+      }
+      if (oddsPillAds.length) {
+        scheduleOddsPillAds();
+        var oddsRoot = document.querySelector('#predictions-grid, #pred-list, #free-picks-list, #picks-list, #seo-picks-list') || document.body;
+        new MutationObserver(function(mutations) {
+          var needsRender = mutations.some(function(mutation) {
+            return Array.from(mutation.addedNodes).some(function(node) {
+              return node.nodeType === 1 && !node.classList.contains('managed-odds-pill-ad') &&
+                (node.classList.contains('match-odds-pill') || (node.querySelector && node.querySelector('.match-odds-pill')));
+            });
+          });
+          if (needsRender) scheduleOddsPillAds();
+        }).observe(oddsRoot, { childList: true, subtree: true });
       }
       if (!hasPopupAd) scheduleTelegramPopup();
     } catch(_) { scheduleTelegramPopup(); }

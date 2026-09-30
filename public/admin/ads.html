@@ -116,6 +116,9 @@
             <label class="placement-chip" data-p="header">
               <input type="checkbox" value="header"> Header Banner
             </label>
+            <label class="placement-chip" data-p="odds-pill">
+              <input type="checkbox" value="odds-pill"> Inside Odds Pill
+            </label>
             <label class="placement-chip" data-p="between-cards">
               <input type="checkbox" value="between-cards"> Between Prediction Cards
             </label>
@@ -135,6 +138,7 @@
               <input type="checkbox" value="blog"> Blog Posts
             </label>
           </div>
+          <p style="margin:8px 0 0;font-size:0.75rem;color:var(--muted);">Inside Odds Pill accepts banner, text, or advertiser code. Code ads are automatically contained and sized beside the odds.</p>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -252,7 +256,7 @@ function renderTable() {
   tbody.innerHTML = ads.map(function(ad) {
     var placements = [];
     try { placements = Array.isArray(ad.placement) ? ad.placement : JSON.parse(ad.placement||'[]'); } catch(_){}
-    var placementLabels = { 'sticky-footer': 'Bottom of Website', 'between-cards': 'Between Prediction Cards', popup: 'Popup Overlay' };
+    var placementLabels = { 'sticky-footer': 'Bottom of Website', 'between-cards': 'Between Prediction Cards', 'odds-pill': 'Inside Odds Pill', popup: 'Popup Overlay' };
     var plBadges = placements.map(function(p){ return '<span style="font-size:0.7rem;padding:2px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);">'+(placementLabels[p] || p)+'</span>'; }).join(' ');
     var statusBadge = ad.status==='active'
       ? '<span class="badge badge-won">ACTIVE</span>'

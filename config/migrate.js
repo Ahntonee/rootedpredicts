@@ -879,7 +879,7 @@ const MIGRATIONS = [
         content     LONGTEXT       DEFAULT NULL COMMENT 'HTML/JS for code; plain text for text ads',
         image_data  LONGTEXT       DEFAULT NULL COMMENT 'Base64 data-URI for banner image',
         link_url    VARCHAR(1000)  DEFAULT NULL COMMENT 'Click target for banner and text ads',
-        placement   JSON           DEFAULT NULL COMMENT 'Array: header|between-cards|sidebar|footer|blog',
+        placement   JSON           DEFAULT NULL COMMENT 'Array: header|odds-pill|between-cards|sidebar|footer|sticky-footer|popup|blog',
         status      ENUM('active','inactive') NOT NULL DEFAULT 'active',
         impressions INT UNSIGNED   NOT NULL DEFAULT 0,
         clicks      INT UNSIGNED   NOT NULL DEFAULT 0,
