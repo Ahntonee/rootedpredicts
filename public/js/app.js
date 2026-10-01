@@ -980,11 +980,12 @@
         return;
       }
       creative.className = 'managed-odds-pill-ad';
-      var compactWidth = ad.type === 'code' ? '116px' : '110px';
-      var compactHeight = ad.type === 'code' ? '36px' : '34px';
+      var compactWidth = oddsClickUrl ? '96px' : (ad.type === 'code' ? '116px' : '110px');
+      var compactHeight = oddsClickUrl ? '31px' : (ad.type === 'code' ? '36px' : '34px');
       creative.style.cssText = 'display:block;width:' + compactWidth + ';min-width:' + compactWidth + ';max-width:' + compactWidth +
         ';height:' + compactHeight + ';max-height:' + compactHeight +
         ';object-fit:contain;border-radius:4px;overflow:hidden;cursor:pointer;color:#fff;font-size:.65rem;line-height:1;background:transparent;';
+      pill.style.borderRadius = '14px';
       if (ad.type !== 'code' || oddsClickUrl) {
         creative.setAttribute('role', 'link');
         creative.setAttribute('tabindex', '0');

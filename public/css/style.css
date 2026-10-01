@@ -1009,7 +1009,7 @@ img { max-width: 100%; display: block; }
 .match-pills-right { flex-shrink: 0; min-width: 90px; }
 .match-odds-pill {
   background: var(--navy, #0f3460); color: #fff;
-  padding: 6px 13px; border-radius: 50px;
+  padding: 6px 13px; border-radius: 14px;
   font-size: 0.79rem; font-weight: 700;
   display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
 }
