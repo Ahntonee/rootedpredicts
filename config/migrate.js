@@ -1056,6 +1056,16 @@ async function seedStaticPages(conn) {
       extra: null,
     },
     {
+      slug: 'disclaimer',
+      page_title: 'Disclaimer | Rooted Predictions',
+      meta_description: 'Important information about football predictions, betting risks, accuracy, third-party links and responsible gambling.',
+      hero_title: 'Disclaimer',
+      hero_subtitle: null,
+      last_updated: '2026-10-01',
+      content: `<p style="margin-bottom:20px;">The information and football predictions published by Rooted Predictions are provided for informational and entertainment purposes only. They do not constitute financial, betting, or professional advice.</p><h2 style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--text);margin:32px 0 12px;">No Guaranteed Results</h2><p style="margin-bottom:20px;">Football results are inherently uncertain. We do not guarantee the accuracy of any prediction, tip, odds, analysis, or statistical information. Past performance does not guarantee future results.</p><h2 style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--text);margin:32px 0 12px;">Your Responsibility</h2><p style="margin-bottom:20px;">Any betting decision you make is entirely your responsibility. Only gamble with money you can afford to lose and verify all odds and market details directly with your bookmaker before placing a bet.</p><h2 style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--text);margin:32px 0 12px;">Third-Party Services</h2><p style="margin-bottom:20px;">Our website may contain advertising and links to third-party bookmakers or services. Rooted Predictions does not control those services and is not responsible for their availability, content, terms, transactions, or losses arising from their use.</p><h2 style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--text);margin:32px 0 12px;">Responsible Gambling</h2><p style="margin-bottom:20px;">You must be at least 18 years old, or meet the legal gambling age in your jurisdiction. If gambling is causing harm, stop and seek assistance from a recognised responsible-gambling organisation.</p><h2 style="font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--text);margin:32px 0 12px;">Contact</h2><p>For questions about this disclaimer, contact <a href="mailto:legal@rootedpredict.com" style="color:var(--red);">legal@rootedpredict.com</a>.</p>`,
+      extra: null,
+    },
+    {
       slug: 'contact',
       page_title: 'Contact Rooted Predictions — Get in Touch',
       meta_description: 'Contact the Rooted Predictions team for support, partnership enquiries, or feedback. We are here to help bettors worldwide win more.',

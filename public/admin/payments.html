@@ -29,6 +29,9 @@
     <button class="btn btn-sm btn-outline status-tab" data-status="rejected" id="tab-rejected">
       <span class="material-icons-round">cancel</span>Rejected
     </button>
+    <select class="admin-filter-select" id="payment-method-filter" style="margin-left:auto;">
+      <option value="">All Payment Methods</option><option value="paystack">Paystack</option><option value="usdt">USDT</option><option value="bank_transfer">Bank Transfer / MoMo</option>
+    </select>
   </div>
 
   <!-- Table -->
@@ -48,6 +51,7 @@
             <th>User</th>
             <th>Plan</th>
             <th>Amount</th>
+            <th>Payment Method</th>
             <th>Submitted</th>
             <th>Receipt</th>
             <th>Actions</th>
@@ -139,7 +143,8 @@ async function loadSubmissions(status, page) {
   document.getElementById('ps-pagination').style.display = 'none';
 
   try {
-    var json = await Admin.api('GET', '/api/admin/payment-submissions?status=' + status + '&page=' + page);
+    var method = document.getElementById('payment-method-filter').value;
+    var json = await Admin.api('GET', '/api/admin/payment-submissions?status=' + status + '&page=' + page + '&method=' + encodeURIComponent(method));
     document.getElementById('ps-loading').style.display = 'none';
 
     if (!json.success) {
@@ -177,14 +182,22 @@ async function loadSubmissions(status, page) {
       } else {
         actions = statusBadge + (r.notes ? '<br><small style="color:var(--muted);">' + r.notes + '</small>' : '');
       }
+      var methodLabels = { paystack:'Paystack', usdt:'USDT', moniepoint:'Bank Transfer', momo:'MoMo' };
+      var methodLabel = methodLabels[r.payment_method] || r.payment_method || 'Bank Transfer';
+      var amount = r.payment_amount != null ? Number(r.payment_amount).toLocaleString(undefined,{maximumFractionDigits:2}) : (planAmounts[r.plan] || '');
+      var currency = r.payment_currency || 'NGN';
+      var receipt = r.record_type === 'manual'
+        ? '<button class="btn btn-outline btn-sm" onclick="viewReceipt(' + r.id + ')"><span class="material-icons-round">visibility</span>View</button>'
+        : '<span style="font-size:0.78rem;color:var(--muted);">Automatic</span>';
 
       return '<tr>' +
         '<td>' + ((page - 1) * 20 + i + 1) + '</td>' +
         '<td><div style="font-weight:600;">' + (r.user_name || '') + '</div><div style="font-size:0.78rem;color:var(--muted);">' + r.user_email + '</div></td>' +
         '<td>' + (planLabels[r.plan] || r.plan) + '</td>' +
-        '<td style="font-weight:700;">&#8358;' + (planAmounts[r.plan] || '') + '</td>' +
+        '<td style="font-weight:700;">' + currency + ' ' + amount + '</td>' +
+        '<td><span class="badge badge-pending">' + methodLabel + '</span></td>' +
         '<td style="font-size:0.82rem;color:var(--muted);">' + fmtDate(r.submitted_at) + '</td>' +
-        '<td><button class="btn btn-outline btn-sm" onclick="viewReceipt(' + r.id + ')"><span class="material-icons-round">visibility</span>View</button></td>' +
+        '<td>' + receipt + '</td>' +
         '<td>' + (r.status === 'pending' ? actions : statusBadge + (r.notes ? '<div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">' + r.notes + '</div>' : '')) + '</td>' +
         '</tr>';
     }).join('');
@@ -278,6 +291,7 @@ document.getElementById('ps-prev').addEventListener('click', function() {
 document.getElementById('ps-next').addEventListener('click', function() {
   loadSubmissions(currentStatus, currentPage + 1);
 });
+document.getElementById('payment-method-filter').addEventListener('change', function() { loadSubmissions(currentStatus, 1); });
 
 document.addEventListener('DOMContentLoaded', async function() {
   var user = await Admin.requireAdmin();

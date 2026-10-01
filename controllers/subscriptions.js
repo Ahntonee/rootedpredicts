@@ -532,25 +532,38 @@ async function manualSubmit(req, res) {
 // ── GET /api/admin/payment-submissions  (superadmin)
 async function adminListSubmissions(req, res) {
   try {
-    const status = req.query.status || 'pending';
+    const status = ['pending','approved','rejected'].includes(req.query.status) ? req.query.status : 'pending';
+    const method = ['paystack','usdt','bank_transfer'].includes(req.query.method) ? req.query.method : '';
     const page   = Math.max(1, parseInt(req.query.page) || 1);
     const limit  = 20;
     const offset = (page - 1) * limit;
-
-    const [rows] = await db.query(
+    const manualWhere = method === 'usdt' ? " AND ps.payment_method='usdt'" :
+      method === 'bank_transfer' ? " AND ps.payment_method<>'usdt'" :
+      method === 'paystack' ? ' AND 1=0' : '';
+    const [manualRows] = await db.query(
       `SELECT ps.id, ps.plan, ps.amount_ngn, ps.payment_method, ps.payment_currency, ps.payment_amount, ps.payment_details, ps.payment_reference, ps.status, ps.notes,
               ps.submitted_at, ps.reviewed_at,
-              u.name AS user_name, u.email AS user_email, u.id AS user_id
+              u.name AS user_name, u.email AS user_email, u.id AS user_id, 'manual' AS record_type
        FROM payment_submissions ps
        JOIN users u ON u.id = ps.user_id
-       WHERE ps.status = ?
-       ORDER BY ps.submitted_at DESC
-       LIMIT ? OFFSET ?`,
-      [status, limit, offset]
+       WHERE ps.status = ?${manualWhere}`,
+      [status]
     );
-    const [[{ total }]] = await db.query(
-      `SELECT COUNT(*) AS total FROM payment_submissions WHERE status = ?`, [status]
-    );
+    let paystackRows = [];
+    if (status === 'approved' && (!method || method === 'paystack')) {
+      [paystackRows] = await db.query(
+        `SELECT s.id, s.plan, NULL AS amount_ngn, 'paystack' AS payment_method, s.currency AS payment_currency,
+                s.amount AS payment_amount, NULL AS payment_details, s.paystack_reference AS payment_reference,
+                'approved' AS status, NULL AS notes, s.created_at AS submitted_at, s.starts_at AS reviewed_at,
+                u.name AS user_name, u.email AS user_email, u.id AS user_id, 'paystack' AS record_type
+         FROM subscriptions s JOIN users u ON u.id=s.user_id
+         WHERE s.paystack_reference IS NOT NULL
+           AND s.id=(SELECT MAX(s2.id) FROM subscriptions s2 WHERE s2.paystack_reference=s.paystack_reference)`
+      );
+    }
+    const combined = manualRows.concat(paystackRows).sort((a,b) => new Date(b.submitted_at)-new Date(a.submitted_at));
+    const total = combined.length;
+    const rows = combined.slice(offset, offset + limit);
     return res.json({ success: true, data: rows, total, page, limit });
   } catch (e) {
     return res.status(500).json({ success: false, message: e.message });

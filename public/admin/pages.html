@@ -60,6 +60,9 @@
       <button class="page-tab" data-slug="privacy" onclick="selectPage('privacy',this)">
         <span class="material-icons-round">lock</span>Privacy Policy
       </button>
+      <button class="page-tab" data-slug="disclaimer" onclick="selectPage('disclaimer',this)">
+        <span class="material-icons-round">warning</span>Disclaimer
+      </button>
       <button class="page-tab" data-slug="contact" onclick="selectPage('contact',this)">
         <span class="material-icons-round">mail</span>Contact Us
       </button>
@@ -408,7 +411,7 @@ function renderPage(slug) {
   document.getElementById('contact-details-card').style.display      = isContact      ? '' : 'none';
   document.getElementById('subscription-details-card').style.display = isSubscription ? '' : 'none';
   document.getElementById('content-card').style.display              = (!isContact && !isSubscription) ? '' : 'none';
-  document.getElementById('last-updated-wrap').style.display         = (slug === 'terms' || slug === 'privacy') ? '' : 'none';
+  document.getElementById('last-updated-wrap').style.display         = (slug === 'terms' || slug === 'privacy' || slug === 'disclaimer') ? '' : 'none';
   document.getElementById('hero-subtitle-wrap').style.display        = (isCategory || slug === 'about' || slug === 'contact') ? '' : 'none';
 
   // About stats

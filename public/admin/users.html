@@ -19,8 +19,9 @@
   <div class="admin-table-header">
     <div class="admin-filters">
       <select class="admin-filter-select" id="f-role"><option value="">All Roles</option><option value="user">User</option><option value="vip">VIP</option><option value="admin">Admin</option></select>
-      <select class="admin-filter-select" id="f-country"><option value="">All Countries</option><option>Nigeria</option><option>Ghana</option><option>Kenya</option><option>South Africa</option><option>United Kingdom</option><option>United States</option></select>
+      <select class="admin-filter-select" id="f-country"><option value="">All Countries</option></select>
       <div style="position:relative;"><span class="material-icons-round" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:1rem;color:var(--muted);">search</span><input type="text" class="admin-search" id="f-search" placeholder="Search name or email..."></div>
+      <button class="btn btn-outline btn-sm" id="download-csv"><span class="material-icons-round">download</span>Download CSV</button>
     </div>
     <button class="btn btn-outline btn-sm" id="apply-filters"><span class="material-icons-round">filter_list</span>Apply</button>
   </div>
@@ -76,6 +77,7 @@ let userPage=1;
 
 async function loadUsers(page) {
   page=page||1;
+  userPage=page;
   const role    = document.getElementById('f-role').value;
   const country = document.getElementById('f-country').value;
   const search  = document.getElementById('f-search').value;
@@ -89,6 +91,7 @@ async function loadUsers(page) {
   document.getElementById('user-loading').style.display='none';
   if (!json.success) return;
   const d = json.data;
+  populateCountries(d.countries || []);
   document.getElementById('user-table').style.display='block';
   document.getElementById('user-tbody').innerHTML = d.users.map(u=>`
     <tr>
@@ -102,12 +105,34 @@ async function loadUsers(page) {
       <td><button onclick="editUser(${u.id},'${u.name}','${u.role}',${u.is_banned},'${u.membership_tier || 'free'}')" class="btn btn-outline btn-sm" style="padding:4px 8px;"><span class="material-icons-round" style="font-size:0.9rem;">edit</span></button></td>
     </tr>`).join('');
   const pages = Math.ceil(d.total/20);
+  document.getElementById('user-pagination').style.display=pages>1?'flex':'none';
   if (pages>1) {
     document.getElementById('user-pagination').style.display='flex';
     document.getElementById('u-info').textContent='Page '+page+' of '+pages+' ('+d.total+' total)';
     document.getElementById('u-prev').disabled=(page<=1);
     document.getElementById('u-next').disabled=(page>=pages);
   }
+}
+
+function countryLabel(code) {
+  try { return new Intl.DisplayNames(['en'], {type:'region'}).of(String(code).toUpperCase()) || code; } catch (_) { return code; }
+}
+function populateCountries(countries) {
+  const select=document.getElementById('f-country');
+  const selected=select.value;
+  select.innerHTML='<option value="">All Countries</option>'+countries.map(c=>'<option value="'+String(c).replace(/"/g,'&quot;')+'">'+countryLabel(c)+'</option>').join('');
+  select.value=selected;
+}
+function csvCell(value) { return '"'+String(value==null?'':value).replace(/"/g,'""')+'"'; }
+async function downloadUsersCsv() {
+  const role=document.getElementById('f-role').value, country=document.getElementById('f-country').value, search=document.getElementById('f-search').value;
+  let url='/api/admin/users?page=1&limit=5000';
+  if(role) url+='&role='+encodeURIComponent(role); if(country) url+='&country='+encodeURIComponent(country); if(search) url+='&search='+encodeURIComponent(search);
+  const json=await Admin.api('GET',url); if(!json.success){Admin.toast(json.message||'Export failed','error');return;}
+  const lines=[['ID','Name','Email','Role','Plan','Country','Status','Joined'].map(csvCell).join(',')];
+  json.data.users.forEach(u=>lines.push([u.id,u.name,u.email,u.role,u.membership_tier||'free',u.country||'',u.is_banned?'Banned':'Active',u.created_at].map(csvCell).join(',')));
+  const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='rootedpredict-users-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); URL.revokeObjectURL(a.href);
 }
 
 function editUser(id,name,role,banned,tier) {
@@ -127,6 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   Admin.buildSidebar(user);
   loadUsers(1);
   document.getElementById('apply-filters').addEventListener('click',()=>loadUsers(1));
+  document.getElementById('download-csv').addEventListener('click',downloadUsersCsv);
   document.getElementById('u-prev').addEventListener('click',()=>loadUsers(--userPage));
   document.getElementById('u-next').addEventListener('click',()=>loadUsers(++userPage));
   document.getElementById('grant-vip-btn').addEventListener('click', async function() {

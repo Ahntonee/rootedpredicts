@@ -338,26 +338,30 @@ async function previewScore(req, res) {
 async function getUsers(req, res) {
   try {
     const { page=1, limit=20, role, country, search } = req.query;
-    const offset = (parseInt(page)-1)*parseInt(limit);
+    const safeLimit = Math.min(5000, Math.max(1, parseInt(limit) || 20));
+    const offset = (Math.max(1, parseInt(page) || 1)-1)*safeLimit;
     const conditions = [], filterArgs = [];
-    if (role)    { conditions.push('role=?');                            filterArgs.push(role); }
-    if (country) { conditions.push('country=?');                        filterArgs.push(country); }
-    if (search)  { conditions.push('(name LIKE ? OR email LIKE ?)');    filterArgs.push(`%${search}%`, `%${search}%`); }
+    if (role === 'admin') conditions.push("u.role='admin'");
+    if (role === 'vip') conditions.push("(u.role='vip' OR EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id=u.id AND s.status IN ('active','trialing','cancelled') AND (s.expires_at IS NULL OR s.expires_at>NOW())))");
+    if (role === 'user') conditions.push("u.role='user' AND NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id=u.id AND s.status IN ('active','trialing','cancelled') AND (s.expires_at IS NULL OR s.expires_at>NOW()))");
+    if (country) { conditions.push('UPPER(TRIM(u.country))=UPPER(TRIM(?))'); filterArgs.push(country); }
+    if (search)  { conditions.push('(u.name LIKE ? OR u.email LIKE ?)'); filterArgs.push(`%${search}%`, `%${search}%`); }
     const WHERE = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
     const [[{total}]] = await db.query(
-      `SELECT COUNT(*) as total FROM users${WHERE}`, filterArgs
+      `SELECT COUNT(*) as total FROM users u${WHERE}`, filterArgs
     );
     const [rows] = await db.query(
-      `SELECT id,name,email,role,country,is_banned,created_at FROM users${WHERE}
-       ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      [...filterArgs, parseInt(limit), offset]
+      `SELECT u.id,u.name,u.email,u.role,u.country,u.is_banned,u.created_at FROM users u${WHERE}
+       ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
+      [...filterArgs, safeLimit, offset]
     );
+    const [countryRows] = await db.query("SELECT DISTINCT TRIM(country) AS country FROM users WHERE country IS NOT NULL AND TRIM(country)<>'' ORDER BY country");
     const { attachMembership } = require('../services/membership');
     const users = await Promise.all(rows.map(async user => {
       const membership = await attachMembership(db, { ...user });
       return { ...membership, membership_tier: membership.membership_tier || 'free' };
     }));
-    res.json({ success:true, data:{ users, total:parseInt(total), page:parseInt(page) }});
+    res.json({ success:true, data:{ users, countries:countryRows.map(row => row.country), total:parseInt(total), page:parseInt(page), limit:safeLimit }});
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 }
 

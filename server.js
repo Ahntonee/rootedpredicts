@@ -521,6 +521,7 @@ app.get('/sitemap.xml', async (req, res) => {
     { url: '/contact.html',   changefreq: 'monthly', priority: '0.4' },
     { url: '/privacy.html',   changefreq: 'yearly',  priority: '0.3' },
     { url: '/terms.html',     changefreq: 'yearly',  priority: '0.3' },
+    { url: '/disclaimer.html',changefreq: 'yearly',  priority: '0.3' },
   ];
 
   try {
